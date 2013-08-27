@@ -236,6 +236,8 @@ class SoundFile(object):
         return data
 
     def __setitem__(self, frame, data):
+        if self._file_mode == read_mode:
+            raise RuntimeError("Can not write to read-only file")
         if not isinstance(frame, slice):
             frame = slice(frame, frame+1)
         if frame.start is None:
@@ -284,6 +286,8 @@ class SoundFile(object):
         return np.reshape(np_data, (read, self.channels))
 
     def write(self, data):
+        if self._file_mode == read_mode:
+            raise RuntimeError("Can not write to read-only file")
         formats = {
             np.dtype(np.float64): 'double*',
             np.dtype(np.float32): 'float*',
