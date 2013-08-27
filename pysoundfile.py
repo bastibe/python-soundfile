@@ -2,6 +2,40 @@ from cffi import FFI
 import numpy as np
 import sys
 
+"""PySoundFile is an audio library based on libsndfile, CFFI and Numpy
+
+PySoundFile can read and write sound files. File reading/writing is
+supported through libsndfile[1], which is a free, cross-platform,
+open-source library for reading and writing many different sampled
+sound file formats that runs on many platforms including Windows, OS
+X, and Unix. It is accessed through CFFI[2], which is a foreight
+function interface for Python calling C code. CFFI is supported for
+CPython 2.6+, 3.x and PyPy 2.0+. PySoundFile represents audio data as
+NumPy arrays.
+
+[1]: http://www.mega-nerd.com/libsndfile/
+[2]: http://cffi.readthedocs.org/
+
+Every sound file is represented as a SoundFile object. SoundFiles can
+be created for reading, writing, or both. Each SoundFile has a
+samplerate, a number of channels, and a file format. These can not be
+changed at runtime.
+
+A SoundFile has methods for reading and writing data to/from the file.
+Even though every sound file has a fixed file format, reading and
+writing is possible in four different NumPy formats: int16, int32,
+float32 and float64.
+
+At the same time, SoundFiles act as container types, so you can use
+slices to read or write data as well. Since there is no way of
+specifying data formats for slices, the SoundFile will always return
+float32 data for those.
+
+PySoundFile is BSD licensed.
+(c) 2013, Bastian Bechtold
+
+"""
+
 ffi = FFI()
 ffi.cdef("""
 typedef int64_t sf_count_t ;
