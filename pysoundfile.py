@@ -183,8 +183,62 @@ _snd = ffi.dlopen('sndfile')
 
 class SoundFile(object):
 
+    """SoundFile handles reading and writing to sound files.
+
+    Each SoundFile opens one sound file on the disk. This sound file
+    has a specific samplerate, data format and a set number of
+    channels. Each sound file can be opened in read_mode, write_mode,
+    or read_write_mode. Note that read_write_mode is unsupported for
+    some formats.
+
+    Data can be written to the file using write(), or read from the
+    file using read(). Every read and write operation starts at a
+    certain position in the file. Reading N frames will change this
+    position by N frames as well. Alternatively, seek(), seek_start(),
+    and seek_end() can be used to set the current position to a frame
+    index offset from the current position, the start of the file, or
+    the end of the file, respectively.
+
+    Alternatively, slices can be used to access data at arbitrary
+    positions in the file. Note that slices currently only work on
+    frame indices, not channels. The quickest way to read in a whole
+    file as a float32 NumPy array is in fact SoundFile('filename')[:].
+
+    All data access uses frames as index. A frame is one discrete
+    time-step in the sound file. Every frame contains as many samples
+    as there are channels in the file.
+
+    In addition to audio data, there are a number of text fields in
+    every sound file. In particular, you can set a title, a copyright
+    notice, a software description, the artist name, a comment, a
+    date, the album name, a license, a tracknumber and a genre. Note
+    however, that not all of these fields are supported for every file
+    format.
+
+    """
+
     def __init__(self, name, samplerate=0, channels=0, format=0,
                  file_mode=read_write_mode):
+        """Open a new SoundFile.
+
+        If a file is only opened in read_mode or in read_write_mode,
+        no samplerate, channels or file format need to be given. If a
+        file is opened in write_mode, you must provide a samplerate, a
+        number of channels, and a file format. An exception is the RAW
+        data format, which requires these data points for reading as
+        well.
+
+        File formats consist of three parts OR'ed together:
+        - one of the file types from snd_types
+        - one of the data types from snd_subtypes
+        - an endianness from snd_endians
+
+        Since this is somewhat burdensome if you have to do it for
+        every new file, you can use one of the commonly used
+        pre-defined types wave_file, flac_file, matlab_file or
+        ogg_file.
+
+        """
         info = ffi.new("SF_INFO*")
         info.samplerate = samplerate
         info.channels = channels
@@ -203,19 +257,24 @@ class SoundFile(object):
         self.seekable = info.seekable == 1
 
     def __del__(self):
+        # be sure to flush data to disk before closing the file
         _snd.sf_write_sync(self._file)
         err = _snd.sf_close(self._file)
         self._handle_error_number(err)
 
     def _handle_error(self):
+        # this checks the error flag of the SNDFILE* structure
         err = _snd.sf_error(self._file)
         self._handle_error_number(err)
 
     def _handle_error_number(self, err):
+        # pretty-print a numerical error code
         if err != 0:
             err_str = _snd.sf_error_number(err)
             raise RuntimeError(ffi.string(err_str).decode())
 
+    # these strings are used as properties to access text data n the
+    # sound file
     _snd_strings = {
         'title': 0x01,
         'copyright': 0x02,
@@ -230,6 +289,7 @@ class SoundFile(object):
     }
 
     def __setattr__(self, name, value):
+        # access text data in the sound file through properties
         if name in self._snd_strings:
             if self._file_mode == read_mode:
                 raise RuntimeError("Can not change %s of file in read mode" %
@@ -241,6 +301,7 @@ class SoundFile(object):
             self.__dict__[name] = value
 
     def __getattr__(self, name):
+        # access text data in the sound file through properties
         if name in self._snd_strings:
             data = _snd.sf_get_string(self._file, self._snd_strings[name])
             if data == ffi.NULL:
@@ -251,12 +312,17 @@ class SoundFile(object):
             raise AttributeError("SoundFile has no attribute %s" % name)
 
     def __len__(self):
+        # strangely, the only way to see the length of a file seems to
+        # be to seek to the end. Returns the number of frames in the
+        # file.
         curr = self.seek(0)
         length = self.seek_end(0)
         self.seek(curr)
         return(length)
 
     def __getitem__(self, frame):
+        # access the file as if it where a one-dimensional Numpy
+        # array. Data must be in the form (frames x channels).
         if not isinstance(frame, slice):
             frame = slice(frame, frame+1)
         if frame.start is None:
@@ -270,6 +336,8 @@ class SoundFile(object):
         return data
 
     def __setitem__(self, frame, data):
+        # access the file as if it where a one-dimensional Numpy
+        # array. Data must be in the form (frames x channels).
         if self._file_mode == read_mode:
             raise RuntimeError("Can not write to read-only file")
         if not isinstance(frame, slice):
@@ -289,15 +357,41 @@ class SoundFile(object):
         return data
 
     def seek(self, frames):
+        """Set the read position relative to the current position.
+
+        Positive values will fast-forward. Negative values will rewind.
+
+        Returns the new absolute read position in frames.
+        """
         return _snd.sf_seek(self._file, frames, 1)
 
-    def seek_start(self, frames):
-        return _snd.sf_seek(self._file, frames, 0)
+    def seek_absolute(self, frames):
+        """Set an absolute read position.
 
-    def seek_end(self, frames):
-        return _snd.sf_seek(self._file, frames, 2)
+        Positive values will set the read position to the given frame
+        index. Negative values will set the read position to the given
+        index counted from the end of the file.
+
+        Returns the new absolute read position in frames.
+        """
+        if frames >= 0:
+            return _snd.sf_seek(self._file, frames, 0)
+        else:
+            return _snd.sf_seek(self._file, frames, 2)
 
     def read(self, frames, format=np.float32):
+        """Read a number of frames from the file.
+
+        Reads the given number of frames in the given data format from
+        the current read position. This also advances the read
+        position by the same number of frames.
+
+        Returns the read data as a (frames x channels) NumPy array.
+
+        If there is not enough data left in the file to read, a
+        smaller NumPy array will be returned.
+
+        """
         formats = {
             np.float64: 'double[]',
             np.float32: 'float[]',
@@ -320,6 +414,16 @@ class SoundFile(object):
         return np.reshape(np_data, (read, self.channels))
 
     def write(self, data):
+        """Write a number of frames to the file.
+
+        Writes a number of frames to the current read position in the
+        file. This also advances the read position by the same number
+        of frames and enlarges the file if necessary.
+
+        The data must be provided as a (frames x channels) NumPy
+        array.
+
+        """
         if self._file_mode == read_mode:
             raise RuntimeError("Can not write to read-only file")
         formats = {
