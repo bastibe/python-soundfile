@@ -10,7 +10,7 @@ setup(
     author_email='basti@bastibe.de',
     url='https://github.com/bastibe/PySoundFile',
     keywords=['audio', 'libsndfile'],
-    py_modules=['pysoundio'],
+    py_modules=['pysoundfile'],
     license='BSD 3-Clause License',
     requires=['numpy',
               'cffi (>=0.6)'],
