@@ -148,7 +148,9 @@ def _decodeformat(format):
 _snd = ffi.dlopen('sndfile')
 
 class SoundFile(object):
-    def __init__(self, name, samplerate=0, channels=0, format=0, file_mode=read_write_mode):
+
+    def __init__(self, name, samplerate=0, channels=0, format=0,
+                 file_mode=read_write_mode):
         info = ffi.new("SF_INFO*")
         info.samplerate = samplerate
         info.channels = channels
@@ -196,7 +198,8 @@ class SoundFile(object):
     def __setattr__(self, name, value):
         if name in self._snd_strings:
             if self._file_mode == read_mode:
-                raise RuntimeError("Can not change %s of file in read mode" % name)
+                raise RuntimeError("Can not change %s of file in read mode" %
+                                   name)
             data = ffi.new('char[]', value.encode())
             err = _snd.sf_set_string(self._file, self._snd_strings[name], data)
             self._handle_error_number(err)
@@ -232,8 +235,9 @@ class SoundFile(object):
         if not isinstance(frame, slice):
             frame = slice(frame, frame+1)
         if frame.stop-frame.start != len(data):
-            raise IndexError("Could not fit data of length %i into slice of length %i" %
-                             (len(data), frame.stop-frame.start))
+            raise IndexError(
+                "Could not fit data of length %i into slice of length %i" %
+                (len(data), frame.stop-frame.start))
         curr = self.seek(0)
         self.seek_start(frame.start)
         self.write(data)
@@ -287,6 +291,8 @@ class SoundFile(object):
         if data.dtype not in writers:
             raise ValueError("Data must be int16, int32, float32 or float64")
         raw_data = ffi.new('char[]', data.flatten().tostring())
-        written = writers[data.dtype](self._file, ffi.cast(formats[data.dtype], raw_data), len(data))
+        written = writers[data.dtype](self._file,
+                                      ffi.cast(formats[data.dtype], raw_data),
+                                      len(data))
         self._handle_error()
         return written
