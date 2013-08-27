@@ -323,12 +323,17 @@ class SoundFile(object):
     def __getitem__(self, frame):
         # access the file as if it where a one-dimensional Numpy
         # array. Data must be in the form (frames x channels).
+        # Both open slice bounds and negative values are allowed.
         if not isinstance(frame, slice):
             frame = slice(frame, frame+1)
         if frame.start is None:
             frame = slice(0, frame.stop)
         if frame.stop is None:
             frame = slice(frame.start, len(self))
+        if frame.start < 0:
+            frame = slice(len(self)+frame.start, frame.stop)
+        if frame.stop < 0:
+            frame = slice(frame.start, len(self)+frame.stop)
         curr = self.seek(0)
         self.seek_start(frame.start)
         data = self.read(frame.stop-frame.start)
@@ -338,6 +343,7 @@ class SoundFile(object):
     def __setitem__(self, frame, data):
         # access the file as if it where a one-dimensional Numpy
         # array. Data must be in the form (frames x channels).
+        # Both open slice bounds and negative values are allowed.
         if self._file_mode == read_mode:
             raise RuntimeError("Can not write to read-only file")
         if not isinstance(frame, slice):
@@ -346,6 +352,10 @@ class SoundFile(object):
             frame = slice(0, frame.stop)
         if frame.stop is None:
             frame = slice(frame.start, len(self))
+        if frame.start < 0:
+            frame = slice(len(self)+frame.start, frame.stop)
+        if frame.stop < 0:
+            frame = slice(frame.start, len(self)+frame.stop)
         if frame.stop-frame.start != len(data):
             raise IndexError(
                 "Could not fit data of length %i into slice of length %i" %
