@@ -194,8 +194,8 @@ class SoundFile(object):
     Data can be written to the file using write(), or read from the
     file using read(). Every read and write operation starts at a
     certain position in the file. Reading N frames will change this
-    position by N frames as well. Alternatively, seek(), seek_start(),
-    and seek_end() can be used to set the current position to a frame
+    position by N frames as well. Alternatively, seek() and
+    seek_absolute() can be used to set the current position to a frame
     index offset from the current position, the start of the file, or
     the end of the file, respectively.
 
@@ -316,8 +316,8 @@ class SoundFile(object):
         # be to seek to the end. Returns the number of frames in the
         # file.
         curr = self.seek(0)
-        length = self.seek_end(0)
-        self.seek(curr)
+        length = self.seek_absolute(-1)
+        self.seek_absolute(curr)
         return(length)
 
     def __getitem__(self, frame):
@@ -335,7 +335,7 @@ class SoundFile(object):
         if frame.stop < 0:
             frame = slice(frame.start, len(self)+frame.stop)
         curr = self.seek(0)
-        self.seek_start(frame.start)
+        self.seek_absolute(frame.start)
         data = self.read(frame.stop-frame.start)
         self.seek(curr)
         return data
@@ -361,7 +361,7 @@ class SoundFile(object):
                 "Could not fit data of length %i into slice of length %i" %
                 (len(data), frame.stop-frame.start))
         curr = self.seek(0)
-        self.seek_start(frame.start)
+        self.seek_absolute(frame.start)
         self.write(data)
         self.seek(curr)
         return data
