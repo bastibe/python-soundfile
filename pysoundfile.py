@@ -26,10 +26,14 @@ Even though every sound file has a fixed file format, reading and
 writing is possible in four different NumPy formats: int16, int32,
 float32 and float64.
 
-At the same time, SoundFiles act as container types, so you can use
+At the same time, SoundFiles act as sequence types, so you can use
 slices to read or write data as well. Since there is no way of
 specifying data formats for slices, the SoundFile will always return
 float32 data for those.
+
+Note that you need to have libsndfile installed in order to use
+PySoundFile. On Windows, you need to rename the library to
+"sndfile.dll".
 
 PySoundFile is BSD licensed.
 (c) 2013, Bastian Bechtold

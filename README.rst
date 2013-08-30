@@ -19,6 +19,15 @@ NumPy arrays.
 | PySoundFile is BSD licensed.
 | (c) 2013, Bastian Bechtold
 
+Prerequisites
+-------------
+
+You need to have libsndfile installed in order to use PySoundFile. You
+can download libsndfile from its website_. On Windows, you need to
+rename the library to "sndfile.dll" and put it into a path reachable
+by Python. One way to do that is to put sndfile.dll into the ``lib``
+directory in your Python installation.
+
 Usage
 -----
 
