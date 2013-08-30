@@ -28,6 +28,8 @@ rename the library to "sndfile.dll" and put it into a path reachable
 by Python. One way to do that is to put sndfile.dll into the ``lib``
 directory in your Python installation.
 
+.. _website: http://www.mega-nerd.com/libsndfile/#Download
+
 Usage
 -----
 
