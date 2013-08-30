@@ -22,11 +22,12 @@ NumPy arrays.
 Prerequisites
 -------------
 
-You need to have libsndfile installed in order to use PySoundFile. You
-can download libsndfile from its website_. On Windows, you need to
-rename the library to "sndfile.dll" and put it into a path reachable
-by Python. One way to do that is to put sndfile.dll into the ``lib``
-directory in your Python installation.
+You need to have libsndfile installed in order to use PySoundFile. On
+Unix, use your package manager to install libsndfile. You can download
+libsndfile binaries for Windows from its website_. On Windows, you
+need to rename the library to "sndfile.dll" and put it into a path
+reachable by Python. One way to do that is to put sndfile.dll into the
+``lib`` directory in your Python installation.
 
 .. _website: http://www.mega-nerd.com/libsndfile/#Download
 
