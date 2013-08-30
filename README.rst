@@ -60,9 +60,9 @@ into an ogg-vorbis file:
     from pysoundfile import SoundFile
 
     wave = SoundFile('existing_file.wav')
-    ogg  = SoundFIle('new_file.ogg', samplerate=wave.samplerate,
-                     channels=wave.channels, file_format=ogg_file,
-                     open_mode=write_mode)
+    ogg  = SoundFile('new_file.ogg', sample_rate=wave.samplerate,
+                     channels=wave.channels, format=ogg_file,
+                     mode=write_mode)
 
     data = wave.read(1024)
     while len(data) > 0:
