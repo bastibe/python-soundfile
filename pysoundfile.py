@@ -18,7 +18,7 @@ NumPy arrays.
 
 Every sound file is represented as a SoundFile object. SoundFiles can
 be created for reading, writing, or both. Each SoundFile has a
-samplerate, a number of channels, and a file format. These can not be
+sample_rate, a number of channels, and a file format. These can not be
 changed at runtime.
 
 A SoundFile has methods for reading and writing data to/from the file.
@@ -217,16 +217,16 @@ class SoundFile(object):
 
     """
 
-    def __init__(self, name, samplerate=0, channels=0, format=0,
+    def __init__(self, name, sample_rate=0, channels=0, format=0,
                  file_mode=read_write_mode):
         """Open a new SoundFile.
 
         If a file is only opened in read_mode or in read_write_mode,
-        no samplerate, channels or file format need to be given. If a
-        file is opened in write_mode, you must provide a samplerate, a
-        number of channels, and a file format. An exception is the RAW
-        data format, which requires these data points for reading as
-        well.
+        no sample_rate, channels or file format need to be given. If a
+        file is opened in write_mode, you must provide a sample_rate,
+        a number of channels, and a file format. An exception is the
+        RAW data format, which requires these data points for reading
+        as well.
 
         File formats consist of three parts OR'ed together:
         - one of the file types from snd_types
@@ -240,7 +240,7 @@ class SoundFile(object):
 
         """
         info = ffi.new("SF_INFO*")
-        info.samplerate = samplerate
+        info.samplerate = sample_rate
         info.channels = channels
         info.format = format
         filename = ffi.new('char[]', name.encode())
@@ -250,7 +250,7 @@ class SoundFile(object):
         self._handle_error()
 
         self.frames = info.frames
-        self.samplerate = info.samplerate
+        self.sample_rate = info.sample_rate
         self.channels = info.channels
         self.format = _decodeformat(info.format)
         self.sections = info.sections
