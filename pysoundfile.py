@@ -254,7 +254,7 @@ class SoundFile(object):
         self._handle_error()
 
         self.frames = info.frames
-        self.sample_rate = info.sample_rate
+        self.sample_rate = info.samplerate
         self.channels = info.channels
         self.format = _decodeformat(info.format)
         self.sections = info.sections

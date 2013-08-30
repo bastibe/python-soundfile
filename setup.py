@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='PySoundFile',
-    version='0.2',
+    version='0.2.1',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
