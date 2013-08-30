@@ -222,7 +222,7 @@ class SoundFile(object):
     """
 
     def __init__(self, name, sample_rate=0, channels=0, format=0,
-                 file_mode=read_write_mode):
+                 mode=read_write_mode):
         """Open a new SoundFile.
 
         If a file is only opened in read_mode or in read_write_mode,
@@ -248,7 +248,7 @@ class SoundFile(object):
         info.channels = channels
         info.format = format
         filename = ffi.new('char[]', name.encode())
-        self._file_mode = file_mode
+        self._file_mode = mode
 
         self._file = _snd.sf_open(filename, self._file_mode, info)
         self._handle_error()
