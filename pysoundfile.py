@@ -334,6 +334,8 @@ class SoundFile(object):
             frame = slice(len(self)+frame.start, frame.stop)
         if frame.stop < 0:
             frame = slice(frame.start, len(self)+frame.stop)
+        if frame.start > frame.stop:
+            frame = slice(frame.stop, frame.start)
         curr = self.seek(0)
         self.seek_absolute(frame.start)
         data = self.read(frame.stop-frame.start)
