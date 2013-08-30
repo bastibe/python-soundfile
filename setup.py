@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='PySoundFile',
-    version='0.1',
+    version='0.2',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
@@ -44,5 +44,9 @@ setup(
 
     .. _libsndfile: http://www.mega-nerd.com/libsndfile/
     .. _CFFI: http://cffi.readthedocs.org/
+
+    Note that you need to have libsndfile installed in order to use
+    PySoundFile. On Windows, you need to rename the library to
+    "sndfile.dll".
 
     ''')
