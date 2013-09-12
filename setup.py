@@ -4,9 +4,9 @@ from sys import platform
 from platform import architecture
 
 if platform == 'win32' and architecture()[0] == '32bit':
-    sndfile = [('', ['sndfile32.dll'])]
+    sndfile = [('', ['win/sndfile32.dll'])]
 elif platform == 'win32' and architecture()[0] == '64bit':
-    sndfile = [('', ['sndfile64.dll'])]
+    sndfile = [('', ['win/sndfile64.dll'])]
 else:
     sndfile = []
 
