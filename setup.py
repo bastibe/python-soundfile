@@ -1,6 +1,14 @@
 #!/usr/bin/env python
-
 from distutils.core import setup
+from sys import platform
+from platform import architecture
+
+if platform == 'win32' and architecture()[0] == '32bit':
+    sndfile = [('', ['sndfile32.dll'])]
+elif platform == 'win32' and architecture()[0] == '64bit':
+    sndfile = [('', ['sndfile64.dll'])]
+else:
+    sndfile = []
 
 setup(
     name='PySoundFile',
@@ -11,6 +19,7 @@ setup(
     url='https://github.com/bastibe/PySoundFile',
     keywords=['audio', 'libsndfile'],
     py_modules=['pysoundfile'],
+    data_files=sndfile,
     license='BSD 3-Clause License',
     requires=['numpy',
               'cffi (>=0.6)'],
