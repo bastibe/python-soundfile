@@ -1,7 +1,5 @@
 from cffi import FFI
 import numpy as np
-import sys
-import platform
 
 """PySoundFile is an audio library based on libsndfile, CFFI and Numpy
 
@@ -184,12 +182,7 @@ def _decodeformat(format):
 
     return (type, subtype, endianness)
 
-if sys.platform == 'win32' and platform.architecture()[0] == '32bit':
-    _snd = ffi.dlopen('sndfile32')
-elif sys.platform == 'win32' and platform.architecture()[0] == '64bit':
-    _snd = ffi.dlopen('sndfile64')
-else:
-    _snd = ffi.dlopen('sndfile')
+_snd = ffi.dlopen('sndfile')
 
 class SoundFile(object):
 
