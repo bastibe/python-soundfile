@@ -2,11 +2,14 @@
 from distutils.core import setup
 from sys import platform
 from platform import architecture
+import shutil
 
 if platform == 'win32' and architecture()[0] == '32bit':
-    sndfile = [('', ['win/sndfile32.dll'])]
+    shutil.copy2('win/sndfile32.dll', 'win/sndfile.dll')
+    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
 elif platform == 'win32' and architecture()[0] == '64bit':
-    sndfile = [('', ['win/sndfile64.dll'])]
+    shutil.copy2('win/sndfile64.dll', 'win/sndfile.dll')
+    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
 else:
     sndfile = []
 
