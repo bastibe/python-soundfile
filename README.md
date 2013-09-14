@@ -1,64 +1,74 @@
-===========
 PySoundFile
 ===========
 
 PySoundFile is an audio library based on libsndfile, CFFI and Numpy
 
 PySoundFile can read and write sound files. File reading/writing is
-supported through libsndfile_, which is a free, cross-platform,
+supported through [libsndfile][], which is a free, cross-platform,
 open-source library for reading and writing many different sampled
 sound file formats that runs on many platforms including Windows, OS
-X, and Unix. It is accessed through CFFI_, which is a foreight
+X, and Unix. It is accessed through [CFFI][], which is a foreight
 function interface for Python calling C code. CFFI is supported for
 CPython 2.6+, 3.x and PyPy 2.0+. PySoundFile represents audio data as
 NumPy arrays.
 
-.. _libsndfile: http://www.mega-nerd.com/libsndfile/
-.. _CFFI: http://cffi.readthedocs.org/
+[libsndfile]: http://www.mega-nerd.com/libsndfile/
+[CFFI]: http://cffi.readthedocs.org/
 
-| PySoundFile is BSD licensed.
-| (c) 2013, Bastian Bechtold
+PySoundFile is BSD licensed.  
+(c) 2013, Bastian Bechtold
 
-Prerequisites
--------------
+Installation
+------------
 
-You need to have libsndfile installed in order to use PySoundFile. On
-Unix, use your package manager to install libsndfile. You can download
-libsndfile binaries for Windows from its website_. On Windows, you
-need to rename the library to "sndfile.dll" and put it into a path
-reachable by Python. One way to do that is to put sndfile.dll into the
-``lib`` directory in your Python installation.
+On the Python side, you need to have CFFI and Numpy in order to use
+PySoundCard. Additionally, You need the library PortAudio installed on
+your computer. On Unix, use your package manager to install PortAudio.
+Then just install PySoundCard using pip or `python setup.py install`.
 
-.. _website: http://www.mega-nerd.com/libsndfile/#Download
+If you are running Windows, I recommend using [WinPython][] or some
+similar distribution. This should set you up with Numpy. However, you
+also need CFFI and it's dependency, PyCParser. A good place to get
+these are the [Unofficial Windows Binaries for Python][pybuilds].
+Having installed those, you can download the Windows installers for
+PySoundCard:
+
+[PySoundFile-0.2.1.win-amd64-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.2.1.win-amd64-py2.7.exe)  
+[PySoundFile-0.2.1.win-amd64-py2.2](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.2.1.win-amd64-py3.3.exe)  
+[PySoundFile-0.2.1.win32-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.2.1.win32-py2.7.exe)  
+[PySoundFile-0.2.1.win32-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.2.1.win32-py3.3.exe)
+
+[WinPython]: https://code.google.com/p/winpython/
+[pybuilds]: http://www.lfd.uci.edu/~gohlke/pythonlibs/
+
 
 Usage
 -----
 
 Each SoundFile opens one sound file on the disk. This sound file has a
 specific samplerate, data format and a set number of channels. Each
-sound file can be opened in ``read_mode``, ``write_mode``, or
-``read_write_mode``. Note that ``read_write_mode`` is unsupported for
+sound file can be opened in `read_mode`, `write_mode`, or
+`read_write_mode`. Note that `read_write_mode` is unsupported for
 some formats.
 
 All data access uses frames as index. A frame is one discrete
 time-step in the sound file. Every frame contains as many samples as
 there are channels in the file.
 
-Read/Write Functions
-~~~~~~~~~~~~~~~~~~~~
+### Read/Write Functions
 
-Data can be written to the file using ``write()``, or read from the
-file using ``read()``. Every read and write operation starts at a
+Data can be written to the file using `write()`, or read from the
+file using `read()`. Every read and write operation starts at a
 certain position in the file. Reading N frames will change this
-position by N frames as well. Alternatively, ``seek()``, and
-``seek_absolute()``, can be used to set the current position to a
+position by N frames as well. Alternatively, `seek()`, and
+`seek_absolute()`, can be used to set the current position to a
 frame index offset from the current position, the start of the file,
 or the end of the file, respectively.
 
 Here is an example for a program that reads a wave file and copies it
 into an ogg-vorbis file:
 
-.. code:: python
+```python
 
     from pysoundfile import SoundFile
 
@@ -71,9 +81,9 @@ into an ogg-vorbis file:
     while len(data) > 0:
         ogg.write(data)
         data = wave.read(1024)
+```
 
-Sequence Interface
-~~~~~~~~~~~~~~~~~~
+### Sequence Interface
 
 Alternatively, slices can be used to access data at arbitrary
 positions in the file. Note that slices currently only work on frame
@@ -81,14 +91,14 @@ indices, not channels.
 
 Here is an example of reading in a whole wave file into a NumPy array:
 
-.. code:: python
+```python
 
     from pysoundfile import SoundFile
 
     wave = SoundFile('existing_file.wav')[:]
+```
 
-Accessing Text Data
-~~~~~~~~~~~~~~~~~~~
+### Accessing Text Data
 
 In addition to audio data, there are a number of text fields in every
 sound file. In particular, you can set a title, a copyright notice, a
