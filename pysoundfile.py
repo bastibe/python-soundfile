@@ -221,7 +221,7 @@ class SoundFile(object):
     """
 
     def __init__(self, name, sample_rate=0, channels=0, format=0,
-                 mode=read_write_mode):
+                 mode=read_mode):
         """Open a new SoundFile.
 
         If a file is only opened in read_mode or in read_write_mode,
