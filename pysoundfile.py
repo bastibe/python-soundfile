@@ -261,9 +261,11 @@ class SoundFile(object):
 
     def __del__(self):
         # be sure to flush data to disk before closing the file
-        _snd.sf_write_sync(self._file)
-        err = _snd.sf_close(self._file)
-        self._handle_error_number(err)
+        if self._file:
+            _snd.sf_write_sync(self._file)
+            err = _snd.sf_close(self._file)
+            self._handle_error_number(err)
+            self._file = None
 
     def __enter__(self):
         return self
