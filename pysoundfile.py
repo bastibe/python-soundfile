@@ -265,6 +265,13 @@ class SoundFile(object):
         err = _snd.sf_close(self._file)
         self._handle_error_number(err)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        # flush remaining data to disk and close file
+        self.__del__()
+
     def _handle_error(self):
         # this checks the error flag of the SNDFILE* structure
         err = _snd.sf_error(self._file)
