@@ -1,3 +1,5 @@
+import os
+
 from cffi import FFI
 import numpy as np
 
@@ -97,6 +99,23 @@ sf_count_t  sf_write_raw     (SNDFILE *sndfile, void *ptr, sf_count_t bytes) ;
 
 const char* sf_get_string    (SNDFILE *sndfile, int str_type) ;
 int         sf_set_string    (SNDFILE *sndfile, int str_type, const char* str) ;
+
+sf_count_t  sf_vio_get_filelen (void *user_data) ;
+sf_count_t  sf_vio_seek        (sf_count_t offset, int whence, void *user_data) ;
+sf_count_t  sf_vio_read        (void *ptr, sf_count_t count, void *user_data) ;
+sf_count_t  sf_vio_write       (const void *ptr, sf_count_t count, void *user_data) ;
+sf_count_t  sf_vio_tell        (void *user_data) ;
+
+typedef struct SF_VIRTUAL_IO
+{    sf_count_t  (*get_filelen) (void *user_data) ;
+     sf_count_t  (*seek)        (sf_count_t offset, int whence, void *user_data) ;
+     sf_count_t  (*read)        (void *ptr, sf_count_t count, void *user_data) ;
+     sf_count_t  (*write)       (const void *ptr, sf_count_t count, void *user_data) ;
+     sf_count_t  (*tell)        (void *user_data) ;
+} SF_VIRTUAL_IO ;
+
+SNDFILE*    sf_open_virtual   (SF_VIRTUAL_IO *sfvirtual, int mode, SF_INFO *sfinfo, void *user_data) ;
+
 """)
 
 read_mode = 0x10
@@ -184,6 +203,44 @@ def _decodeformat(format):
 
 _snd = ffi.dlopen('sndfile')
 
+
+@ffi.callback("sf_count_t(void *user_data)")
+def vio_get_filelen(user_data):
+    fObj = ffi.from_handle(user_data)
+    return len(fObj)
+
+
+@ffi.callback("sf_count_t(sf_count_t offset, int whence, void *user_data)")
+def vio_seek(offset, whence, user_data):
+    fObj = ffi.from_handle(user_data)
+    fObj.seek(offset, whence)
+    return fObj.tell()
+
+
+@ffi.callback("sf_count_t(void *ptr, sf_count_t count, void *user_data)")
+def vio_read(ptr, count, user_data):
+    fObj = ffi.from_handle(user_data)
+    data = fObj.read(count)
+    buf = ffi.buffer(ptr, len(data))
+    buf[0:len(data)] = data
+    return len(data)
+
+
+@ffi.callback("sf_count_t(const void *ptr, sf_count_t count, void *user_data)")
+def vio_write(ptr, count, user_data):
+    fObj = ffi.from_handle(user_data)
+    buf = ffi.buffer(ptr)
+    data = buf[:]
+    length = fObj.write(data)
+    return length
+
+
+@ffi.callback("sf_count_t(void *user_data)")
+def vio_tell(user_data):
+    fObj = ffi.from_handle(user_data)
+    return fObj.tell()
+
+
 class SoundFile(object):
 
     """SoundFile handles reading and writing to sound files.
@@ -221,7 +278,7 @@ class SoundFile(object):
     """
 
     def __init__(self, name, sample_rate=0, channels=0, format=0,
-                 mode=read_mode):
+                 mode=read_mode, virtual_io=False, stream=False):
         """Open a new SoundFile.
 
         If a file is only opened in read_mode or in read_write_mode,
@@ -246,10 +303,37 @@ class SoundFile(object):
         info.samplerate = sample_rate
         info.channels = channels
         info.format = format
-        filename = ffi.new('char[]', name.encode())
         self._file_mode = mode
 
-        self._file = _snd.sf_open(filename, self._file_mode, info)
+        if virtual_io:
+            fObj = name
+            for attr in ('seek', 'read', 'write', 'tell'):
+                if not hasattr(fObj, attr):
+                    msg = 'File-like object must have: "%s"' % attr
+                    raise RuntimeError(msg)
+            # Streams must implement __len__
+            if stream and not hasattr(fObj, '__len__'):
+                msg = 'File-like object stream must have: "__len__"'
+                raise RuntimeError(msg)
+            elif not stream and not hasattr(fObj, '__len__'):
+                old_file_position = fObj.tell()
+                fObj.seek(0, os.SEEK_END)
+                size = fObj.tell()
+                fObj.__len__ = lambda: size
+                fObj.seek(old_file_position, os.SEEK_SET)
+            vio = ffi.new("SF_VIRTUAL_IO*")
+            vio.get_filelen = vio_get_filelen
+            vio.seek = vio_seek
+            vio.read = vio_read
+            vio.write = vio_write
+            vio.tell = vio_tell
+            user_data = ffi.new_handle(fObj)
+            self._file = _snd.sf_open_virtual(vio, self._file_mode, info,
+                                              user_data)
+        else:
+            filename = ffi.new('char[]', name.encode())
+            self._file = _snd.sf_open(filename, self._file_mode, info)
+
         self._handle_error()
 
         self.frames = info.frames
