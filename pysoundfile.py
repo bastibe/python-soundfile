@@ -328,9 +328,9 @@ class SoundFile(object):
             vio.read = vio_read
             vio.write = vio_write
             vio.tell = vio_tell
-            user_data = ffi.new_handle(fObj)
+            self._user_data = ffi.new_handle(fObj)
             self._file = _snd.sf_open_virtual(vio, self._file_mode, info,
-                                              user_data)
+                                              self._user_data)
         else:
             filename = ffi.new('char[]', name.encode())
             self._file = _snd.sf_open(filename, self._file_mode, info)
