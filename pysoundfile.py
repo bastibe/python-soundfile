@@ -207,7 +207,7 @@ _snd = ffi.dlopen('sndfile')
 @ffi.callback("sf_vio_get_filelen")
 def vio_get_filelen(user_data):
     fObj = ffi.from_handle(user_data)
-    return len(fObj)
+    return fObj._length
 
 
 @ffi.callback("sf_vio_seek")
@@ -312,16 +312,19 @@ class SoundFile(object):
                 if not hasattr(fObj, attr):
                     msg = 'File-like object must have: "%s"' % attr
                     raise RuntimeError(msg)
-            # Streams must implement __len__
-            if virtual_io == 'stream' and not hasattr(fObj, '__len__'):
-                msg = 'File-like object stream must have: "__len__"'
+            # Streams must set _length or implement __len__
+            if virtual_io == 'stream' and \
+               (not hasattr(fObj, '_length') or not hasattr(fObj, '__len__')):
+                msg = 'File-like object stream must have: "_length"'
                 raise RuntimeError(msg)
             elif not hasattr(fObj, '__len__'):
                 old_file_position = fObj.tell()
                 fObj.seek(0, os.SEEK_END)
                 size = fObj.tell()
-                fObj.__len__ = lambda: size
+                setattr(fObj, '_length', size)
                 fObj.seek(old_file_position, os.SEEK_SET)
+            else:
+                setattr(fObj, '_length', len(fObj))
             vio = ffi.new("SF_VIRTUAL_IO*")
             vio.get_filelen = vio_get_filelen
             vio.seek = vio_seek
