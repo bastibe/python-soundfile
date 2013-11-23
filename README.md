@@ -31,7 +31,7 @@ similar distribution. This should set you up with Numpy. However, you
 also need CFFI and it's dependency, PyCParser. A good place to get
 these are the [Unofficial Windows Binaries for Python][pybuilds].
 Having installed those, you can download the Windows installers for
-PySoundCard:
+PySoundFile:
 
 [PySoundFile-0.3.win-amd64-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.3.win-amd64-py2.7.exe)  
 [PySoundFile-0.3.win-amd64-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.3.win-amd64-py3.3.exe)  
