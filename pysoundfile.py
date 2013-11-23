@@ -278,7 +278,7 @@ class SoundFile(object):
     """
 
     def __init__(self, name, sample_rate=0, channels=0, format=0,
-                 mode=read_mode, virtual_io=False, stream=False):
+                 mode=read_mode, virtual_io=False):
         """Open a new SoundFile.
 
         If a file is only opened in read_mode or in read_write_mode,
@@ -305,6 +305,7 @@ class SoundFile(object):
         info.format = format
         self._file_mode = mode
 
+        # Will be valid if it is either True or 'stream'
         if virtual_io:
             fObj = name
             for attr in ('seek', 'read', 'write', 'tell'):
@@ -312,10 +313,10 @@ class SoundFile(object):
                     msg = 'File-like object must have: "%s"' % attr
                     raise RuntimeError(msg)
             # Streams must implement __len__
-            if stream and not hasattr(fObj, '__len__'):
+            if virtual_io == 'stream' and not hasattr(fObj, '__len__'):
                 msg = 'File-like object stream must have: "__len__"'
                 raise RuntimeError(msg)
-            elif not stream and not hasattr(fObj, '__len__'):
+            elif not hasattr(fObj, '__len__'):
                 old_file_position = fObj.tell()
                 fObj.seek(0, os.SEEK_END)
                 size = fObj.tell()
