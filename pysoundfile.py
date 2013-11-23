@@ -100,11 +100,11 @@ sf_count_t  sf_write_raw     (SNDFILE *sndfile, void *ptr, sf_count_t bytes) ;
 const char* sf_get_string    (SNDFILE *sndfile, int str_type) ;
 int         sf_set_string    (SNDFILE *sndfile, int str_type, const char* str) ;
 
-sf_count_t  sf_vio_get_filelen (void *user_data) ;
-sf_count_t  sf_vio_seek        (sf_count_t offset, int whence, void *user_data) ;
-sf_count_t  sf_vio_read        (void *ptr, sf_count_t count, void *user_data) ;
-sf_count_t  sf_vio_write       (const void *ptr, sf_count_t count, void *user_data) ;
-sf_count_t  sf_vio_tell        (void *user_data) ;
+typedef sf_count_t  (*sf_vio_get_filelen) (void *user_data) ;
+typedef sf_count_t  (*sf_vio_seek)        (sf_count_t offset, int whence, void *user_data) ;
+typedef sf_count_t  (*sf_vio_read)        (void *ptr, sf_count_t count, void *user_data) ;
+typedef sf_count_t  (*sf_vio_write)       (const void *ptr, sf_count_t count, void *user_data) ;
+typedef sf_count_t  (*sf_vio_tell)        (void *user_data) ;
 
 typedef struct SF_VIRTUAL_IO
 {    sf_count_t  (*get_filelen) (void *user_data) ;
@@ -204,20 +204,20 @@ def _decodeformat(format):
 _snd = ffi.dlopen('sndfile')
 
 
-@ffi.callback("sf_count_t(void *user_data)")
+@ffi.callback("sf_vio_get_filelen")
 def vio_get_filelen(user_data):
     fObj = ffi.from_handle(user_data)
     return len(fObj)
 
 
-@ffi.callback("sf_count_t(sf_count_t offset, int whence, void *user_data)")
+@ffi.callback("sf_vio_seek")
 def vio_seek(offset, whence, user_data):
     fObj = ffi.from_handle(user_data)
     fObj.seek(offset, whence)
     return fObj.tell()
 
 
-@ffi.callback("sf_count_t(void *ptr, sf_count_t count, void *user_data)")
+@ffi.callback("sf_vio_read")
 def vio_read(ptr, count, user_data):
     fObj = ffi.from_handle(user_data)
     data = fObj.read(count)
@@ -226,7 +226,7 @@ def vio_read(ptr, count, user_data):
     return len(data)
 
 
-@ffi.callback("sf_count_t(const void *ptr, sf_count_t count, void *user_data)")
+@ffi.callback("sf_vio_write")
 def vio_write(ptr, count, user_data):
     fObj = ffi.from_handle(user_data)
     buf = ffi.buffer(ptr)
@@ -235,7 +235,7 @@ def vio_write(ptr, count, user_data):
     return length
 
 
-@ffi.callback("sf_count_t(void *user_data)")
+@ffi.callback("sf_vio_tell")
 def vio_tell(user_data):
     fObj = ffi.from_handle(user_data)
     return fObj.tell()
