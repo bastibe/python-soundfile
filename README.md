@@ -45,15 +45,41 @@ PySoundFile:
 Usage
 -----
 
-Each SoundFile opens one sound file on the disk. This sound file has a
-specific samplerate, data format and a set number of channels. Each
-sound file can be opened in `read_mode`, `write_mode`, or
-`read_write_mode`. Note that `read_write_mode` is unsupported for
-some formats.
+Each SoundFile can either open one sound file on the disk, or an
+open file-like object (using `libsndfile`'s [virtual file interface][vio]).
+This sound file has a specific samplerate, data format and a set
+number of channels. Each sound file can be opened in `read_mode`,
+`write_mode`, or `read_write_mode`. Note that `read_write_mode`
+is unsupported for some formats.
 
 All data access uses frames as index. A frame is one discrete
 time-step in the sound file. Every frame contains as many samples as
 there are channels in the file.
+
+[vio]: http://www.mega-nerd.com/libsndfile/api.html#open_virtual
+
+### Virtual IO
+
+If you have an open file-like object, you can use something
+similar to this to decode it:
+
+```python
+from io import BytesIO
+from pysoundfile import SoundFile
+fObj = BytesIO(open('filename.flac', 'rb').read())
+flac = SoundFile(fObj, virtual_io=True)
+```
+
+Here is an example using an HTTP stream:
+```python
+from pysoundfile import SoundFile
+import requests
+
+response = requests.get('http://www.example.com/my.flac')
+# Streams must supply a _length
+response._length = len(response.content)
+flac = SoundFile(response.raw, virtual_io='stream')
+```
 
 ### Read/Write Functions
 
