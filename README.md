@@ -70,15 +70,19 @@ fObj = BytesIO(open('filename.flac', 'rb').read())
 flac = SoundFile(fObj, virtual_io=True)
 ```
 
-Here is an example using an HTTP stream:
+Here is an example using an HTTP request:
 ```python
+from io import BytesIO
 from pysoundfile import SoundFile
 import requests
 
-response = requests.get('http://www.example.com/my.flac')
-# Streams must supply a _length
-response._length = len(response.content)
-flac = SoundFile(response.raw, virtual_io='stream')
+fObj = BytesIO()
+response = requests.get('http://www.example.com/my.flac', stream=True)
+for data in response.iter_content(4096):
+    if data:
+        fObj.write(data)
+fObj.seek(0)
+flac = SoundFile(fObj, virtual_io=True)
 ```
 
 ### Read/Write Functions
