@@ -204,43 +204,6 @@ def _decodeformat(format):
 _snd = ffi.dlopen('sndfile')
 
 
-@ffi.callback("sf_vio_get_filelen")
-def vio_get_filelen(user_data):
-    fObj = ffi.from_handle(user_data)
-    return fObj._length
-
-
-@ffi.callback("sf_vio_seek")
-def vio_seek(offset, whence, user_data):
-    fObj = ffi.from_handle(user_data)
-    fObj.seek(offset, whence)
-    return fObj.tell()
-
-
-@ffi.callback("sf_vio_read")
-def vio_read(ptr, count, user_data):
-    fObj = ffi.from_handle(user_data)
-    data = fObj.read(count)
-    buf = ffi.buffer(ptr, len(data))
-    buf[0:len(data)] = data
-    return len(data)
-
-
-@ffi.callback("sf_vio_write")
-def vio_write(ptr, count, user_data):
-    fObj = ffi.from_handle(user_data)
-    buf = ffi.buffer(ptr)
-    data = buf[:]
-    length = fObj.write(data)
-    return length
-
-
-@ffi.callback("sf_vio_tell")
-def vio_tell(user_data):
-    fObj = ffi.from_handle(user_data)
-    return fObj.tell()
-
-
 class SoundFile(object):
 
     """SoundFile handles reading and writing to sound files.
@@ -308,32 +271,63 @@ class SoundFile(object):
         # Will be valid if it is either True or 'stream'
         if virtual_io:
             fObj = name
+
             for attr in ('seek', 'read', 'write', 'tell'):
                 if not hasattr(fObj, attr):
                     msg = 'File-like object must have: "%s"' % attr
                     raise RuntimeError(msg)
             # Streams must set _length or implement __len__
             if virtual_io == 'stream' and \
-               (not hasattr(fObj, '_length') or not hasattr(fObj, '__len__')):
-                msg = 'File-like object stream must have: "_length"'
+               not hasattr(fObj, '_length') and \
+               not hasattr(fObj, '__len__'):
+                msg = 'File-like object stream must have: "_length" or implement "__len__"'
                 raise RuntimeError(msg)
+            elif hasattr(fObj, '_length'):
+                size = fObj._length
             elif not hasattr(fObj, '__len__'):
                 old_file_position = fObj.tell()
                 fObj.seek(0, os.SEEK_END)
                 size = fObj.tell()
-                setattr(fObj, '_length', size)
                 fObj.seek(old_file_position, os.SEEK_SET)
             else:
-                setattr(fObj, '_length', len(fObj))
+                size = len(fObj)
+
+            # Define callbacks here, so they can reference fObj / size
+            @ffi.callback("sf_vio_get_filelen")
+            def vio_get_filelen(user_data):
+                return size
+
+            @ffi.callback("sf_vio_seek")
+            def vio_seek(offset, whence, user_data):
+                fObj.seek(offset, whence)
+                curr = fObj.tell()
+                return curr
+
+            @ffi.callback("sf_vio_read")
+            def vio_read(ptr, count, user_data):
+                buf = ffi.buffer(ptr, count)
+                data_read = fObj.readinto(buf)
+                return data_read
+
+            @ffi.callback("sf_vio_write")
+            def vio_write(ptr, count, user_data):
+                buf = ffi.buffer(ptr)
+                data = buf[:]
+                length = fObj.write(data)
+                return length
+
+            @ffi.callback("sf_vio_tell")
+            def vio_tell(user_data):
+                return fObj.tell()
+
             vio = ffi.new("SF_VIRTUAL_IO*")
             vio.get_filelen = vio_get_filelen
             vio.seek = vio_seek
             vio.read = vio_read
             vio.write = vio_write
             vio.tell = vio_tell
-            self._user_data = ffi.new_handle(fObj)
             self._file = _snd.sf_open_virtual(vio, self._file_mode, info,
-                                              self._user_data)
+                                              ffi.NULL)
         else:
             filename = ffi.new('char[]', name.encode())
             self._file = _snd.sf_open(filename, self._file_mode, info)
