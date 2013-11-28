@@ -334,6 +334,54 @@ class SoundFile(object):
         self.sections = info.sections
         self.seekable = info.seekable == 1
 
+    def _init_vio(self, fObj):
+        # Define callbacks here, so they can reference fObj / size
+        @ffi.callback("sf_vio_get_filelen")
+        def vio_get_filelen(user_data):
+            # Streams must set _length or implement __len__
+            if hasattr(fObj, '_length'):
+                size = fObj._length
+            elif not hasattr(fObj, '__len__'):
+                old_file_position = fObj.tell()
+                fObj.seek(0, os.SEEK_END)
+                size = fObj.tell()
+                fObj.seek(old_file_position, os.SEEK_SET)
+            else:
+                size = len(fObj)
+            return size
+
+        @ffi.callback("sf_vio_seek")
+        def vio_seek(offset, whence, user_data):
+            fObj.seek(offset, whence)
+            curr = fObj.tell()
+            return curr
+
+        @ffi.callback("sf_vio_read")
+        def vio_read(ptr, count, user_data):
+            buf = ffi.buffer(ptr, count)
+            data_read = fObj.readinto(buf)
+            return data_read
+
+        @ffi.callback("sf_vio_write")
+        def vio_write(ptr, count, user_data):
+            buf = ffi.buffer(ptr)
+            data = buf[:]
+            length = fObj.write(data)
+            return length
+
+        @ffi.callback("sf_vio_tell")
+        def vio_tell(user_data):
+            return fObj.tell()
+
+        vio = ffi.new("SF_VIRTUAL_IO*")
+        vio.get_filelen = vio_get_filelen
+        vio.seek = vio_seek
+        vio.read = vio_read
+        vio.write = vio_write
+        vio.tell = vio_tell
+
+        return vio
+
     def __del__(self):
         # be sure to flush data to disk before closing the file
         if self._file:
