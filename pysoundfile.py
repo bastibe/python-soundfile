@@ -268,7 +268,6 @@ class SoundFile(object):
         info.format = format
         self._file_mode = mode
 
-        # Will be valid if it is either True or 'stream'
         if virtual_io:
             fObj = name
 
@@ -276,12 +275,6 @@ class SoundFile(object):
                 if not hasattr(fObj, attr):
                     msg = 'File-like object must have: "%s"' % attr
                     raise RuntimeError(msg)
-            # Streams must set _length or implement __len__
-            if virtual_io == 'stream' and \
-               not hasattr(fObj, '_length') and \
-               not hasattr(fObj, '__len__'):
-                msg = 'File-like object stream must have: "_length" or implement "__len__"'
-                raise RuntimeError(msg)
             elif hasattr(fObj, '_length'):
                 size = fObj._length
             elif not hasattr(fObj, '__len__'):
