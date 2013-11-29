@@ -1,3 +1,5 @@
+import os
+
 from cffi import FFI
 import numpy as np
 
@@ -97,6 +99,23 @@ sf_count_t  sf_write_raw     (SNDFILE *sndfile, void *ptr, sf_count_t bytes) ;
 
 const char* sf_get_string    (SNDFILE *sndfile, int str_type) ;
 int         sf_set_string    (SNDFILE *sndfile, int str_type, const char* str) ;
+
+typedef sf_count_t  (*sf_vio_get_filelen) (void *user_data) ;
+typedef sf_count_t  (*sf_vio_seek)        (sf_count_t offset, int whence, void *user_data) ;
+typedef sf_count_t  (*sf_vio_read)        (void *ptr, sf_count_t count, void *user_data) ;
+typedef sf_count_t  (*sf_vio_write)       (const void *ptr, sf_count_t count, void *user_data) ;
+typedef sf_count_t  (*sf_vio_tell)        (void *user_data) ;
+
+typedef struct SF_VIRTUAL_IO
+{    sf_count_t  (*get_filelen) (void *user_data) ;
+     sf_count_t  (*seek)        (sf_count_t offset, int whence, void *user_data) ;
+     sf_count_t  (*read)        (void *ptr, sf_count_t count, void *user_data) ;
+     sf_count_t  (*write)       (const void *ptr, sf_count_t count, void *user_data) ;
+     sf_count_t  (*tell)        (void *user_data) ;
+} SF_VIRTUAL_IO ;
+
+SNDFILE*    sf_open_virtual   (SF_VIRTUAL_IO *sfvirtual, int mode, SF_INFO *sfinfo, void *user_data) ;
+
 """)
 
 read_mode = 0x10
@@ -184,6 +203,7 @@ def _decodeformat(format):
 
 _snd = ffi.dlopen('sndfile')
 
+
 class SoundFile(object):
 
     """SoundFile handles reading and writing to sound files.
@@ -221,7 +241,7 @@ class SoundFile(object):
     """
 
     def __init__(self, name, sample_rate=0, channels=0, format=0,
-                 mode=read_mode):
+                 mode=read_mode, virtual_io=False):
         """Open a new SoundFile.
 
         If a file is only opened in read_mode or in read_write_mode,
@@ -246,10 +266,23 @@ class SoundFile(object):
         info.samplerate = sample_rate
         info.channels = channels
         info.format = format
-        filename = ffi.new('char[]', name.encode())
         self._file_mode = mode
 
-        self._file = _snd.sf_open(filename, self._file_mode, info)
+        if virtual_io:
+            fObj = name
+            for attr in ('seek', 'read', 'write', 'tell'):
+                if not hasattr(fObj, attr):
+                    msg = 'File-like object must have: "%s"' % attr
+                    raise RuntimeError(msg)
+            self._vio = self._init_vio(fObj)
+            vio = ffi.new("SF_VIRTUAL_IO*", self._vio)
+            self._vio['vio_cdata'] = vio
+            self._file = _snd.sf_open_virtual(vio, self._file_mode, info,
+                                              ffi.NULL)
+        else:
+            filename = ffi.new('char[]', name.encode())
+            self._file = _snd.sf_open(filename, self._file_mode, info)
+
         self._handle_error()
 
         self.frames = info.frames
@@ -258,6 +291,54 @@ class SoundFile(object):
         self.format = _decodeformat(info.format)
         self.sections = info.sections
         self.seekable = info.seekable == 1
+
+    def _init_vio(self, fObj):
+        # Define callbacks here, so they can reference fObj / size
+        @ffi.callback("sf_vio_get_filelen")
+        def vio_get_filelen(user_data):
+            # Streams must set _length or implement __len__
+            if hasattr(fObj, '_length'):
+                size = fObj._length
+            elif not hasattr(fObj, '__len__'):
+                old_file_position = fObj.tell()
+                fObj.seek(0, os.SEEK_END)
+                size = fObj.tell()
+                fObj.seek(old_file_position, os.SEEK_SET)
+            else:
+                size = len(fObj)
+            return size
+
+        @ffi.callback("sf_vio_seek")
+        def vio_seek(offset, whence, user_data):
+            fObj.seek(offset, whence)
+            curr = fObj.tell()
+            return curr
+
+        @ffi.callback("sf_vio_read")
+        def vio_read(ptr, count, user_data):
+            buf = ffi.buffer(ptr, count)
+            data_read = fObj.readinto(buf)
+            return data_read
+
+        @ffi.callback("sf_vio_write")
+        def vio_write(ptr, count, user_data):
+            buf = ffi.buffer(ptr)
+            data = buf[:]
+            length = fObj.write(data)
+            return length
+
+        @ffi.callback("sf_vio_tell")
+        def vio_tell(user_data):
+            return fObj.tell()
+
+        vio = {
+            'get_filelen': vio_get_filelen,
+            'seek': vio_seek,
+            'read': vio_read,
+            'write': vio_write,
+            'tell': vio_tell,
+        }
+        return vio
 
     def __del__(self):
         # be sure to flush data to disk before closing the file
