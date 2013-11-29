@@ -269,12 +269,12 @@ class SoundFile(object):
         self._file_mode = mode
 
         if virtual_io:
-            self._fObj = name
+            fObj = name
             for attr in ('seek', 'read', 'write', 'tell'):
-                if not hasattr(self._fObj, attr):
+                if not hasattr(fObj, attr):
                     msg = 'File-like object must have: "%s"' % attr
                     raise RuntimeError(msg)
-            self._vio = self._init_vio(self._fObj, info)
+            self._vio = self._init_vio(fObj)
             vio = ffi.new("SF_VIRTUAL_IO*", self._vio)
             self._vio['vio_cdata'] = vio
             self._file = _snd.sf_open_virtual(vio, self._file_mode, info,
@@ -292,7 +292,7 @@ class SoundFile(object):
         self.sections = info.sections
         self.seekable = info.seekable == 1
 
-    def _init_vio(self, fObj, info):
+    def _init_vio(self, fObj):
         # Define callbacks here, so they can reference fObj / size
         @ffi.callback("sf_vio_get_filelen")
         def vio_get_filelen(user_data):
