@@ -514,7 +514,7 @@ class SoundFile(object):
         data = ffi.new(formats[format], frames*self.channels)
         read = readers[format](self._file, data, frames)
         self._handle_error()
-        np_data = np.fromstring(ffi.buffer(data)[:], dtype=format,
+        np_data = np.fromstring(ffi.buffer(data), dtype=format,
                                 count=read*self.channels)
         return np.reshape(np_data, (read, self.channels))
 
