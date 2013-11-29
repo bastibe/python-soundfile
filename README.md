@@ -45,45 +45,31 @@ PySoundFile:
 Usage
 -----
 
-Each SoundFile can either open one sound file on the disk, or an
-open file-like object (using `libsndfile`'s [virtual file interface][vio]).
-This sound file has a specific samplerate, data format and a set
+Each SoundFile can either open a sound file on the disk, or a
+file-like object (using `libsndfile`'s [virtual file interface][vio]).
+Every sound file has a specific samplerate, data format and a set
 number of channels. Each sound file can be opened in `read_mode`,
-`write_mode`, or `read_write_mode`. Note that `read_write_mode`
-is unsupported for some formats.
+`write_mode`, or `read_write_mode`. Note that `read_write_mode` is
+unsupported for some formats.
+
+You can read and write any file that [`libsndfile`][formats] can open.
+This includes Microsoft WAV, OGG, FLAC and Matlab MAT files. Different
+variants of these can be built by ORing `snd_types`, `snd_subtypes`
+and `snd_endians` or using the predefined formats `wave_file`,
+`flac_file`, `matlab_file` and `ogg_file`. Note that specifying the
+format is only necessary when writing.
+
+If a file on disk is opened, it is kept open for as long as the
+SoundFile object exists and closes automatically when it goes out of
+scope. Alternatively, the SoundFile object can be used as a context
+manager, which closes the file when it exits.
 
 All data access uses frames as index. A frame is one discrete
 time-step in the sound file. Every frame contains as many samples as
 there are channels in the file.
 
 [vio]: http://www.mega-nerd.com/libsndfile/api.html#open_virtual
-
-### Virtual IO
-
-If you have an open file-like object, you can use something
-similar to this to decode it:
-
-```python
-from io import BytesIO
-from pysoundfile import SoundFile
-fObj = BytesIO(open('filename.flac', 'rb').read())
-flac = SoundFile(fObj, virtual_io=True)
-```
-
-Here is an example using an HTTP request:
-```python
-from io import BytesIO
-from pysoundfile import SoundFile
-import requests
-
-fObj = BytesIO()
-response = requests.get('http://www.example.com/my.flac', stream=True)
-for data in response.iter_content(4096):
-    if data:
-        fObj.write(data)
-fObj.seek(0)
-flac = SoundFile(fObj, virtual_io=True)
-```
+[formats]: http://www.mega-nerd.com/libsndfile/#Features
 
 ### Read/Write Functions
 
@@ -126,6 +112,33 @@ Here is an example of reading in a whole wave file into a NumPy array:
     from pysoundfile import SoundFile
 
     wave = SoundFile('existing_file.wav')[:]
+```
+
+### Virtual IO
+
+If you have an open file-like object, you can use something
+similar to this to decode it:
+
+```python
+from io import BytesIO
+from pysoundfile import SoundFile
+fObj = BytesIO(open('filename.flac', 'rb').read())
+flac = SoundFile(fObj, virtual_io=True)
+```
+
+Here is an example using an HTTP request:
+```python
+from io import BytesIO
+from pysoundfile import SoundFile
+import requests
+
+fObj = BytesIO()
+response = requests.get('http://www.example.com/my.flac', stream=True)
+for data in response.iter_content(4096):
+    if data:
+        fObj.write(data)
+fObj.seek(0)
+flac = SoundFile(fObj, virtual_io=True)
 ```
 
 ### Accessing Text Data
