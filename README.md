@@ -31,7 +31,7 @@ similar distribution. This should set you up with Numpy. However, you
 also need CFFI and it's dependency, PyCParser. A good place to get
 these are the [Unofficial Windows Binaries for Python][pybuilds].
 Having installed those, you can download the Windows installers for
-PySoundCard:
+PySoundFile:
 
 [PySoundFile-0.3.win-amd64-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.3.win-amd64-py2.7.exe)  
 [PySoundFile-0.3.win-amd64-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.3.win-amd64-py3.3.exe)  
@@ -45,15 +45,45 @@ PySoundCard:
 Usage
 -----
 
-Each SoundFile opens one sound file on the disk. This sound file has a
-specific samplerate, data format and a set number of channels. Each
-sound file can be opened in `read_mode`, `write_mode`, or
-`read_write_mode`. Note that `read_write_mode` is unsupported for
-some formats.
+Each SoundFile can either open one sound file on the disk, or an
+open file-like object (using `libsndfile`'s [virtual file interface][vio]).
+This sound file has a specific samplerate, data format and a set
+number of channels. Each sound file can be opened in `read_mode`,
+`write_mode`, or `read_write_mode`. Note that `read_write_mode`
+is unsupported for some formats.
 
 All data access uses frames as index. A frame is one discrete
 time-step in the sound file. Every frame contains as many samples as
 there are channels in the file.
+
+[vio]: http://www.mega-nerd.com/libsndfile/api.html#open_virtual
+
+### Virtual IO
+
+If you have an open file-like object, you can use something
+similar to this to decode it:
+
+```python
+from io import BytesIO
+from pysoundfile import SoundFile
+fObj = BytesIO(open('filename.flac', 'rb').read())
+flac = SoundFile(fObj, virtual_io=True)
+```
+
+Here is an example using an HTTP request:
+```python
+from io import BytesIO
+from pysoundfile import SoundFile
+import requests
+
+fObj = BytesIO()
+response = requests.get('http://www.example.com/my.flac', stream=True)
+for data in response.iter_content(4096):
+    if data:
+        fObj.write(data)
+fObj.seek(0)
+flac = SoundFile(fObj, virtual_io=True)
+```
 
 ### Read/Write Functions
 
