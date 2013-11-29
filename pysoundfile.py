@@ -262,10 +262,10 @@ class SoundFile(object):
         ogg_file.
 
         """
-        self._info = ffi.new("SF_INFO*")
-        self._info.samplerate = sample_rate
-        self._info.channels = channels
-        self._info.format = format
+        info = ffi.new("SF_INFO*")
+        info.samplerate = sample_rate
+        info.channels = channels
+        info.format = format
         self._file_mode = mode
 
         if virtual_io:
@@ -274,19 +274,22 @@ class SoundFile(object):
                 if not hasattr(self._fObj, attr):
                     msg = 'File-like object must have: "%s"' % attr
                     raise RuntimeError(msg)
-            self._init_vio(self._fObj, self._info)
+            self._vio = self._init_vio(self._fObj, info)
+            vio = ffi.new("SF_VIRTUAL_IO*", self._vio)
+            self._file = _snd.sf_open_virtual(vio, self._file_mode, info,
+                                              ffi.NULL)
         else:
             filename = ffi.new('char[]', name.encode())
-            self._file = _snd.sf_open(filename, self._file_mode, self._info)
+            self._file = _snd.sf_open(filename, self._file_mode, info)
 
         self._handle_error()
 
-        self.frames = self._info.frames
-        self.sample_rate = self._info.samplerate
-        self.channels = self._info.channels
-        self.format = _decodeformat(self._info.format)
-        self.sections = self._info.sections
-        self.seekable = self._info.seekable == 1
+        self.frames = info.frames
+        self.sample_rate = info.samplerate
+        self.channels = info.channels
+        self.format = _decodeformat(info.format)
+        self.sections = info.sections
+        self.seekable = info.seekable == 1
 
     def _init_vio(self, fObj, info):
         # Define callbacks here, so they can reference fObj / size
@@ -327,15 +330,14 @@ class SoundFile(object):
         def vio_tell(user_data):
             return fObj.tell()
 
-        self._vio = ffi.new("SF_VIRTUAL_IO*")
-        self._vio.get_filelen = vio_get_filelen
-        self._vio.seek = vio_seek
-        self._vio.read = vio_read
-        self._vio.write = vio_write
-        self._vio.tell = vio_tell
-
-        self._file = _snd.sf_open_virtual(self._vio, self._file_mode, info,
-                                          ffi.NULL)
+        vio = {
+            'get_filelen': vio_get_filelen,
+            'seek': vio_seek,
+            'read': vio_read,
+            'write': vio_write,
+            'tell': vio_tell,
+        }
+        return vio
 
     def __del__(self):
         # be sure to flush data to disk before closing the file
@@ -511,7 +513,7 @@ class SoundFile(object):
         data = ffi.new(formats[format], frames*self.channels)
         read = readers[format](self._file, data, frames)
         self._handle_error()
-        np_data = np.fromstring(ffi.buffer(data), dtype=format,
+        np_data = np.fromstring(ffi.buffer(data)[:], dtype=format,
                                 count=read*self.channels)
         return np.reshape(np_data, (read, self.channels))
 
