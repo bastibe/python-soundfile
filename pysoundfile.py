@@ -276,6 +276,7 @@ class SoundFile(object):
                     raise RuntimeError(msg)
             self._vio = self._init_vio(self._fObj, info)
             vio = ffi.new("SF_VIRTUAL_IO*", self._vio)
+            self._vio['vio_cdata'] = vio
             self._file = _snd.sf_open_virtual(vio, self._file_mode, info,
                                               ffi.NULL)
         else:
