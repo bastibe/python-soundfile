@@ -22,9 +22,9 @@ Installation
 ------------
 
 On the Python side, you need to have CFFI and Numpy in order to use
-PySoundCard. Additionally, You need the library PortAudio installed on
-your computer. On Unix, use your package manager to install PortAudio.
-Then just install PySoundCard using pip or `python setup.py install`.
+PySoundFile. Additionally, You need the library libsndfile installed on
+your computer. On Unix, use your package manager to install libsndfile.
+Then just install PySoundFile using pip or `python setup.py install`.
 
 If you are running Windows, I recommend using [WinPython][] or some
 similar distribution. This should set you up with Numpy. However, you
@@ -33,10 +33,10 @@ these are the [Unofficial Windows Binaries for Python][pybuilds].
 Having installed those, you can download the Windows installers for
 PySoundFile:
 
-[PySoundFile-0.3.win-amd64-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.3.win-amd64-py2.7.exe)  
-[PySoundFile-0.3.win-amd64-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.3.win-amd64-py3.3.exe)  
-[PySoundFile-0.3.win32-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.3.win32-py2.7.exe)  
-[PySoundFile-0.3.win32-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.3.win32-py3.3.exe)
+[PySoundFile-0.4.win-amd64-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.4.win-amd64-py2.7.exe)  
+[PySoundFile-0.4.win-amd64-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.4.win-amd64-py3.3.exe)  
+[PySoundFile-0.4.win32-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.4.win32-py2.7.exe)  
+[PySoundFile-0.4.win32-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.4.win32-py3.3.exe)
 
 [WinPython]: https://code.google.com/p/winpython/
 [pybuilds]: http://www.lfd.uci.edu/~gohlke/pythonlibs/
