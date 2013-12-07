@@ -184,7 +184,7 @@ snd_endians = {
 }
 
 wave_file = snd_types['WAV']|snd_subtypes['PCM_16']|snd_endians['FILE']
-flac_file = snd_types['FLAC']|snd_subtypes['FLOAT']|snd_endians['FILE']
+flac_file = snd_types['FLAC']|snd_subtypes['PCM_16']|snd_endians['FILE']
 matlab_file = snd_types['MAT5']|snd_subtypes['DOUBLE']|snd_endians['FILE']
 ogg_file = snd_types['OGG']|snd_subtypes['VORBIS']|snd_endians['FILE']
 
