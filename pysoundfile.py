@@ -183,10 +183,10 @@ snd_endians = {
     'CPU':    0x30000000, # Force CPU endian-ness.
 }
 
-wave_file = snd_types['WAV']|snd_subtypes['PCM_16']|snd_endians['FILE']
-flac_file = snd_types['FLAC']|snd_subtypes['FLOAT']|snd_endians['FILE']
-matlab_file = snd_types['MAT5']|snd_subtypes['DOUBLE']|snd_endians['FILE']
-ogg_file = snd_types['OGG']|snd_subtypes['VORBIS']|snd_endians['FILE']
+wave_file = ('WAV', 'PCM_16', 'FILE')
+flac_file = ('FLAC', 'FLOAT', 'FILE')
+matlab_file = ('MAT5', 'DOUBLE', 'FILE')
+ogg_file = ('OGG', 'VORBIS', 'FILE')
 
 def _encodeformat(format):
     type = snd_types[format[0]]
