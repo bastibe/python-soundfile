@@ -188,6 +188,12 @@ flac_file = snd_types['FLAC']|snd_subtypes['PCM_16']|snd_endians['FILE']
 matlab_file = snd_types['MAT5']|snd_subtypes['DOUBLE']|snd_endians['FILE']
 ogg_file = snd_types['OGG']|snd_subtypes['VORBIS']|snd_endians['FILE']
 
+def _encodeformat(format):
+    type = snd_types[format[0]]
+    subtype = snd_subtypes[format[1]]
+    endianness = snd_endians[format[2]]
+    return type|subtype|endianness
+
 def _decodeformat(format):
     sub_mask  = 0x0000FFFF
     type_mask = 0x0FFF0000
@@ -251,10 +257,12 @@ class SoundFile(object):
         RAW data format, which requires these data points for reading
         as well.
 
-        File formats consist of three parts OR'ed together:
+        File formats consist of three parts:
         - one of the file types from snd_types
         - one of the data types from snd_subtypes
         - an endianness from snd_endians
+        and can be either a tuple of three strings indicate the keys,
+        or an OR'ed together integer of them.
 
         Since this is somewhat burdensome if you have to do it for
         every new file, you can use one of the commonly used
@@ -265,6 +273,8 @@ class SoundFile(object):
         info = ffi.new("SF_INFO*")
         info.samplerate = sample_rate
         info.channels = channels
+        if hasattr(format, '__getitem__'):
+            format = _encodeformat(format)
         info.format = format
         self._file_mode = mode
 
