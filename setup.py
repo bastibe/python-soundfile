@@ -25,8 +25,7 @@ setup(
     data_files=sndfile,
     license='BSD 3-Clause License',
     install_requires=['numpy',
-                      'cffi>=0.6',
-                      'docopt'],
+                      'cffi>=0.6'],
     platforms='any',
     classifiers=[
         'Development Status :: 3 - Alpha',
