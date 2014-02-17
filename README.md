@@ -41,7 +41,6 @@ PySoundFile:
 [WinPython]: https://code.google.com/p/winpython/
 [pybuilds]: http://www.lfd.uci.edu/~gohlke/pythonlibs/
 
-
 Usage
 -----
 
@@ -85,18 +84,17 @@ Here is an example for a program that reads a wave file and copies it
 into an ogg-vorbis file:
 
 ```python
+from pysoundfile import SoundFile
 
-    from pysoundfile import SoundFile
+wave = SoundFile('existing_file.wav')
+ogg  = SoundFile('new_file.ogg', sample_rate=wave.samplerate,
+                 channels=wave.channels, format=ogg_file,
+                 mode=write_mode)
 
-    wave = SoundFile('existing_file.wav')
-    ogg  = SoundFile('new_file.ogg', sample_rate=wave.samplerate,
-                     channels=wave.channels, format=ogg_file,
-                     mode=write_mode)
-
+data = wave.read(1024)
+while len(data) > 0:
+    ogg.write(data)
     data = wave.read(1024)
-    while len(data) > 0:
-        ogg.write(data)
-        data = wave.read(1024)
 ```
 
 ### Sequence Interface
@@ -108,10 +106,9 @@ indices, not channels.
 Here is an example of reading in a whole wave file into a NumPy array:
 
 ```python
+from pysoundfile import SoundFile
 
-    from pysoundfile import SoundFile
-
-    wave = SoundFile('existing_file.wav')[:]
+wave = SoundFile('existing_file.wav')[:]
 ```
 
 ### Virtual IO
