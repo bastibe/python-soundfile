@@ -478,7 +478,7 @@ class SoundFile(object):
 
         Returns the new absolute read position in frames.
         """
-        return _snd.sf_seek(self._file, frames, 1)
+        return _snd.sf_seek(self._file, frames, os.SEEK_CUR)
 
     def seek_absolute(self, frames):
         """Set an absolute read position.
@@ -490,9 +490,9 @@ class SoundFile(object):
         Returns the new absolute read position in frames.
         """
         if frames >= 0:
-            return _snd.sf_seek(self._file, frames, 0)
+            return _snd.sf_seek(self._file, frames, os.SEEK_SET)
         else:
-            return _snd.sf_seek(self._file, frames, 2)
+            return _snd.sf_seek(self._file, frames, os.SEEK_END)
 
     def read(self, frames, format=np.float32):
         """Read a number of frames from the file.
