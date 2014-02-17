@@ -494,12 +494,13 @@ class SoundFile(object):
         else:
             return _snd.sf_seek(self._file, frames, 2)
 
-    def read(self, frames, format=np.float32):
+    def read(self, frames=-1, format=np.float32):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
         the current read position. This also advances the read
         position by the same number of frames.
+        Use frames=-1 to read until the end of the file.
 
         Returns the read data as a (frames x channels) NumPy array.
 
@@ -521,6 +522,9 @@ class SoundFile(object):
         }
         if format not in formats:
             raise ValueError("Can only read int16, int32, float32 and float64")
+        if frames == -1:
+            curr = self.seek(0)
+            frames = self.frames - curr
         data = ffi.new(formats[format], frames*self.channels)
         read = readers[format](self._file, data, frames)
         self._handle_error()
