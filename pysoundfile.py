@@ -423,25 +423,25 @@ class SoundFile(object):
         self.seek_absolute(curr)
         return(length)
 
+    def _get_slice_bounds(self, frame):
+        # get start and stop index from slice, asserting step==1
+        if not isinstance(frame, slice):
+            frame = slice(frame, frame + 1)
+        start, stop, step = frame.indices(len(self))
+        if step != 1:
+            raise RuntimeError("Step size must be 1!")
+        if start > stop:
+            stop = start
+        return start, stop
+
     def __getitem__(self, frame):
         # access the file as if it where a one-dimensional Numpy
         # array. Data must be in the form (frames x channels).
         # Both open slice bounds and negative values are allowed.
-        if not isinstance(frame, slice):
-            frame = slice(frame, frame+1)
-        if frame.start is None:
-            frame = slice(0, frame.stop)
-        if frame.stop is None:
-            frame = slice(frame.start, len(self))
-        if frame.start < 0:
-            frame = slice(len(self)+frame.start, frame.stop)
-        if frame.stop < 0:
-            frame = slice(frame.start, len(self)+frame.stop)
-        if frame.start > frame.stop:
-            frame = slice(frame.stop, frame.start)
+        start, stop = self._get_slice_bounds(frame)
         curr = self.seek(0)
-        self.seek_absolute(frame.start)
-        data = self.read(frame.stop-frame.start)
+        self.seek_absolute(start)
+        data = self.read(stop - start)
         self.seek(curr)
         return data
 
@@ -451,22 +451,13 @@ class SoundFile(object):
         # Both open slice bounds and negative values are allowed.
         if self._file_mode == read_mode:
             raise RuntimeError("Can not write to read-only file")
-        if not isinstance(frame, slice):
-            frame = slice(frame, frame+1)
-        if frame.start is None:
-            frame = slice(0, frame.stop)
-        if frame.stop is None:
-            frame = slice(frame.start, len(self))
-        if frame.start < 0:
-            frame = slice(len(self)+frame.start, frame.stop)
-        if frame.stop < 0:
-            frame = slice(frame.start, len(self)+frame.stop)
-        if frame.stop-frame.start != len(data):
+        start, stop = self._get_slice_bounds(frame)
+        if stop - start != len(data):
             raise IndexError(
                 "Could not fit data of length %i into slice of length %i" %
-                (len(data), frame.stop-frame.start))
+                (len(data), stop - start))
         curr = self.seek(0)
-        self.seek_absolute(frame.start)
+        self.seek_absolute(start)
         self.write(data)
         self.seek(curr)
         return data
