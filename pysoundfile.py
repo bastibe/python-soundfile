@@ -415,13 +415,7 @@ class SoundFile(object):
             raise AttributeError("SoundFile has no attribute %s" % name)
 
     def __len__(self):
-        # strangely, the only way to see the length of a file seems to
-        # be to seek to the end. Returns the number of frames in the
-        # file.
-        curr = self.seek(0)
-        length = self.seek_absolute(-1)
-        self.seek_absolute(curr)
-        return(length)
+        return(self.frames)
 
     def _get_slice_bounds(self, frame):
         # get start and stop index from slice, asserting step==1
