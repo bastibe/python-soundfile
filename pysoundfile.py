@@ -429,15 +429,23 @@ class SoundFile(object):
         return start, stop
 
     def __getitem__(self, frame):
-        # access the file as if it where a one-dimensional Numpy
-        # array. Data must be in the form (frames x channels).
-        # Both open slice bounds and negative values are allowed.
+        # access the file as if it where a Numpy array. The data is
+        # returned as numpy array.
+        second_frame = None
+        if isinstance(frame, tuple):
+            if len(frame) > 2:
+                raise AttributeError(
+                    "SoundFile can only be accessed in one or two dimensions")
+            frame, second_frame = frame
         start, stop = self._get_slice_bounds(frame)
         curr = self.seek(0)
         self.seek_absolute(start)
         data = self.read(stop - start)
         self.seek_absolute(curr)
-        return data
+        if second_frame:
+            return data[(slice(None), second_frame)]
+        else:
+            return data
 
     def __setitem__(self, frame, data):
         # access the file as if it where a one-dimensional Numpy
