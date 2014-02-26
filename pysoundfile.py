@@ -436,7 +436,7 @@ class SoundFile(object):
         curr = self.seek(0)
         self.seek_absolute(start)
         data = self.read(stop - start)
-        self.seek(curr)
+        self.seek_absolute(curr)
         return data
 
     def __setitem__(self, frame, data):
@@ -453,7 +453,7 @@ class SoundFile(object):
         curr = self.seek(0)
         self.seek_absolute(start)
         self.write(data)
-        self.seek(curr)
+        self.seek_absolute(curr)
         return data
 
     def seek(self, frames):
