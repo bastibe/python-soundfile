@@ -33,10 +33,10 @@ these are the [Unofficial Windows Binaries for Python][pybuilds].
 Having installed those, you can download the Windows installers for
 PySoundFile:
 
-[PySoundFile-0.5.0.win-amd64-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.5.0.win-amd64-py2.7.exe)  
-[PySoundFile-0.5.0.win-amd64-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.5.0.win-amd64-py3.3.exe)  
-[PySoundFile-0.5.0.win32-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.5.0.win32-py2.7.exe)  
-[PySoundFile-0.5.0.win32-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.5.0.win32-py3.3.exe)
+[PySoundFile-0.5.0.win-amd64-py2.7](https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win-amd64-py2.7.exe)  
+[PySoundFile-0.5.0.win-amd64-py3.3](https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win-amd64-py3.3.exe)  
+[PySoundFile-0.5.0.win32-py2.7](https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win32-py2.7.exe)  
+[PySoundFile-0.5.0.win32-py3.3](https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win32-py3.3.exe)
 
 [WinPython]: https://code.google.com/p/winpython/
 [pybuilds]: http://www.lfd.uci.edu/~gohlke/pythonlibs/
