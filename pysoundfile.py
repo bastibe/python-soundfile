@@ -456,6 +456,10 @@ class SoundFile(object):
         self.seek_absolute(curr)
         return data
 
+    def flush(self):
+        """Write unwritten data to disk."""
+        _snd.sf_write_sync(self._file)
+
     def seek(self, frames):
         """Set the read position relative to the current position.
 
