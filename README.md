@@ -33,10 +33,10 @@ these are the [Unofficial Windows Binaries for Python][pybuilds].
 Having installed those, you can download the Windows installers for
 PySoundFile:
 
-[PySoundFile-0.4.1.win-amd64-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.4.1.win-amd64-py2.7.exe)  
-[PySoundFile-0.4.1.win-amd64-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.4.1.win-amd64-py3.3.exe)  
-[PySoundFile-0.4.1.win32-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.4.1.win32-py2.7.exe)  
-[PySoundFile-0.4.1.win32-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.4.1.win32-py3.3.exe)
+[PySoundFile-0.5.0.win-amd64-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.5.0.win-amd64-py2.7.exe)  
+[PySoundFile-0.5.0.win-amd64-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.5.0.win-amd64-py3.3.exe)  
+[PySoundFile-0.5.0.win32-py2.7](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.5.0.win32-py2.7.exe)  
+[PySoundFile-0.5.0.win32-py3.3](https://github.com/bastibe/PySoundFile/raw/master/dist/PySoundFile-0.5.0.win32-py3.3.exe)
 
 [WinPython]: https://code.google.com/p/winpython/
 [pybuilds]: http://www.lfd.uci.edu/~gohlke/pythonlibs/
@@ -100,8 +100,8 @@ while len(data) > 0:
 ### Sequence Interface
 
 Alternatively, slices can be used to access data at arbitrary
-positions in the file. Note that slices currently only work on frame
-indices, not channels.
+positions in the file. If you index in two dimensions, you can select
+single channels of a multi-channel file.
 
 Here is an example of reading in a whole wave file into a NumPy array:
 
