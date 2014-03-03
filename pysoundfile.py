@@ -617,3 +617,6 @@ class SoundFile(object):
                                       len(data))
         self._handle_error()
         return written
+
+def open(*args, **kwargs):
+    return SoundFile(*args, **kwargs)
