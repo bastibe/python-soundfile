@@ -279,8 +279,8 @@ class SoundFile(object):
 
     """
 
-    def __init__(self, name, sample_rate=None, channels=2, format=None,
-                 subtype=None, endian=None, mode='r', virtual_io=False):
+    def __init__(self, name, mode='r', sample_rate=None, channels=2,
+                 subtype=None, endian=None, format=None, virtual_io=False):
         """Open a new SoundFile.
 
         If a file is only opened with mode='r' or mode='rw',
