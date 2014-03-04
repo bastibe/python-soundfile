@@ -642,3 +642,15 @@ def read(filename, frames=None, start=None, stop=None, **kwargs):
         data = f.read(frames, **kwargs)
     return data, f.sample_rate
 
+def write(data, filename, sample_rate, *args, **kwargs):
+    # e.g. write(myarray, 'myfile.wav', 44100, sf.FLOAT)
+    if data.ndim == 1:
+        channels = 1
+    elif data.ndim == 2:
+        channels = data.shape[1]
+    else:
+        raise RuntimeError("Only one- and two-dimensional arrays are allowed!")
+    frames = data.shape[0]
+    with open(filename, 'w', sample_rate, channels, *args, **kwargs) as f:
+        written = f.write(data)
+    assert frames == written, "Error writing file!"
