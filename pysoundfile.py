@@ -620,3 +620,15 @@ class SoundFile(object):
 
 def open(*args, **kwargs):
     return SoundFile(*args, **kwargs)
+
+def read(filename, frames=None, start=None, stop=None, **kwargs):
+    # If frames and stop are both specified, frames takes precedence!
+    # start and stop accept negative indices.
+    with open(filename, 'r') as f:
+        start, stop, _ = slice(start, stop).indices(f.frames)
+        if frames is None:
+            frames = max(0, stop - start)
+        f.seek_absolute(start)
+        data = f.read(frames, **kwargs)
+    return data, f.sample_rate
+
