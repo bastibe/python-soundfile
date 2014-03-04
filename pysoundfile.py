@@ -279,7 +279,7 @@ class SoundFile(object):
 
     """
 
-    def __init__(self, name, mode='r', sample_rate=None, channels=2,
+    def __init__(self, name, mode='r', sample_rate=None, channels=None,
                  subtype=None, endian=None, format=None, virtual_io=False):
         """Open a new SoundFile.
 
@@ -310,21 +310,26 @@ class SoundFile(object):
         except KeyError:
             raise ValueError("invalid mode: " + mode)
         self.mode = mode
+        if format is None:
+            ext = name.rsplit('.', 1)[-1]
+            format = _format_by_extension.get(ext.lower(), 0x0)
         info = ffi.new("SF_INFO*")
-        if self._file_mode == M_WRITE:
-            assert sample_rate, "Sample rate must be specified for mode='w'!"
+        if mode == 'w' or format == RAW:
+            assert sample_rate, \
+                "sample_rate must be specified for mode='w' and format=RAW!"
             info.samplerate = sample_rate
+            assert channels, \
+                "channels must be specified for mode='w' and format=RAW!"
             info.channels = channels
-            if format is None:
-                ext = name.rsplit('.', 1)[-1]
-                format = _format_by_extension[ext.lower()]
-            assert format & _TYPEMASK, "Invalid format!"
             if subtype is None:
-                subtype = _default_subtypes[format]
-            assert subtype & _SUBMASK, "Invalid subtype!"
+                subtype = _default_subtypes.get(format, 0x0)
             endian = endian or FILE
-            assert endian == FILE or endian & _ENDMASK, "Invalid endian-ness!"
-            info.format = format | subtype | endian
+            format = format | subtype | endian
+            assert format, "No format specified!"
+            assert format & _TYPEMASK, "Invalid format!"
+            assert format & _SUBMASK, "Invalid subtype!"
+            assert endian == FILE or format & _ENDMASK, "Invalid endian-ness!"
+            info.format = format
 
         if virtual_io:
             fObj = name
