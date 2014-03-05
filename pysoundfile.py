@@ -694,12 +694,15 @@ def open(*args, **kwargs):
 def read(filename, frames=None, start=None, stop=None, **kwargs):
     # If frames and stop are both specified, frames takes precedence!
     # start and stop accept negative indices.
-    with open(filename, 'r') as f:
+    read_kwargs = {}
+    if 'dtype' in kwargs:
+        read_kwargs['dtype'] = kwargs.pop('dtype')
+    with open(filename, 'r', **kwargs) as f:
         start, stop, _ = slice(start, stop).indices(f.frames)
         if frames is None:
             frames = max(0, stop - start)
         f.seek_absolute(start)
-        data = f.read(frames, **kwargs)
+        data = f.read(frames, **read_kwargs)
     return data, f.sample_rate
 
 def write(data, filename, sample_rate, *args, **kwargs):
