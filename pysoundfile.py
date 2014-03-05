@@ -116,6 +116,12 @@ typedef struct SF_VIRTUAL_IO
 
 SNDFILE*    sf_open_virtual   (SF_VIRTUAL_IO *sfvirtual, int mode, SF_INFO *sfinfo, void *user_data) ;
 
+typedef struct SF_FORMAT_INFO
+{
+    int         format ;
+    const char* name ;
+    const char* extension ;
+} SF_FORMAT_INFO ;
 """)
 
 _M_READ = 0x10
@@ -191,6 +197,8 @@ _ALBUM       = 0x07
 _LICENSE     = 0x08
 _TRACKNUMBER = 0x09
 _GENRE       = 0x10
+
+_GET_FORMAT_INFO = 0x1028
 
 _format_by_extension = {
     'wav': WAV,
@@ -390,6 +398,14 @@ class SoundFile(object):
         self.endian = info.format & _ENDMASK
         self.sections = info.sections
         self.seekable = info.seekable == 1
+
+    @property
+    def format_string(self):
+        return get_format_info(self.format)
+
+    @property
+    def subtype_string(self):
+        return get_format_info(self.subtype)
 
     def _init_vio(self, fObj):
         # Define callbacks here, so they can reference fObj / size
@@ -668,3 +684,10 @@ def write(data, filename, sample_rate, *args, **kwargs):
     with open(filename, 'w', sample_rate, channels, *args, **kwargs) as f:
         written = f.write(data)
     assert frames == written, "Error writing file!"
+
+def get_format_info(format):
+    format_info = ffi.new("struct SF_FORMAT_INFO*")
+    format_info.format = format
+    _snd.sf_command(ffi.NULL, _GET_FORMAT_INFO, format_info,
+                    ffi.sizeof("SF_FORMAT_INFO"))
+    return ffi.string(format_info.name).decode() if format_info.name else ""
