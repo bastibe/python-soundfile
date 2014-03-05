@@ -465,6 +465,11 @@ class SoundFile(object):
             err_str = _snd.sf_error_number(err)
             raise RuntimeError(ffi.string(err_str).decode())
 
+    def _getAttributeNames(self):
+        # return all possible attributes used in __setattr__ and __getattr__.
+        # This is useful for auto-completion (e.g. IPython)
+        return _snd_strings
+
     def __setattr__(self, name, value):
         # access text data in the sound file through properties
         if name in _snd_strings:
