@@ -691,3 +691,9 @@ def get_format_info(format):
     _snd.sf_command(ffi.NULL, _GET_FORMAT_INFO, format_info,
                     ffi.sizeof("SF_FORMAT_INFO"))
     return ffi.string(format_info.name).decode() if format_info.name else ""
+
+def decode_number(number):
+    # e.g. decode_number(myfile.subtype)
+    for k, v in globals().items():
+        if not k.startswith('_') and v == number:
+            return k
