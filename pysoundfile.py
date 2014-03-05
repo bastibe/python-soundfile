@@ -614,7 +614,7 @@ class SoundFile(object):
         else:
             return _snd.sf_seek(self._file, frames, os.SEEK_END)
 
-    def read(self, frames=None, format=np.float32):
+    def read(self, frames=None, dtype=np.float32):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
@@ -640,15 +640,16 @@ class SoundFile(object):
             np.int32: _snd.sf_readf_int,
             np.int16: _snd.sf_readf_short
         }
-        if format not in formats:
+        dtype = np.dtype(dtype)
+        if dtype.type not in formats:
             raise ValueError("Can only read int16, int32, float32 and float64")
         if frames is None:
             curr = self.seek(0)
             frames = self.frames - curr
-        data = ffi.new(formats[format], frames*self.channels)
-        read = readers[format](self._file, data, frames)
+        data = ffi.new(formats[dtype.type], frames*self.channels)
+        read = readers[dtype.type](self._file, data, frames)
         self._handle_error()
-        np_data = np.frombuffer(ffi.buffer(data), dtype=format,
+        np_data = np.frombuffer(ffi.buffer(data), dtype=dtype,
                                 count=read*self.channels)
         return np.reshape(np_data, (read, self.channels))
 
@@ -666,22 +667,23 @@ class SoundFile(object):
         if self.mode == 'r':
             raise RuntimeError("Can not write to read-only file")
         formats = {
-            np.dtype(np.float64): 'double*',
-            np.dtype(np.float32): 'float*',
-            np.dtype(np.int32): 'int*',
-            np.dtype(np.int16): 'short*'
+            np.float64: 'double*',
+            np.float32: 'float*',
+            np.int32: 'int*',
+            np.int16: 'short*'
         }
         writers = {
-            np.dtype(np.float64): _snd.sf_writef_double,
-            np.dtype(np.float32): _snd.sf_writef_float,
-            np.dtype(np.int32): _snd.sf_writef_int,
-            np.dtype(np.int16): _snd.sf_writef_short
+            np.float64: _snd.sf_writef_double,
+            np.float32: _snd.sf_writef_float,
+            np.int32: _snd.sf_writef_int,
+            np.int16: _snd.sf_writef_short
         }
-        if data.dtype not in writers:
+        if data.dtype.type not in writers:
             raise ValueError("Data must be int16, int32, float32 or float64")
         raw_data = ffi.new('char[]', data.flatten().tostring())
-        written = writers[data.dtype](self._file,
-                                      ffi.cast(formats[data.dtype], raw_data),
+        written = writers[data.dtype.type](self._file,
+                                      ffi.cast(
+                                          formats[data.dtype.type], raw_data),
                                       len(data))
         self._handle_error()
         return written
