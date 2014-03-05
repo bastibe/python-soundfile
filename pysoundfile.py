@@ -494,7 +494,7 @@ class SoundFile(object):
             raise AttributeError("SoundFile has no attribute %s" % name)
 
     def __len__(self):
-        return(self.frames)
+        return self.frames
 
     def _get_slice_bounds(self, frame):
         # get start and stop index from slice, asserting step==1
