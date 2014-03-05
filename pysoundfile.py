@@ -330,6 +330,8 @@ class SoundFile(object):
             assert format & _SUBMASK, "Invalid subtype!"
             assert endian == FILE or format & _ENDMASK, "Invalid endian-ness!"
             info.format = format
+            assert _snd.sf_format_check(info), \
+                "Invalid combination of format, subtype and endian!"
 
         if virtual_io:
             fObj = name
