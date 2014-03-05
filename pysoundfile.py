@@ -310,6 +310,7 @@ class SoundFile(object):
         except KeyError:
             raise ValueError("invalid mode: " + mode)
         self.mode = mode
+        original_format, original_endian = format, endian
         if format is None:
             ext = name.rsplit('.', 1)[-1]
             format = _format_by_extension.get(ext.lower(), 0x0)
@@ -332,6 +333,13 @@ class SoundFile(object):
             info.format = format
             assert _snd.sf_format_check(info), \
                 "Invalid combination of format, subtype and endian!"
+        else:
+            should_be_none = [sample_rate, channels, subtype,
+                              original_endian, original_format]
+            if should_be_none != [None] * len(should_be_none):
+                raise RuntimeError("If mode='r', none of these arguments are "
+                                   "allowed: sample_rate, channels, format, "
+                                   "subtype, endian")
 
         if virtual_io:
             fObj = name
