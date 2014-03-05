@@ -128,60 +128,66 @@ _M_READ = 0x10
 _M_WRITE = 0x20
 _M_RDWR = 0x30
 
-WAV   = 0x010000  # Microsoft WAV format (little endian default).
-AIFF  = 0x020000  # Apple/SGI AIFF format (big endian).
-AU    = 0x030000  # Sun/NeXT AU format (big endian).
-RAW   = 0x040000  # RAW PCM data.
-PAF   = 0x050000  # Ensoniq PARIS file format.
-SVX   = 0x060000  # Amiga IFF / SVX8 / SV16 format.
-NIST  = 0x070000  # Sphere NIST format.
-VOC   = 0x080000  # VOC files.
-IRCAM = 0x0A0000  # Berkeley/IRCAM/CARL
-W64   = 0x0B0000  # Sonic Foundrys 64 bit RIFF/WAV
-MAT4  = 0x0C0000  # Matlab (tm) V4.2 / GNU Octave 2.0
-MAT5  = 0x0D0000  # Matlab (tm) V5.0 / GNU Octave 2.1
-PVF   = 0x0E0000  # Portable Voice Format
-XI    = 0x0F0000  # Fasttracker 2 Extended Instrument
-HTK   = 0x100000  # HMM Tool Kit format
-SDS   = 0x110000  # Midi Sample Dump Standard
-AVR   = 0x120000  # Audio Visual Research
-WAVEX = 0x130000  # MS WAVE with WAVEFORMATEX
-SD2   = 0x160000  # Sound Designer 2
-FLAC  = 0x170000  # FLAC lossless file format
-CAF   = 0x180000  # Core Audio File format
-WVE   = 0x190000  # Psion WVE format
-OGG   = 0x200000  # Xiph OGG container
-MPC2K = 0x210000  # Akai MPC 2000 sampler
-RF64  = 0x220000  # RF64 WAV file
+_formats = {
+    0x010000: 'WAV',    # Microsoft WAV format (little endian default).
+    0x020000: 'AIFF',   # Apple/SGI AIFF format (big endian).
+    0x030000: 'AU',     # Sun/NeXT AU format (big endian).
+    0x040000: 'RAW',    # RAW PCM data.
+    0x050000: 'PAF',    # Ensoniq PARIS file format.
+    0x060000: 'SVX',    # Amiga IFF / SVX8 / SV16 format.
+    0x070000: 'NIST',   # Sphere NIST format.
+    0x080000: 'VOC',    # VOC files.
+    0x0A0000: 'IRCAM',  # Berkeley/IRCAM/CARL
+    0x0B0000: 'W64',    # Sonic Foundry's 64 bit RIFF/WAV
+    0x0C0000: 'MAT4',   # Matlab (tm) V4.2 / GNU Octave 2.0
+    0x0D0000: 'MAT5',   # Matlab (tm) V5.0 / GNU Octave 2.1
+    0x0E0000: 'PVF',    # Portable Voice Format
+    0x0F0000: 'XI',     # Fasttracker 2 Extended Instrument
+    0x100000: 'HTK',    # HMM Tool Kit format
+    0x110000: 'SDS',    # Midi Sample Dump Standard
+    0x120000: 'AVR',    # Audio Visual Research
+    0x130000: 'WAVEX',  # MS WAVE with WAVEFORMATEX
+    0x160000: 'SD2',    # Sound Designer 2
+    0x170000: 'FLAC',   # FLAC lossless file format
+    0x180000: 'CAF',    # Core Audio File format
+    0x190000: 'WVE',    # Psion WVE format
+    0x200000: 'OGG',    # Xiph OGG container
+    0x210000: 'MPC2K',  # Akai MPC 2000 sampler
+    0x220000: 'RF64',   # RF64 WAV file
+}
 
-PCM_S8    = 0x0001  # Signed 8 bit data
-PCM_16    = 0x0002  # Signed 16 bit data
-PCM_24    = 0x0003  # Signed 24 bit data
-PCM_32    = 0x0004  # Signed 32 bit data
-PCM_U8    = 0x0005  # Unsigned 8 bit data (WAV and RAW only)
-FLOAT     = 0x0006  # 32 bit float data
-DOUBLE    = 0x0007  # 64 bit float data
-ULAW      = 0x0010  # U-Law encoded.
-ALAW      = 0x0011  # A-Law encoded.
-IMA_ADPCM = 0x0012  # IMA ADPCM.
-MS_ADPCM  = 0x0013  # Microsoft ADPCM.
-GSM610    = 0x0020  # GSM 6.10 encoding.
-VOX_ADPCM = 0x0021  # OKI / Dialogix ADPCM
-G721_32   = 0x0030  # 32kbs G721 ADPCM encoding.
-G723_24   = 0x0031  # 24kbs G723 ADPCM encoding.
-G723_40   = 0x0032  # 40kbs G723 ADPCM encoding.
-DWVW_12   = 0x0040  # 12 bit Delta Width Variable Word encoding.
-DWVW_16   = 0x0041  # 16 bit Delta Width Variable Word encoding.
-DWVW_24   = 0x0042  # 24 bit Delta Width Variable Word encoding.
-DWVW_N    = 0x0043  # N bit Delta Width Variable Word encoding.
-DPCM_8    = 0x0050  # 8 bit differential PCM (XI only)
-DPCM_16   = 0x0051  # 16 bit differential PCM (XI only)
-VORBIS    = 0x0060  # Xiph Vorbis encoding.
+_subtypes = {
+    0x0001: 'PCM_S8',     # Signed 8 bit data
+    0x0002: 'PCM_16',     # Signed 16 bit data
+    0x0003: 'PCM_24',     # Signed 24 bit data
+    0x0004: 'PCM_32',     # Signed 32 bit data
+    0x0005: 'PCM_U8',     # Unsigned 8 bit data (WAV and RAW only)
+    0x0006: 'FLOAT',      # 32 bit float data
+    0x0007: 'DOUBLE',     # 64 bit float data
+    0x0010: 'ULAW',       # U-Law encoded.
+    0x0011: 'ALAW',       # A-Law encoded.
+    0x0012: 'IMA_ADPCM',  # IMA ADPCM.
+    0x0013: 'MS_ADPCM',   # Microsoft ADPCM.
+    0x0020: 'GSM610',     # GSM 6.10 encoding.
+    0x0021: 'VOX_ADPCM',  # OKI / Dialogix ADPCM
+    0x0030: 'G721_32',    # 32kbs G721 ADPCM encoding.
+    0x0031: 'G723_24',    # 24kbs G723 ADPCM encoding.
+    0x0032: 'G723_40',    # 40kbs G723 ADPCM encoding.
+    0x0040: 'DWVW_12',    # 12 bit Delta Width Variable Word encoding.
+    0x0041: 'DWVW_16',    # 16 bit Delta Width Variable Word encoding.
+    0x0042: 'DWVW_24',    # 24 bit Delta Width Variable Word encoding.
+    0x0043: 'DWVW_N',     # N bit Delta Width Variable Word encoding.
+    0x0050: 'DPCM_8',     # 8 bit differential PCM (XI only)
+    0x0051: 'DPCM_16',    # 16 bit differential PCM (XI only)
+    0x0060: 'VORBIS',     # Xiph Vorbis encoding.
+}
 
-FILE   = 0x00000000  # Default file endian-ness.
-LITTLE = 0x10000000  # Force little endian-ness.
-BIG    = 0x20000000  # Force big endian-ness.
-CPU    = 0x30000000  # Force CPU endian-ness.
+_endians = {
+    0x00000000: 'FILE',    # Default file endian-ness.
+    0x10000000: 'LITTLE',  # Force little endian-ness.
+    0x20000000: 'BIG',     # Force big endian-ness.
+    0x30000000: 'CPU',     # Force CPU endian-ness.
+}
 
 _SUBMASK  = 0x0000FFFF
 _TYPEMASK = 0x0FFF0000
@@ -199,6 +205,27 @@ _TRACKNUMBER = 0x09
 _GENRE       = 0x10
 
 _GET_FORMAT_INFO = 0x1028
+
+class FormatType(int):
+    def __repr__(self):
+        return _formats.get(self, int.__repr__(self))
+
+class SubtypeType(int):
+    def __repr__(self):
+        return _subtypes.get(self, int.__repr__(self))
+
+class EndianType(int):
+    def __repr__(self):
+        return _endians.get(self, int.__repr__(self))
+
+for k, v in _formats.items():
+    globals()[v] = FormatType(k)
+
+for k, v in _subtypes.items():
+    globals()[v] = SubtypeType(k)
+
+for k, v in _endians.items():
+    globals()[v] = EndianType(k)
 
 _format_by_extension = {
     'wav': WAV,
@@ -335,6 +362,7 @@ class SoundFile(object):
         ogg_file.
 
         """
+        _avoid_format_types(mode, sample_rate, channels)
         try:
             mode_int = {'r':  _M_READ,
                         'w':  _M_WRITE,
@@ -393,9 +421,9 @@ class SoundFile(object):
         self.frames = info.frames
         self.sample_rate = info.samplerate
         self.channels = info.channels
-        self.format = info.format & _TYPEMASK
-        self.subtype = info.format & _SUBMASK
-        self.endian = info.format & _ENDMASK
+        self.format = FormatType(info.format & _TYPEMASK)
+        self.subtype = SubtypeType(info.format & _SUBMASK)
+        self.endian = EndianType(info.format & _ENDMASK)
         self.sections = info.sections
         self.seekable = info.seekable == 1
 
@@ -674,6 +702,7 @@ def read(filename, frames=None, start=None, stop=None, **kwargs):
 
 def write(data, filename, sample_rate, *args, **kwargs):
     # e.g. write(myarray, 'myfile.wav', 44100, sf.FLOAT)
+    _avoid_format_types(sample_rate)
     if data.ndim == 1:
         channels = 1
     elif data.ndim == 2:
@@ -697,3 +726,12 @@ def decode_number(number):
     for k, v in globals().items():
         if not k.startswith('_') and v == number:
             return k
+
+def _avoid_format_types(*args):
+    for arg in args:
+        if isinstance(arg, FormatType):
+            raise TypeError("Unexpected FormatType!")
+        if isinstance(arg, SubtypeType):
+            raise TypeError("Unexpected SubtypeType!")
+        if isinstance(arg, EndianType):
+            raise TypeError("Unexpected EndianType!")
