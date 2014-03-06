@@ -724,12 +724,6 @@ def get_format_info(format):
                     _ffi.sizeof("SF_FORMAT_INFO"))
     return _ffi.string(format_info.name).decode() if format_info.name else ""
 
-def decode_number(number):
-    # e.g. decode_number(myfile.subtype)
-    for k, v in globals().items():
-        if not k.startswith('_') and v == number:
-            return k
-
 def _avoid_format_types(*args):
     for arg in args:
         if isinstance(arg, FormatType):
