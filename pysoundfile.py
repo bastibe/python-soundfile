@@ -218,14 +218,13 @@ class EndianType(int):
     def __repr__(self):
         return _endians.get(self, int.__repr__(self))
 
-for k, v in _formats.items():
-    globals()[v] = FormatType(k)
+def _add_formats_to_module_namespace(format_dict, format_type):
+    for k, v in format_dict.items():
+        globals()[v] = format_type(k)
 
-for k, v in _subtypes.items():
-    globals()[v] = SubtypeType(k)
-
-for k, v in _endians.items():
-    globals()[v] = EndianType(k)
+_add_formats_to_module_namespace(_formats, FormatType)
+_add_formats_to_module_namespace(_subtypes, SubtypeType)
+_add_formats_to_module_namespace(_endians, EndianType)
 
 _format_by_extension = {
     'wav': WAV,
