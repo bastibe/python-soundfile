@@ -1,7 +1,6 @@
-import os
-
-from cffi import FFI
-import numpy as np
+from cffi import FFI as _FFI
+import numpy as _np
+import os as _os
 
 """PySoundFile is an audio library based on libsndfile, CFFI and Numpy
 
@@ -41,8 +40,8 @@ PySoundFile is BSD licensed.
 
 """
 
-ffi = FFI()
-ffi.cdef("""
+_ffi = _FFI()
+_ffi.cdef("""
 typedef int64_t sf_count_t ;
 
 typedef struct SNDFILE_tag SNDFILE ;
@@ -299,7 +298,7 @@ _snd_strings = {
     'genre': _GENRE
 }
 
-_snd = ffi.dlopen('sndfile')
+_snd = _ffi.dlopen('sndfile')
 
 
 class SoundFile(object):
@@ -373,7 +372,7 @@ class SoundFile(object):
         if format is None:
             ext = name.rsplit('.', 1)[-1]
             format = _format_by_extension.get(ext.lower(), 0x0)
-        info = ffi.new("SF_INFO*")
+        info = _ffi.new("SF_INFO*")
         if mode == 'w' or format == RAW:
             assert sample_rate, \
                 "sample_rate must be specified for mode='w' and format=RAW!"
@@ -407,12 +406,12 @@ class SoundFile(object):
                     msg = 'File-like object must have: "%s"' % attr
                     raise RuntimeError(msg)
             self._vio = self._init_vio(fObj)
-            vio = ffi.new("SF_VIRTUAL_IO*", self._vio)
+            vio = _ffi.new("SF_VIRTUAL_IO*", self._vio)
             self._vio['vio_cdata'] = vio
             self._file = _snd.sf_open_virtual(vio, mode_int, info,
-                                              ffi.NULL)
+                                              _ffi.NULL)
         else:
-            filename = ffi.new('char[]', name.encode())
+            filename = _ffi.new('char[]', name.encode())
             self._file = _snd.sf_open(filename, mode_int, info)
 
         self._handle_error()
@@ -436,40 +435,40 @@ class SoundFile(object):
 
     def _init_vio(self, fObj):
         # Define callbacks here, so they can reference fObj / size
-        @ffi.callback("sf_vio_get_filelen")
+        @_ffi.callback("sf_vio_get_filelen")
         def vio_get_filelen(user_data):
             # Streams must set _length or implement __len__
             if hasattr(fObj, '_length'):
                 size = fObj._length
             elif not hasattr(fObj, '__len__'):
                 old_file_position = fObj.tell()
-                fObj.seek(0, os.SEEK_END)
+                fObj.seek(0, _os.SEEK_END)
                 size = fObj.tell()
-                fObj.seek(old_file_position, os.SEEK_SET)
+                fObj.seek(old_file_position, _os.SEEK_SET)
             else:
                 size = len(fObj)
             return size
 
-        @ffi.callback("sf_vio_seek")
+        @_ffi.callback("sf_vio_seek")
         def vio_seek(offset, whence, user_data):
             fObj.seek(offset, whence)
             curr = fObj.tell()
             return curr
 
-        @ffi.callback("sf_vio_read")
+        @_ffi.callback("sf_vio_read")
         def vio_read(ptr, count, user_data):
-            buf = ffi.buffer(ptr, count)
+            buf = _ffi.buffer(ptr, count)
             data_read = fObj.readinto(buf)
             return data_read
 
-        @ffi.callback("sf_vio_write")
+        @_ffi.callback("sf_vio_write")
         def vio_write(ptr, count, user_data):
-            buf = ffi.buffer(ptr)
+            buf = _ffi.buffer(ptr)
             data = buf[:]
             length = fObj.write(data)
             return length
 
-        @ffi.callback("sf_vio_tell")
+        @_ffi.callback("sf_vio_tell")
         def vio_tell(user_data):
             return fObj.tell()
 
@@ -506,7 +505,7 @@ class SoundFile(object):
         # pretty-print a numerical error code
         if err != 0:
             err_str = _snd.sf_error_number(err)
-            raise RuntimeError(ffi.string(err_str).decode())
+            raise RuntimeError(_ffi.string(err_str).decode())
 
     def _getAttributeNames(self):
         # return all possible attributes used in __setattr__ and __getattr__.
@@ -519,7 +518,7 @@ class SoundFile(object):
             if self.mode == 'r':
                 raise RuntimeError("Can not change %s of file in read mode" %
                                    name)
-            data = ffi.new('char[]', value.encode())
+            data = _ffi.new('char[]', value.encode())
             err = _snd.sf_set_string(self._file, _snd_strings[name], data)
             self._handle_error_number(err)
         else:
@@ -529,10 +528,10 @@ class SoundFile(object):
         # access text data in the sound file through properties
         if name in _snd_strings:
             data = _snd.sf_get_string(self._file, _snd_strings[name])
-            if data == ffi.NULL:
+            if data == _ffi.NULL:
                 return ""
             else:
-                return ffi.string(data).decode()
+                return _ffi.string(data).decode()
         else:
             raise AttributeError("SoundFile has no attribute %s" % name)
 
@@ -597,7 +596,7 @@ class SoundFile(object):
 
         Returns the new absolute read position in frames.
         """
-        return _snd.sf_seek(self._file, frames, os.SEEK_CUR)
+        return _snd.sf_seek(self._file, frames, _os.SEEK_CUR)
 
     def seek_absolute(self, frames):
         """Set an absolute read position.
@@ -609,11 +608,11 @@ class SoundFile(object):
         Returns the new absolute read position in frames.
         """
         if frames >= 0:
-            return _snd.sf_seek(self._file, frames, os.SEEK_SET)
+            return _snd.sf_seek(self._file, frames, _os.SEEK_SET)
         else:
-            return _snd.sf_seek(self._file, frames, os.SEEK_END)
+            return _snd.sf_seek(self._file, frames, _os.SEEK_END)
 
-    def read(self, frames=None, dtype=np.float32):
+    def read(self, frames=None, dtype='float32'):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
@@ -628,29 +627,29 @@ class SoundFile(object):
 
         """
         formats = {
-            np.float64: 'double[]',
-            np.float32: 'float[]',
-            np.int32: 'int[]',
-            np.int16: 'short[]'
+            _np.float64: 'double[]',
+            _np.float32: 'float[]',
+            _np.int32: 'int[]',
+            _np.int16: 'short[]'
         }
         readers = {
-            np.float64: _snd.sf_readf_double,
-            np.float32: _snd.sf_readf_float,
-            np.int32: _snd.sf_readf_int,
-            np.int16: _snd.sf_readf_short
+            _np.float64: _snd.sf_readf_double,
+            _np.float32: _snd.sf_readf_float,
+            _np.int32: _snd.sf_readf_int,
+            _np.int16: _snd.sf_readf_short
         }
-        dtype = np.dtype(dtype)
+        dtype = _np.dtype(dtype)
         if dtype.type not in formats:
             raise ValueError("Can only read int16, int32, float32 and float64")
         if frames is None:
             curr = self.seek(0)
             frames = self.frames - curr
-        data = ffi.new(formats[dtype.type], frames*self.channels)
+        data = _ffi.new(formats[dtype.type], frames*self.channels)
         read = readers[dtype.type](self._file, data, frames)
         self._handle_error()
-        np_data = np.frombuffer(ffi.buffer(data), dtype=dtype,
+        np_data = _np.frombuffer(_ffi.buffer(data), dtype=dtype,
                                 count=read*self.channels)
-        return np.reshape(np_data, (read, self.channels))
+        return _np.reshape(np_data, (read, self.channels))
 
     def write(self, data):
         """Write a number of frames to the file.
@@ -666,22 +665,22 @@ class SoundFile(object):
         if self.mode == 'r':
             raise RuntimeError("Can not write to read-only file")
         formats = {
-            np.float64: 'double*',
-            np.float32: 'float*',
-            np.int32: 'int*',
-            np.int16: 'short*'
+            _np.float64: 'double*',
+            _np.float32: 'float*',
+            _np.int32: 'int*',
+            _np.int16: 'short*'
         }
         writers = {
-            np.float64: _snd.sf_writef_double,
-            np.float32: _snd.sf_writef_float,
-            np.int32: _snd.sf_writef_int,
-            np.int16: _snd.sf_writef_short
+            _np.float64: _snd.sf_writef_double,
+            _np.float32: _snd.sf_writef_float,
+            _np.int32: _snd.sf_writef_int,
+            _np.int16: _snd.sf_writef_short
         }
         if data.dtype.type not in writers:
             raise ValueError("Data must be int16, int32, float32 or float64")
-        raw_data = ffi.new('char[]', data.flatten().tostring())
+        raw_data = _ffi.new('char[]', data.flatten().tostring())
         written = writers[data.dtype.type](self._file,
-                                      ffi.cast(
+                                      _ffi.cast(
                                           formats[data.dtype.type], raw_data),
                                       len(data))
         self._handle_error()
@@ -719,11 +718,11 @@ def write(data, filename, sample_rate, *args, **kwargs):
     assert frames == written, "Error writing file!"
 
 def get_format_info(format):
-    format_info = ffi.new("struct SF_FORMAT_INFO*")
+    format_info = _ffi.new("struct SF_FORMAT_INFO*")
     format_info.format = format
-    _snd.sf_command(ffi.NULL, _GET_FORMAT_INFO, format_info,
-                    ffi.sizeof("SF_FORMAT_INFO"))
-    return ffi.string(format_info.name).decode() if format_info.name else ""
+    _snd.sf_command(_ffi.NULL, _GET_FORMAT_INFO, format_info,
+                    _ffi.sizeof("SF_FORMAT_INFO"))
+    return _ffi.string(format_info.name).decode() if format_info.name else ""
 
 def decode_number(number):
     # e.g. decode_number(myfile.subtype)
