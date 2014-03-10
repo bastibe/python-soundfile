@@ -360,7 +360,7 @@ class SoundFile(object):
         ogg_file.
 
         """
-        _avoid_format_types(sample_rate, channels)
+        assert _raise_error_if_format_type(sample_rate, channels)
         try:
             mode_int = {'r':  _M_READ,
                         'w':  _M_WRITE,
@@ -705,7 +705,7 @@ def read(filename, frames=None, start=None, stop=None, **kwargs):
 
 def write(data, filename, sample_rate, *args, **kwargs):
     # e.g. write(myarray, 'myfile.wav', 44100, sf.FLOAT)
-    _avoid_format_types(sample_rate)
+    assert _raise_error_if_format_type(sample_rate)
     if data.ndim == 1:
         channels = 1
     elif data.ndim == 2:
@@ -724,10 +724,12 @@ def get_format_info(format):
                     _ffi.sizeof("SF_FORMAT_INFO"))
     return _ffi.string(format_info.name).decode() if format_info.name else ""
 
-def _avoid_format_types(*args):
+def _raise_error_if_format_type(*args):
     # raise error if one of the arguments has one of the format types.
-    # This is used to prevent accidentally passing soundfile formats where
-    # numeric values are expected (especially when using positional arguments).
+    # For use in assertions to prevent accidentally passing soundfile formats
+    # where numeric values are expected (esp. when using positional arguments).
+    format_types = (FormatType, SubtypeType, EndianType)
     for arg in args:
-        if isinstance(arg, (FormatType, SubtypeType, EndianType)):
+        if isinstance(arg, format_types):
             raise TypeError("%s is not allowed here!" % repr(arg))
+    return True
