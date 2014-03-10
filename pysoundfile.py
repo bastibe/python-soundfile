@@ -360,7 +360,7 @@ class SoundFile(object):
         ogg_file.
 
         """
-        _avoid_format_types(mode, sample_rate, channels)
+        _avoid_format_types(sample_rate, channels)
         try:
             mode_int = {'r':  _M_READ,
                         'w':  _M_WRITE,
@@ -725,10 +725,9 @@ def get_format_info(format):
     return _ffi.string(format_info.name).decode() if format_info.name else ""
 
 def _avoid_format_types(*args):
+    # raise error if one of the arguments has one of the format types.
+    # This is used to prevent accidentally passing soundfile formats where
+    # numeric values are expected (especially when using positional arguments).
     for arg in args:
-        if isinstance(arg, FormatType):
-            raise TypeError("Unexpected FormatType!")
-        if isinstance(arg, SubtypeType):
-            raise TypeError("Unexpected SubtypeType!")
-        if isinstance(arg, EndianType):
-            raise TypeError("Unexpected EndianType!")
+        if isinstance(arg, (FormatType, SubtypeType, EndianType)):
+            raise TypeError("%s is not allowed here!" % repr(arg))
