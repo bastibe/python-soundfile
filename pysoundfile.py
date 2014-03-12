@@ -363,7 +363,7 @@ class SoundFile(object):
         """
         assert _raise_error_if_format_type(file, sample_rate, channels)
 
-        mode = mode or getattr(file, 'mode','r')
+        mode = mode or getattr(file, 'mode', 'r')
         mode_chars = set(mode)
         mode_chars.add('b')
         if mode_chars == set('rb'):
