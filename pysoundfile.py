@@ -712,7 +712,7 @@ class SoundFile(object):
         if dtype.type not in formats:
             raise ValueError("Can only read int16, int32, float32 and float64")
         if frames is None:
-            curr = self.seek_relative(0)
+            curr = self.seek_relative(r=0)
             frames = self.frames - curr
         data = _ffi.new(formats[dtype.type], frames*self.channels)
         read = readers[dtype.type](self._file, data, frames)
