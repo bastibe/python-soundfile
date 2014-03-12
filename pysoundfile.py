@@ -422,7 +422,11 @@ class SoundFile(object):
             self._file = _snd.sf_open_virtual(self._vio, self._mode,
                                               self._info, _ffi.NULL)
         self._handle_error()
+        if self._mode == _M_WRITE:
+            # this is not set by libsndfile:
+            self._info.frames = 0
 
+    frames = property(lambda self: self._info.frames)
     sample_rate = property(lambda self: self._info.samplerate)
     channels = property(lambda self: self._info.channels)
     format = property(lambda self: FormatType(self._info.format & _TYPEMASK))
@@ -436,19 +440,6 @@ class SoundFile(object):
     mode = property(lambda self: {_M_READ: 'r',
                                   _M_WRITE: 'w',
                                   _M_RDWR: 'r+'}[self._mode])
-
-    @property
-    def frames(self):
-        """Return number of frames by seeking to the end of the file.
-
-        This should give the right result even after write operations.
-        It doesn't work, however, if the file is closed.
-
-        """
-        curr = self.seek_relative(0)
-        frames = _snd.sf_seek(self._file, 0, _os.SEEK_END)
-        self.seek_absolute(curr)
-        return frames
 
     def _init_vio(self, fObj):
         # Define callbacks here, so they can reference fObj / size
@@ -763,6 +754,15 @@ class SoundFile(object):
                                           formats[data.dtype.type], raw_data),
                                       len(data))
         self._handle_error()
+
+        if self._mode == _M_RDWR:
+            curr = self.seek_relative(0)
+            self._info.frames = _snd.sf_seek(self._file, 0, _os.SEEK_END)
+            self.seek_absolute(curr)
+        else:
+            # in mode='w', seeking is not possible
+            self._info.frames += written
+
         return written
 
 def open(*args, **kwargs):
