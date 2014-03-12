@@ -405,6 +405,7 @@ class SoundFile(object):
                 "Only allowed if mode='w' or format=RAW: sample_rate, " \
                 "channels, format, subtype, endian"
 
+        self._name = file
         if isinstance(file, str):
             file = _ffi.new('char[]', file.encode())
             self._file = _snd.sf_open(file, self._mode, self._info)
@@ -417,6 +418,7 @@ class SoundFile(object):
                           "a file-like object with the methods " \
                           "'seek()', 'read()', 'write()' and 'tell()'!"
                     raise RuntimeError(msg)
+            self._name = str(file)
             file = self._init_vio(file)
             self._vio = _ffi.new("SF_VIRTUAL_IO*", file)
             self._file = _snd.sf_open_virtual(self._vio, self._mode,
@@ -426,6 +428,7 @@ class SoundFile(object):
             # this is not set by libsndfile:
             self._info.frames = 0
 
+    name = property(lambda self: self._name)
     frames = property(lambda self: self._info.frames)
     sample_rate = property(lambda self: self._info.samplerate)
     channels = property(lambda self: self._info.channels)
