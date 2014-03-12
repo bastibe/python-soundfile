@@ -423,56 +423,32 @@ class SoundFile(object):
                                               self._info, _ffi.NULL)
         self._handle_error()
 
-    @property
-    def closed(self):
-        return self._file is None
-
-    @property
-    def mode(self):
-        return {_M_READ: 'r', _M_WRITE: 'w', _M_RDWR: 'r+'}[self._mode]
+    sample_rate = property(lambda self: self._info.samplerate)
+    channels = property(lambda self: self._info.channels)
+    format = property(lambda self: FormatType(self._info.format & _TYPEMASK))
+    subtype = property(lambda self: SubtypeType(self._info.format & _SUBMASK))
+    endian = property(lambda self: EndianType(self._info.format & _ENDMASK))
+    format_string = property(lambda self: get_format_info(self.format))
+    subtype_string = property(lambda self: get_format_info(self.subtype))
+    sections = property(lambda self: self._info.sections)
+    seekable = property(lambda self: self._info.seekable == 1)
+    closed = property(lambda self: self._file is None)
+    mode = property(lambda self: {_M_READ: 'r',
+                                  _M_WRITE: 'w',
+                                  _M_RDWR: 'r+'}[self._mode])
 
     @property
     def frames(self):
+        """Return number of frames by seeking to the end of the file.
+
+        This should give the right result even after write operations.
+        It doesn't work, however, if the file is closed.
+
+        """
         curr = self.seek(0)
         frames = _snd.sf_seek(self._file, 0, _os.SEEK_END)
         self.seek_absolute(curr)
         return frames
-
-    @property
-    def sample_rate(self):
-        return self._info.samplerate
-
-    @property
-    def channels(self):
-        return self._info.channels
-
-    @property
-    def format(self):
-        return FormatType(self._info.format & _TYPEMASK)
-
-    @property
-    def format_string(self):
-        return get_format_info(self.format)
-
-    @property
-    def subtype(self):
-        return SubtypeType(self._info.format & _SUBMASK)
-
-    @property
-    def subtype_string(self):
-        return get_format_info(self.subtype)
-
-    @property
-    def endian(self):
-        return EndianType(self._info.format & _ENDMASK)
-
-    @property
-    def sections(self):
-        return self._info.sections
-
-    @property
-    def seekable(self):
-        return self._info.seekable == 1
 
     def _init_vio(self, fObj):
         # Define callbacks here, so they can reference fObj / size
