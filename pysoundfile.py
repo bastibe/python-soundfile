@@ -314,7 +314,7 @@ class SoundFile(object):
     Data can be written to the file using write(), or read from the
     file using read(). Every read and write operation starts at a
     certain position in the file. Reading N frames will change this
-    position by N frames as well. Alternatively, seek() and
+    position by N frames as well. Alternatively, seek_relative() and
     seek_absolute() can be used to set the current position to a frame
     index offset from the current position, the start of the file, or
     the end of the file, respectively.
@@ -445,7 +445,7 @@ class SoundFile(object):
         It doesn't work, however, if the file is closed.
 
         """
-        curr = self.seek(0)
+        curr = self.seek_relative(0)
         frames = _snd.sf_seek(self._file, 0, _os.SEEK_END)
         self.seek_absolute(curr)
         return frames
@@ -576,7 +576,7 @@ class SoundFile(object):
                     "SoundFile can only be accessed in one or two dimensions")
             frame, second_frame = frame
         start, stop = self._get_slice_bounds(frame)
-        curr = self.seek(0)
+        curr = self.seek_relative(0)
         self.seek_absolute(start)
         data = self.read(stop - start)
         self.seek_absolute(curr)
@@ -596,7 +596,7 @@ class SoundFile(object):
             raise IndexError(
                 "Could not fit data of length %i into slice of length %i" %
                 (len(data), stop - start))
-        curr = self.seek(0)
+        curr = self.seek_relative(0)
         self.seek_absolute(start)
         self.write(data)
         self.seek_absolute(curr)
@@ -606,28 +606,88 @@ class SoundFile(object):
         """Write unwritten data to disk."""
         _snd.sf_write_sync(self._file)
 
-    def seek(self, frames):
-        """Set the read position relative to the current position.
+    def _check_seek_arguments(self, both, w, r):
+        if self._mode == _M_WRITE:
+            raise RuntimeError("Seeking is not possible if mode='w'!")
+        if [both, w, r] == [None] * 3:
+            raise ValueError("At least one argument needed!")
+        assert both is None or r is None, "Either both or r must be None!"
+
+        original_r, original_w = r, w
+        try:
+            r, w = both
+            both = None
+            assert original_r is None and original_w is None, \
+                "If both has two items, r and w must be None!"
+        except (TypeError, ValueError):
+            pass  # ignore errors and continue
+
+        if (r, w) == (None, None) and self._mode != _M_READ:
+            w = both
+        if r is None:
+            r = both
+
+        if self._mode == _M_READ and w is not None:
+            raise ValueError("Trying to set write position in read mode!")
+        if self._mode == _M_WRITE and r is not None:
+            raise ValueError("Trying to set read position in write mode!")
+
+        # at least one of (r, w) is not None!
+        return r, w
+
+    def seek_relative(self, both=None, w=None, r=None):
+        """Set the read/write positions relative to the current position.
 
         Positive values will fast-forward. Negative values will rewind.
 
-        Returns the new absolute read position in frames.
+        Returns the new absolute read/write positions in frames.
+
         """
-        return _snd.sf_seek(self._file, frames, _os.SEEK_CUR)
+        r, w = self._check_seek_arguments(both, w, r)
 
-    def seek_absolute(self, frames):
-        """Set an absolute read position.
+        def seek_helper(frames, flag=0x0):
+            offset = _snd.sf_seek(self._file, frames, _os.SEEK_CUR | flag)
+            if offset < 0:
+                raise IndexError("Cannot seek to %d" % frames)
+            return offset
 
-        Positive values will set the read position to the given frame
-        index. Negative values will set the read position to the given
+        if w is None:
+            return seek_helper(r, _M_READ)
+        elif r is None:
+            return seek_helper(w, _M_WRITE)
+        else:
+            return seek_helper(r, _M_READ), seek_helper(w, _M_WRITE)
+
+    def seek_absolute(self, both=None, w=None, r=None):
+        """Set absolute read/write positions.
+
+        Positive values will set the read/write position to the given frame
+        index. Negative values will set the read/write position to the given
         index counted from the end of the file.
 
-        Returns the new absolute read position in frames.
+        Returns the new absolute read/write positions in frames.
+
         """
-        if frames >= 0:
-            return _snd.sf_seek(self._file, frames, _os.SEEK_SET)
+        r, w = self._check_seek_arguments(both, w, r)
+
+        def seek_helper(frames, flag=0x0):
+            if frames >= 0:
+                offset = _snd.sf_seek(self._file, frames, _os.SEEK_SET | flag)
+            else:
+                offset = _snd.sf_seek(self._file, frames, _os.SEEK_END | flag)
+            if offset < 0:
+                raise IndexError("Cannot seek to %d" % frames)
+            return offset
+
+        if w is None:
+            return seek_helper(r, _M_READ)
+        elif r is None:
+            return seek_helper(w, _M_WRITE)
+        elif r == w:
+            offset = seek_helper(r)
+            return offset, offset
         else:
-            return _snd.sf_seek(self._file, frames, _os.SEEK_END)
+            return seek_helper(r, _M_READ), seek_helper(w, _M_WRITE)
 
     def read(self, frames=None, dtype='float32'):
         """Read a number of frames from the file.
@@ -643,6 +703,8 @@ class SoundFile(object):
         smaller NumPy array will be returned.
 
         """
+        if self._mode == _M_WRITE:
+            raise RuntimeError("Can not read if mode='w'!")
         formats = {
             _np.float64: 'double[]',
             _np.float32: 'float[]',
@@ -659,7 +721,7 @@ class SoundFile(object):
         if dtype.type not in formats:
             raise ValueError("Can only read int16, int32, float32 and float64")
         if frames is None:
-            curr = self.seek(0)
+            curr = self.seek_relative(0)
             frames = self.frames - curr
         data = _ffi.new(formats[dtype.type], frames*self.channels)
         read = readers[dtype.type](self._file, data, frames)
@@ -680,7 +742,7 @@ class SoundFile(object):
 
         """
         if self._mode == _M_READ:
-            raise RuntimeError("Can not write to read-only file")
+            raise RuntimeError("Can not write if mode='r'!")
         formats = {
             _np.float64: 'double*',
             _np.float32: 'float*',
