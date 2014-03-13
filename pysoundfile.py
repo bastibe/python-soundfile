@@ -1,7 +1,6 @@
-import os
-
-from cffi import FFI
 import numpy as np
+from cffi import FFI
+from os import SEEK_SET, SEEK_CUR, SEEK_END
 
 """PySoundFile is an audio library based on libsndfile, CFFI and Numpy
 
@@ -236,8 +235,8 @@ class SoundFile(object):
     Data can be written to the file using write(), or read from the
     file using read(). Every read and write operation starts at a
     certain position in the file. Reading N frames will change this
-    position by N frames as well. Alternatively, seek() and
-    seek_absolute() can be used to set the current position to a frame
+    position by N frames as well. Alternatively, seek()
+    can be used to set the current position to a frame
     index offset from the current position, the start of the file, or
     the end of the file, respectively.
 
@@ -337,9 +336,9 @@ class SoundFile(object):
                 size = fObj._length
             elif not hasattr(fObj, '__len__'):
                 old_file_position = fObj.tell()
-                fObj.seek(0, os.SEEK_END)
+                fObj.seek(0, SEEK_END)
                 size = fObj.tell()
-                fObj.seek(old_file_position, os.SEEK_SET)
+                fObj.seek(old_file_position, SEEK_SET)
             else:
                 size = len(fObj)
             return size
@@ -464,10 +463,10 @@ class SoundFile(object):
                     "SoundFile can only be accessed in one or two dimensions")
             frame, second_frame = frame
         start, stop = self._get_slice_bounds(frame)
-        curr = self.seek(0)
-        self.seek_absolute(start)
+        curr = self.seek(0, SEEK_CUR | READ)
+        self.seek(start, SEEK_SET | READ)
         data = self.read(stop - start)
-        self.seek_absolute(curr)
+        self.seek(curr, SEEK_SET | READ)
         if second_frame:
             return data[(slice(None), second_frame)]
         else:
@@ -484,38 +483,36 @@ class SoundFile(object):
             raise IndexError(
                 "Could not fit data of length %i into slice of length %i" %
                 (len(data), stop - start))
-        curr = self.seek(0)
-        self.seek_absolute(start)
+        curr = self.seek(0, SEEK_CUR | WRITE)
+        self.seek(start, SEEK_SET | WRITE)
         self.write(data)
-        self.seek_absolute(curr)
+        self.seek(curr, SEEK_SET | WRITE)
         return data
 
     def flush(self):
         """Write unwritten data to disk."""
         _snd.sf_write_sync(self._file)
 
-    def seek(self, frames):
-        """Set the read position relative to the current position.
+    def seek(self, frames, whence=SEEK_SET):
+        """Set the read and/or write position.
 
-        Positive values will fast-forward. Negative values will rewind.
+        By default (whence=SEEK_SET), frames are counted from the
+        beginning of the file. SEEK_CUR seeks from the current position
+        (positive and negative values are allowed).
+        SEEK_END seeks from the end (use negative values).
 
-        Returns the new absolute read position in frames.
+        In RDWR mode, the whence argument can be combined (using
+        logical or) with READ or WRITE in order to set only the read
+        or write position, respectively (e.g. SEEK_SET | WRITE).
+
+        To set the read/write position to the beginning of the file,
+        use seek(0), to set it to right after the last frame,
+        e.g. for appending new data, use seek(0, SEEK_END).
+
+        Returns the new absolute read position in frames or a negative
+        value on error.
         """
-        return _snd.sf_seek(self._file, frames, os.SEEK_CUR)
-
-    def seek_absolute(self, frames):
-        """Set an absolute read position.
-
-        Positive values will set the read position to the given frame
-        index. Negative values will set the read position to the given
-        index counted from the end of the file.
-
-        Returns the new absolute read position in frames.
-        """
-        if frames >= 0:
-            return _snd.sf_seek(self._file, frames, os.SEEK_SET)
-        else:
-            return _snd.sf_seek(self._file, frames, os.SEEK_END)
+        return _snd.sf_seek(self._file, frames, whence)
 
     def read(self, frames=-1, format=np.float32):
         """Read a number of frames from the file.
