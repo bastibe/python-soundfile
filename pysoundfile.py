@@ -258,26 +258,27 @@ _format_by_extension = {
     #'vox': RAW | VOX_ADPCM,
 }
 
+# see http://www.mega-nerd.com/libsndfile/ for supported subtypes
 _default_subtypes = {
     WAV: PCM_16,
     AIFF: PCM_16,
     AU: PCM_16,
     #RAW:  # subtype must be explicit!
-    #PAF:
-    #SVX:
-    #NIST:
-    #VOC:
-    #IRCAM:
-    #W64:
+    PAF: PCM_16,
+    SVX: PCM_16,
+    NIST: PCM_16,
+    VOC: PCM_16,
+    IRCAM: PCM_16,
+    W64: PCM_16,
     MAT4: DOUBLE,
     MAT5: DOUBLE,
-    #PVF:
-    #XI:
-    #HTK:
+    PVF: PCM_16,
+    XI: DPCM_16,
+    HTK: PCM_16,
     #SDS:
     #AVR:
     WAVEX: PCM_16,
-    #SD2:
+    SD2: PCM_16,
     FLAC: PCM_16,
     CAF: PCM_16,
     #WVE:
