@@ -392,7 +392,6 @@ class SoundFile(object):
                 pass
         if not isinstance(mode, _ModeType):
             raise ValueError("Invalid mode: %s" % repr(mode))
-        self.mode = mode
 
         original_format, original_endian = format, endian
         if format is None:
@@ -400,7 +399,7 @@ class SoundFile(object):
             format = _format_by_extension.get(ext.lower(), 0x0)
 
         self._info = ffi.new("SF_INFO*")
-        if self.mode == WRITE or format == RAW:
+        if mode == WRITE or format == RAW:
             assert sample_rate, \
                 "sample_rate must be specified for mode=WRITE and format=RAW!"
             self._info.samplerate = sample_rate
@@ -454,17 +453,20 @@ class SoundFile(object):
             self._file = _snd.sf_open(filename, mode, self._info)
 
         self._handle_error()
+        self._mode = mode
 
-        self.frames = self._info.frames
-        self.sample_rate = self._info.samplerate
-        self.channels = self._info.channels
-        self.format = _FormatType(self._info.format & _TYPEMASK)
-        self.subtype = _SubtypeType(self._info.format & _SUBMASK)
-        self.endian = _EndianType(self._info.format & _ENDMASK)
-        self.format_string = get_format_string(self.format)
-        self.subtype_string = get_format_string(self.subtype)
-        self.sections = self._info.sections
-        self.seekable = self._info.seekable == 1
+    mode = property(lambda self: self._mode)
+    frames = property(lambda self: self._info.frames)
+    sample_rate = property(lambda self: self._info.samplerate)
+    channels = property(lambda self: self._info.channels)
+    format = property(lambda self: _FormatType(self._info.format & _TYPEMASK))
+    subtype = property(lambda self: _SubtypeType(self._info.format & _SUBMASK))
+    endian = property(lambda self: _EndianType(self._info.format & _ENDMASK))
+    format_string = property(lambda self: get_format_string(self.format))
+    subtype_string = property(lambda self: get_format_string(self.subtype))
+    sections = property(lambda self: self._info.sections)
+    seekable = property(lambda self: self._info.seekable == 1)
+    closed = property(lambda self: self._file is None)
 
     def _init_vio(self, fObj):
         # Define callbacks here, so they can reference fObj / size
@@ -715,6 +717,11 @@ class SoundFile(object):
                                       ffi.cast(formats[data.dtype], raw_data),
                                       len(data))
         self._handle_error()
+
+        curr = self.seek(0, SEEK_CUR | WRITE)
+        self._info.frames = self.seek(0, SEEK_END | WRITE)
+        self.seek(curr, SEEK_SET | WRITE)
+
         return written
 
 
