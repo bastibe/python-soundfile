@@ -383,6 +383,21 @@ class SoundFile(object):
             assert channels, \
                 "channels must be specified for mode='w' and format=RAW!"
             self._info.channels = channels
+
+            def convert_if_string(var, dictionary):
+                if isinstance(var, str):
+                    for k, v in dictionary.items():
+                        if var.upper() == v:
+                            var = k
+                            break
+                    else:
+                        raise ValueError("Invalid argument: %s" % repr(var))
+                return var
+
+            format = convert_if_string(format, _formats)
+            subtype = convert_if_string(subtype, _subtypes)
+            endian = convert_if_string(endian, _endians)
+
             if subtype is None:
                 subtype = _default_subtypes.get(format, 0x0)
             endian = endian or FILE
