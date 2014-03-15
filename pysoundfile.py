@@ -194,6 +194,17 @@ _SUBMASK =  0x0000FFFF
 _TYPEMASK = 0x0FFF0000
 _ENDMASK =  0x30000000
 
+_TITLE       = 0x01
+_COPYRIGHT   = 0x02
+_SOFTWARE    = 0x03
+_ARTIST      = 0x04
+_COMMENT     = 0x05
+_DATE        = 0x06
+_ALBUM       = 0x07
+_LICENSE     = 0x08
+_TRACKNUMBER = 0x09
+_GENRE       = 0x10
+
 _GET_FORMAT_INFO          = 0x1028
 _GET_FORMAT_MAJOR_COUNT   = 0x1030
 _GET_FORMAT_MAJOR         = 0x1031
@@ -288,6 +299,19 @@ _default_subtypes = {
     OGG: VORBIS,
     #MPC2K:
     #RF64:
+}
+
+_str_types = {
+    'title': _TITLE,
+    'copyright': _COPYRIGHT,
+    'software': _SOFTWARE,
+    'artist': _ARTIST,
+    'comment': _COMMENT,
+    'date': _DATE,
+    'album': _ALBUM,
+    'license': _LICENSE,
+    'tracknumber': _TRACKNUMBER,
+    'genre': _GENRE
 }
 
 _snd = ffi.dlopen('sndfile')
@@ -516,37 +540,27 @@ class SoundFile(object):
             err_str = _snd.sf_error_number(err)
             raise RuntimeError(ffi.string(err_str).decode())
 
-    # these strings are used as properties to access text data n the
-    # sound file
-    _snd_strings = {
-        'title': 0x01,
-        'copyright': 0x02,
-        'software': 0x03,
-        'artist': 0x04,
-        'comment': 0x05,
-        'date': 0x06,
-        'album': 0x07,
-        'license': 0x08,
-        'tracknumber': 0x09,
-        'genre': 0x10
-    }
+    def _getAttributeNames(self):
+        # return all possible attributes used in __setattr__ and __getattr__.
+        # This is useful for auto-completion (e.g. IPython)
+        return _str_types
 
     def __setattr__(self, name, value):
         # access text data in the sound file through properties
-        if name in self._snd_strings:
+        if name in _str_types:
             if self.mode == READ:
                 raise RuntimeError("Can not change %s of file in READ mode" %
                                    name)
             data = ffi.new('char[]', value.encode())
-            err = _snd.sf_set_string(self._file, self._snd_strings[name], data)
+            err = _snd.sf_set_string(self._file, _str_types[name], data)
             self._handle_error_number(err)
         else:
             self.__dict__[name] = value
 
     def __getattr__(self, name):
         # access text data in the sound file through properties
-        if name in self._snd_strings:
-            data = _snd.sf_get_string(self._file, self._snd_strings[name])
+        if name in _str_types:
+            data = _snd.sf_get_string(self._file, _str_types[name])
             if data == ffi.NULL:
                 return ""
             else:
