@@ -195,6 +195,10 @@ _TYPEMASK = 0x0FFF0000
 _ENDMASK =  0x30000000
 
 _GET_FORMAT_INFO          = 0x1028
+_GET_FORMAT_MAJOR_COUNT   = 0x1030
+_GET_FORMAT_MAJOR         = 0x1031
+_GET_FORMAT_SUBTYPE_COUNT = 0x1032
+_GET_FORMAT_SUBTYPE       = 0x1033
 
 class _ModeType(int):
     def __repr__(self):
@@ -347,6 +351,10 @@ class SoundFile(object):
            subtype which is used if no subtype is specified.
          - an endian-ness: FILE (default), LITTLE, BIG or CPU.
            In most cases this doesn't have to be specified.
+
+        The functions available_formats() and available_subtypes() can
+        be used to obtain a list of all avaliable major formats and
+        subtypes, respectively.
 
         """
         assert _raise_error_if_format_type(sample_rate, channels)
@@ -689,6 +697,28 @@ def _get_format_info(format, format_flag=_GET_FORMAT_INFO, format_type=int):
                     ffi.sizeof("SF_FORMAT_INFO"))
     return (format_type(format_info.format),
             ffi.string(format_info.name).decode() if format_info.name else "")
+
+
+def _available_formats_helper(count_flag, format_flag, format_type=int):
+    def get_count():
+        count = ffi.new("int*")
+        _snd.sf_command(ffi.NULL, count_flag, count, ffi.sizeof("int"))
+        return count[0]
+
+    return [_get_format_info(f, format_flag, format_type)
+            for f in range(get_count())]
+
+
+def available_formats():
+    """Return a list of available major formats."""
+    return _available_formats_helper(_GET_FORMAT_MAJOR_COUNT,
+                                     _GET_FORMAT_MAJOR, _FormatType)
+
+
+def available_subtypes():
+    """Return a list of available subtypes."""
+    return _available_formats_helper(_GET_FORMAT_SUBTYPE_COUNT,
+                                     _GET_FORMAT_SUBTYPE, _SubtypeType)
 
 
 def get_format_string(format):
