@@ -378,10 +378,10 @@ class SoundFile(object):
         self._info = ffi.new("SF_INFO*")
         if self.mode == WRITE or format == RAW:
             assert sample_rate, \
-                "sample_rate must be specified for mode='w' and format=RAW!"
+                "sample_rate must be specified for mode=WRITE and format=RAW!"
             self._info.samplerate = sample_rate
             assert channels, \
-                "channels must be specified for mode='w' and format=RAW!"
+                "channels must be specified for mode=WRITE and format=RAW!"
             self._info.channels = channels
 
             def convert_if_string(var, dictionary):
@@ -412,7 +412,7 @@ class SoundFile(object):
         else:
             assert [sample_rate, channels, subtype, original_endian,
                     original_format] == [None] * 5, \
-                "Only allowed if mode='w' or format=RAW: sample_rate, " \
+                "Only allowed if mode=WRITE or format=RAW: sample_rate, " \
                 "channels, format, subtype, endian"
 
         if virtual_io:
@@ -535,7 +535,7 @@ class SoundFile(object):
         # access text data in the sound file through properties
         if name in self._snd_strings:
             if self.mode == READ:
-                raise RuntimeError("Can not change %s of file in read mode" %
+                raise RuntimeError("Can not change %s of file in READ mode" %
                                    name)
             data = ffi.new('char[]', value.encode())
             err = _snd.sf_set_string(self._file, self._snd_strings[name], data)
