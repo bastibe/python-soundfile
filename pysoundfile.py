@@ -115,6 +115,12 @@ typedef struct SF_VIRTUAL_IO
 
 SNDFILE*    sf_open_virtual   (SF_VIRTUAL_IO *sfvirtual, int mode, SF_INFO *sfinfo, void *user_data) ;
 
+typedef struct SF_FORMAT_INFO
+{
+    int         format ;
+    const char* name ;
+    const char* extension ;
+} SF_FORMAT_INFO ;
 """)
 
 _open_modes = {
@@ -188,6 +194,7 @@ _SUBMASK =  0x0000FFFF
 _TYPEMASK = 0x0FFF0000
 _ENDMASK =  0x30000000
 
+_GET_FORMAT_INFO          = 0x1028
 
 class _ModeType(int):
     def __repr__(self):
@@ -407,6 +414,8 @@ class SoundFile(object):
         self.format = _FormatType(self._info.format & _TYPEMASK)
         self.subtype = _SubtypeType(self._info.format & _SUBMASK)
         self.endian = _EndianType(self._info.format & _ENDMASK)
+        self.format_string = get_format_string(self.format)
+        self.subtype_string = get_format_string(self.subtype)
         self.sections = self._info.sections
         self.seekable = self._info.seekable == 1
 
@@ -670,6 +679,21 @@ class SoundFile(object):
                                       len(data))
         self._handle_error()
         return written
+
+
+def _get_format_info(format, format_flag=_GET_FORMAT_INFO, format_type=int):
+    # Return the ID and name of a given format.
+    format_info = ffi.new("struct SF_FORMAT_INFO*")
+    format_info.format = format
+    _snd.sf_command(ffi.NULL, format_flag, format_info,
+                    ffi.sizeof("SF_FORMAT_INFO"))
+    return (format_type(format_info.format),
+            ffi.string(format_info.name).decode() if format_info.name else "")
+
+
+def get_format_string(format):
+    """Return the name of a given major format or subtype."""
+    return _get_format_info(format)[1]
 
 
 def _raise_error_if_format_type(*args):
