@@ -440,6 +440,7 @@ class SoundFile(object):
                 "Only allowed if mode=WRITE or format=RAW: sample_rate, " \
                 "channels, format, subtype, endian"
 
+        self._name = file
         if isinstance(file, str):
             file = _ffi.new('char[]', file.encode())
             self._file = _snd.sf_open(file, mode, self._info)
@@ -456,10 +457,12 @@ class SoundFile(object):
             self._vio = self._init_vio(file)
             vio = _ffi.new("SF_VIRTUAL_IO*", self._vio)
             self._file = _snd.sf_open_virtual(vio, mode, self._info, _ffi.NULL)
+            self._name = str(file)
 
         self._handle_error()
         self._mode = mode
 
+    name = property(lambda self: self._name)
     mode = property(lambda self: self._mode)
     frames = property(lambda self: self._info.frames)
     sample_rate = property(lambda self: self._info.samplerate)
