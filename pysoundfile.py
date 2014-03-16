@@ -262,9 +262,9 @@ class SoundFile(object):
                  virtual_io=False):
         """Open a new SoundFile.
 
-        If a file is opened with mode READ or WRITE,
+        If a file is opened with mode READ (the default) or RDWR,
         no sample_rate, channels or file format need to be given. If a
-        file is opened with mode RDWR, you must provide a sample_rate,
+        file is opened with mode WRITE, you must provide a sample_rate,
         a number of channels, and a file format. An exception is the
         RAW data format, which requires these data points for reading
         as well.
