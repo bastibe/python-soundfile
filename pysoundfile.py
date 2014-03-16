@@ -499,8 +499,15 @@ class SoundFile(object):
 
         @_ffi.callback("sf_vio_read")
         def vio_read(ptr, count, user_data):
-            buf = _ffi.buffer(ptr, count)
-            data_read = file.readinto(buf)
+            # first try readinto(), if not available fall back to read()
+            try:
+                buf = _ffi.buffer(ptr, count)
+                data_read = file.readinto(buf)
+            except AttributeError:
+                data = file.read(count)
+                buf = _ffi.buffer(ptr, len(data))
+                buf[0:len(data)] = data
+                data_read = len(data)
             return data_read
 
         @_ffi.callback("sf_vio_write")
