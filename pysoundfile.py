@@ -758,6 +758,15 @@ class SoundFile(object):
         return written
 
 
+def open(*args, **kwargs):
+    """Return a new SoundFile object.
+
+    Takes the same arguments as SoundFile.__init__().
+
+    """
+    return SoundFile(*args, **kwargs)
+
+
 def _get_format_info(format, format_flag=_GET_FORMAT_INFO, format_type=int):
     # Return the ID and name of a given format.
     format_info = _ffi.new("struct SF_FORMAT_INFO*")
