@@ -505,7 +505,7 @@ class SoundFile(object):
 
         @_ffi.callback("sf_vio_write")
         def vio_write(ptr, count, user_data):
-            buf = _ffi.buffer(ptr)
+            buf = _ffi.buffer(ptr, count)
             data = buf[:]
             length = file.write(data)
             return length
