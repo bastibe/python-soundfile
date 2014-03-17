@@ -797,6 +797,34 @@ def read(file, frames=None, start=None, stop=None, **kwargs):
     return data, f.sample_rate
 
 
+def write(data, file, sample_rate, *args, **kwargs):
+    """Write data from a NumPy array into a sound file.
+
+    If file exists, it will be overwritten!
+
+    The number of channels is obtained from data, all further arguments
+    are forwarded to SoundFile.__init__(). See its documentation for
+    details.
+
+    Example usage:
+
+        import pysoundfile as sf
+        sf.write(myarray, 'myfile.wav', 44100, sf.PCM_24)
+
+    """
+    data = _np.asarray(data)
+    if data.ndim == 1:
+        channels = 1
+    elif data.ndim == 2:
+        channels = data.shape[1]
+    else:
+        raise RuntimeError("Only one- and two-dimensional arrays are allowed!")
+    frames = data.shape[0]
+    with SoundFile(file, WRITE, sample_rate, channels, *args, **kwargs) as f:
+        written = f.write(data)
+    assert frames == written, "Error writing file!"
+
+
 def _get_format_info(format, format_flag=_GET_FORMAT_INFO, format_type=int):
     # Return the ID and name of a given format.
     format_info = _ffi.new("struct SF_FORMAT_INFO*")
