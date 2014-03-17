@@ -395,8 +395,9 @@ class SoundFile(object):
             raise ValueError("Invalid mode: %s" % repr(mode))
 
         original_format, original_endian = format, endian
-        if format is None and isinstance(file, str):
-            ext = file.rsplit('.', 1)[-1]
+        if format is None:
+            ext = getattr(file, 'name', file if isinstance(file, str) else ""
+                          ).rsplit('.', 1)[-1]
             format = _format_by_extension.get(ext.lower(), 0x0)
 
         self._info = _ffi.new("SF_INFO*")
