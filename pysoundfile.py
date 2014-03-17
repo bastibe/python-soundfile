@@ -767,6 +767,36 @@ def open(*args, **kwargs):
     return SoundFile(*args, **kwargs)
 
 
+def read(file, frames=None, start=None, stop=None, **kwargs):
+    """Read a sound file and return its contents as NumPy array.
+
+    The number of frames to read can be specified with frames, the
+    position to start reading can be specified with start.
+    By default, the whole file is read from the beginning.
+    Alternatively, a range can be specified with start and stop.
+    Both start and stop accept negative indices to specify positions
+    relative to the end of the file.
+
+    The returned data type can be specified with dtype. See the
+    documentation of SoundFile.read() for details.
+
+    All further arguments are forwarded to SoundFile.__init__().
+
+    """
+    if frames is not None and stop is not None:
+        raise RuntimeError("Only one of (frames, stop) may be used!")
+    read_kwargs = {}
+    if 'dtype' in kwargs:
+        read_kwargs['dtype'] = kwargs.pop('dtype')
+    with SoundFile(file, READ, **kwargs) as f:
+        start, stop, _ = slice(start, stop).indices(f.frames)
+        if frames is None:
+            frames = max(0, stop - start)
+        f.seek(start, SEEK_SET)
+        data = f.read(frames, **read_kwargs)
+    return data, f.sample_rate
+
+
 def _get_format_info(format, format_flag=_GET_FORMAT_INFO, format_type=int):
     # Return the ID and name of a given format.
     format_info = _ffi.new("struct SF_FORMAT_INFO*")
