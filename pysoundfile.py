@@ -375,20 +375,27 @@ class SoundFile(object):
         }
         return vio
 
-    def __del__(self):
-        # be sure to flush data to disk before closing the file
-        if self._file:
-            _snd.sf_write_sync(self._file)
+    def flush(self):
+        # flush unwritten data to disc
+        _snd.sf_write_sync(self._file)
+
+    def close(self):
+        if hasattr(self, '_file'):
+            # be sure to flush data to disk before closing the file
+            self.flush()
             err = _snd.sf_close(self._file)
+            vars(self).clear()
             self._handle_error_number(err)
-            self._file = None
+
+    def __del__(self):
+        self.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, tb):
         # flush remaining data to disk and close file
-        self.__del__()
+        self.close()
 
     def _handle_error(self):
         # this checks the error flag of the SNDFILE* structure
