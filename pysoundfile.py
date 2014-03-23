@@ -124,76 +124,9 @@ typedef struct SF_FORMAT_INFO
 } SF_FORMAT_INFO ;
 """)
 
-_open_modes = {
-    0x10: 'READ',
-    0x20: 'WRITE',
-    0x30: 'RDWR'
-}
-
-_formats = {
-    0x010000: 'WAV',    # Microsoft WAV format (little endian default).
-    0x020000: 'AIFF',   # Apple/SGI AIFF format (big endian).
-    0x030000: 'AU',     # Sun/NeXT AU format (big endian).
-    0x040000: 'RAW',    # RAW PCM data.
-    0x050000: 'PAF',    # Ensoniq PARIS file format.
-    0x060000: 'SVX',    # Amiga IFF / SVX8 / SV16 format.
-    0x070000: 'NIST',   # Sphere NIST format.
-    0x080000: 'VOC',    # VOC files.
-    0x0A0000: 'IRCAM',  # Berkeley/IRCAM/CARL
-    0x0B0000: 'W64',    # Sonic Foundry's 64 bit RIFF/WAV
-    0x0C0000: 'MAT4',   # Matlab (tm) V4.2 / GNU Octave 2.0
-    0x0D0000: 'MAT5',   # Matlab (tm) V5.0 / GNU Octave 2.1
-    0x0E0000: 'PVF',    # Portable Voice Format
-    0x0F0000: 'XI',     # Fasttracker 2 Extended Instrument
-    0x100000: 'HTK',    # HMM Tool Kit format
-    0x110000: 'SDS',    # Midi Sample Dump Standard
-    0x120000: 'AVR',    # Audio Visual Research
-    0x130000: 'WAVEX',  # MS WAVE with WAVEFORMATEX
-    0x160000: 'SD2',    # Sound Designer 2
-    0x170000: 'FLAC',   # FLAC lossless file format
-    0x180000: 'CAF',    # Core Audio File format
-    0x190000: 'WVE',    # Psion WVE format
-    0x200000: 'OGG',    # Xiph OGG container
-    0x210000: 'MPC2K',  # Akai MPC 2000 sampler
-    0x220000: 'RF64',   # RF64 WAV file
-}
-
-_subtypes = {
-    0x0001: 'PCM_S8',     # Signed 8 bit data
-    0x0002: 'PCM_16',     # Signed 16 bit data
-    0x0003: 'PCM_24',     # Signed 24 bit data
-    0x0004: 'PCM_32',     # Signed 32 bit data
-    0x0005: 'PCM_U8',     # Unsigned 8 bit data (WAV and RAW only)
-    0x0006: 'FLOAT',      # 32 bit float data
-    0x0007: 'DOUBLE',     # 64 bit float data
-    0x0010: 'ULAW',       # U-Law encoded.
-    0x0011: 'ALAW',       # A-Law encoded.
-    0x0012: 'IMA_ADPCM',  # IMA ADPCM.
-    0x0013: 'MS_ADPCM',   # Microsoft ADPCM.
-    0x0020: 'GSM610',     # GSM 6.10 encoding.
-    0x0021: 'VOX_ADPCM',  # OKI / Dialogix ADPCM
-    0x0030: 'G721_32',    # 32kbs G721 ADPCM encoding.
-    0x0031: 'G723_24',    # 24kbs G723 ADPCM encoding.
-    0x0032: 'G723_40',    # 40kbs G723 ADPCM encoding.
-    0x0040: 'DWVW_12',    # 12 bit Delta Width Variable Word encoding.
-    0x0041: 'DWVW_16',    # 16 bit Delta Width Variable Word encoding.
-    0x0042: 'DWVW_24',    # 24 bit Delta Width Variable Word encoding.
-    0x0043: 'DWVW_N',     # N bit Delta Width Variable Word encoding.
-    0x0050: 'DPCM_8',     # 8 bit differential PCM (XI only)
-    0x0051: 'DPCM_16',    # 16 bit differential PCM (XI only)
-    0x0060: 'VORBIS',     # Xiph Vorbis encoding.
-}
-
-_endians = {
-    0x00000000: 'FILE',    # Default file endian-ness.
-    0x10000000: 'LITTLE',  # Force little endian-ness.
-    0x20000000: 'BIG',     # Force big endian-ness.
-    0x30000000: 'CPU',     # Force CPU endian-ness.
-}
-
-_SUBMASK =  0x0000FFFF
+_SUBMASK  = 0x0000FFFF
 _TYPEMASK = 0x0FFF0000
-_ENDMASK =  0x30000000
+_ENDMASK  = 0x30000000
 
 _TITLE       = 0x01
 _COPYRIGHT   = 0x02
@@ -212,34 +145,115 @@ _GET_FORMAT_MAJOR         = 0x1031
 _GET_FORMAT_SUBTYPE_COUNT = 0x1032
 _GET_FORMAT_SUBTYPE       = 0x1033
 
-class _ModeType(int):
+
+class _Mode(int):
+    _modes = {}
+
+    @classmethod
+    def _define(cls, id, longname, shortname):
+        cls._modes[id] = longname, shortname.upper()
+        return _Mode(longname)
+
+    def __new__(cls, value):
+        if isinstance(value, str):
+            for k, v in cls._modes.items():
+                if value.upper() in v:
+                    value = k
+                    break
+            else:
+                raise ValueError("Invalid mode string: %s" % repr(value))
+        elif not isinstance(value, _Mode):
+            raise TypeError("Invalid mode")
+        return super(_Mode, cls).__new__(cls, value)
+
     def __repr__(self):
-        return _open_modes.get(self, int.__repr__(self))
+        return self._modes[self][0]
+
     __str__ = __repr__
 
-class _FormatType(int):
+READ  = _Mode._define(0x10, 'READ',  'r')
+WRITE = _Mode._define(0x20, 'WRITE', 'w')
+RDWR  = _Mode._define(0x30, 'RDWR', 'rw')
+
+
+class _Format(int):
+    def __new__(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = globals().get(value.upper())
+            if type(value) is not _Format:
+                raise ValueError("Invalid format string: %s" % repr(value))
+        return super(_Format, cls).__new__(cls, value)
+
     def __repr__(self):
-        return _formats.get(self, int.__repr__(self))
+        for k, v in globals().items():
+            if v == self and type(v) is _Format:
+                return k
+        return super(_Format, self).__repr__()
+
     __str__ = __repr__
 
-class _SubtypeType(int):
-    def __repr__(self):
-        return _subtypes.get(self, int.__repr__(self))
-    __str__ = __repr__
+# major formats:
 
-class _EndianType(int):
-    def __repr__(self):
-        return _endians.get(self, int.__repr__(self))
-    __str__ = __repr__
+WAV   = _Format(0x010000)  # Microsoft WAV format (little endian default).
+AIFF  = _Format(0x020000)  # Apple/SGI AIFF format (big endian).
+AU    = _Format(0x030000)  # Sun/NeXT AU format (big endian).
+RAW   = _Format(0x040000)  # RAW PCM data.
+PAF   = _Format(0x050000)  # Ensoniq PARIS file format.
+SVX   = _Format(0x060000)  # Amiga IFF / SVX8 / SV16 format.
+NIST  = _Format(0x070000)  # Sphere NIST format.
+VOC   = _Format(0x080000)  # VOC files.
+IRCAM = _Format(0x0A0000)  # Berkeley/IRCAM/CARL
+W64   = _Format(0x0B0000)  # Sonic Foundrys 64 bit RIFF/WAV
+MAT4  = _Format(0x0C0000)  # Matlab (tm) V4.2 / GNU Octave 2.0
+MAT5  = _Format(0x0D0000)  # Matlab (tm) V5.0 / GNU Octave 2.1
+PVF   = _Format(0x0E0000)  # Portable Voice Format
+XI    = _Format(0x0F0000)  # Fasttracker 2 Extended Instrument
+HTK   = _Format(0x100000)  # HMM Tool Kit format
+SDS   = _Format(0x110000)  # Midi Sample Dump Standard
+AVR   = _Format(0x120000)  # Audio Visual Research
+WAVEX = _Format(0x130000)  # MS WAVE with WAVEFORMATEX
+SD2   = _Format(0x160000)  # Sound Designer 2
+FLAC  = _Format(0x170000)  # FLAC lossless file format
+CAF   = _Format(0x180000)  # Core Audio File format
+WVE   = _Format(0x190000)  # Psion WVE format
+OGG   = _Format(0x200000)  # Xiph OGG container
+MPC2K = _Format(0x210000)  # Akai MPC 2000 sampler
+RF64  = _Format(0x220000)  # RF64 WAV file
 
-def _add_constants_to_module_namespace(constants_dict, constants_type):
-    for k, v in constants_dict.items():
-        globals()[v] = constants_type(k)
+# subtypes:
 
-_add_constants_to_module_namespace(_open_modes, _ModeType)
-_add_constants_to_module_namespace(_formats, _FormatType)
-_add_constants_to_module_namespace(_subtypes, _SubtypeType)
-_add_constants_to_module_namespace(_endians, _EndianType)
+PCM_S8    = _Format(0x0001)  # Signed 8 bit data
+PCM_16    = _Format(0x0002)  # Signed 16 bit data
+PCM_24    = _Format(0x0003)  # Signed 24 bit data
+PCM_32    = _Format(0x0004)  # Signed 32 bit data
+PCM_U8    = _Format(0x0005)  # Unsigned 8 bit data (WAV and RAW only)
+FLOAT     = _Format(0x0006)  # 32 bit float data
+DOUBLE    = _Format(0x0007)  # 64 bit float data
+ULAW      = _Format(0x0010)  # U-Law encoded.
+ALAW      = _Format(0x0011)  # A-Law encoded.
+IMA_ADPCM = _Format(0x0012)  # IMA ADPCM.
+MS_ADPCM  = _Format(0x0013)  # Microsoft ADPCM.
+GSM610    = _Format(0x0020)  # GSM 6.10 encoding.
+VOX_ADPCM = _Format(0x0021)  # OKI / Dialogix ADPCM
+G721_32   = _Format(0x0030)  # 32kbs G721 ADPCM encoding.
+G723_24   = _Format(0x0031)  # 24kbs G723 ADPCM encoding.
+G723_40   = _Format(0x0032)  # 40kbs G723 ADPCM encoding.
+DWVW_12   = _Format(0x0040)  # 12 bit Delta Width Variable Word encoding.
+DWVW_16   = _Format(0x0041)  # 16 bit Delta Width Variable Word encoding.
+DWVW_24   = _Format(0x0042)  # 24 bit Delta Width Variable Word encoding.
+DWVW_N    = _Format(0x0043)  # N bit Delta Width Variable Word encoding.
+DPCM_8    = _Format(0x0050)  # 8 bit differential PCM (XI only)
+DPCM_16   = _Format(0x0051)  # 16 bit differential PCM (XI only)
+VORBIS    = _Format(0x0060)  # Xiph Vorbis encoding.
+
+# endian-ness:
+
+FILE   = _Format(0x00000000)  # Default file endian-ness.
+LITTLE = _Format(0x10000000)  # Force little endian-ness.
+BIG    = _Format(0x20000000)  # Force big endian-ness.
+CPU    = _Format(0x30000000)  # Force CPU endian-ness.
 
 _format_by_extension = {
     'wav': WAV,
@@ -382,63 +396,52 @@ class SoundFile(object):
         subtypes, respectively.
 
         """
-        assert _raise_error_if_format_type(file, sample_rate, channels)
+        for arg in file, sample_rate, channels:
+            if isinstance(arg, _Format):
+                raise TypeError("%s is not allowed here!" % repr(arg))
 
-        if isinstance(mode, str):
-            try:
-                mode = {'read':  READ,  'r':  READ,
-                        'write': WRITE, 'w':  WRITE,
-                        'rdwr':  RDWR,  'rw': RDWR}[mode.lower()]
-            except KeyError:
-                pass
-        if not isinstance(mode, _ModeType):
-            raise ValueError("Invalid mode: %s" % repr(mode))
+        mode = _Mode(mode)
 
-        original_format, original_endian = format, endian
+        original_format = format
         if format is None:
             ext = getattr(file, 'name', file if isinstance(file, str) else ""
                           ).rsplit('.', 1)[-1]
             format = _format_by_extension.get(ext.lower(), 0x0)
+        else:
+            format = _Format(format)
 
         self._info = _ffi.new("SF_INFO*")
         if mode == WRITE or format == RAW:
-            assert sample_rate, \
-                "sample_rate must be specified for mode=WRITE and format=RAW!"
+            if sample_rate is None:
+                raise TypeError("sample_rate must be specified")
             self._info.samplerate = sample_rate
-            assert channels, \
-                "channels must be specified for mode=WRITE and format=RAW!"
+            if channels is None:
+                raise TypeError("channels must be specified")
             self._info.channels = channels
 
-            def convert_if_string(var, dictionary):
-                if isinstance(var, str):
-                    for k, v in dictionary.items():
-                        if var.upper() == v:
-                            var = k
-                            break
-                    else:
-                        raise ValueError("Invalid argument: %s" % repr(var))
-                return var
+            subtype = _Format(subtype) or _default_subtypes.get(format, 0x0)
+            endian = _Format(endian) or FILE
 
-            format = convert_if_string(format, _formats)
-            subtype = convert_if_string(subtype, _subtypes)
-            endian = convert_if_string(endian, _endians)
-
-            if subtype is None:
-                subtype = _default_subtypes.get(format, 0x0)
-            endian = endian or FILE
             format = format | subtype | endian
-            assert format, "No format specified!"
-            assert format & _TYPEMASK, "Invalid format!"
-            assert format & _SUBMASK, "Invalid subtype!"
-            assert endian == FILE or format & _ENDMASK, "Invalid endian-ness!"
+
+            if not format:
+                raise ValueError("No format specified")
+            if not format & _TYPEMASK:
+                raise ValueError("Invalid format")
+            if not format & _SUBMASK:
+                raise ValueError("Invalid subtype")
+            if not format & _ENDMASK and endian != FILE:
+                raise ValueError("Invalid endian-ness")
             self._info.format = format
-            assert _snd.sf_format_check(self._info), \
-                "Invalid combination of format, subtype and endian!"
+            if not _snd.sf_format_check(self._info):
+                raise ValueError(
+                    "Invalid combination of format, subtype and endian")
         else:
-            assert [sample_rate, channels, subtype, original_endian,
-                    original_format] == [None] * 5, \
-                "Only allowed if mode=WRITE or format=RAW: sample_rate, " \
-                "channels, format, subtype, endian"
+            if [sample_rate, channels, subtype, endian, original_format] \
+                    != [None] * 5:
+                raise TypeError("Only allowed if mode=WRITE or format=RAW: "
+                                "sample_rate, channels, format, subtype, "
+                                "endian")
 
         self._name = file
         if isinstance(file, str):
@@ -467,9 +470,9 @@ class SoundFile(object):
     frames = property(lambda self: self._info.frames)
     sample_rate = property(lambda self: self._info.samplerate)
     channels = property(lambda self: self._info.channels)
-    format = property(lambda self: _FormatType(self._info.format & _TYPEMASK))
-    subtype = property(lambda self: _SubtypeType(self._info.format & _SUBMASK))
-    endian = property(lambda self: _EndianType(self._info.format & _ENDMASK))
+    format = property(lambda self: _Format(self._info.format & _TYPEMASK))
+    subtype = property(lambda self: _Format(self._info.format & _SUBMASK))
+    endian = property(lambda self: _Format(self._info.format & _ENDMASK))
     format_string = property(lambda self: get_format_string(self.format))
     subtype_string = property(lambda self: get_format_string(self.subtype))
     sections = property(lambda self: self._info.sections)
@@ -825,49 +828,37 @@ def write(data, file, sample_rate, *args, **kwargs):
     assert frames == written, "Error writing file!"
 
 
-def _get_format_info(format, format_flag=_GET_FORMAT_INFO, format_type=int):
+def _get_format_info(format, format_flag=_GET_FORMAT_INFO):
     # Return the ID and name of a given format.
     format_info = _ffi.new("struct SF_FORMAT_INFO*")
     format_info.format = format
     _snd.sf_command(_ffi.NULL, format_flag, format_info,
                     _ffi.sizeof("SF_FORMAT_INFO"))
-    return (format_type(format_info.format),
+    return (_Format(format_info.format),
             _ffi.string(format_info.name).decode() if format_info.name else "")
 
 
-def _available_formats_helper(count_flag, format_flag, format_type=int):
+def _available_formats_helper(count_flag, format_flag):
     def get_count():
         count = _ffi.new("int*")
         _snd.sf_command(_ffi.NULL, count_flag, count, _ffi.sizeof("int"))
         return count[0]
 
-    return [_get_format_info(f, format_flag, format_type)
-            for f in range(get_count())]
+    return [_get_format_info(f, format_flag) for f in range(get_count())]
 
 
 def available_formats():
     """Return a list of available major formats."""
     return _available_formats_helper(_GET_FORMAT_MAJOR_COUNT,
-                                     _GET_FORMAT_MAJOR, _FormatType)
+                                     _GET_FORMAT_MAJOR)
 
 
 def available_subtypes():
     """Return a list of available subtypes."""
     return _available_formats_helper(_GET_FORMAT_SUBTYPE_COUNT,
-                                     _GET_FORMAT_SUBTYPE, _SubtypeType)
+                                     _GET_FORMAT_SUBTYPE)
 
 
 def get_format_string(format):
     """Return the name of a given major format or subtype."""
     return _get_format_info(format)[1]
-
-
-def _raise_error_if_format_type(*args):
-    # raise error if one of the arguments has one of the format types.
-    # For use in assertions to prevent accidentally passing soundfile formats
-    # where numeric values are expected (esp. when using positional arguments).
-    format_types = (_FormatType, _SubtypeType, _EndianType)
-    for arg in args:
-        if isinstance(arg, format_types):
-            raise TypeError("%s is not allowed here!" % repr(arg))
-    return True
