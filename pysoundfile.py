@@ -124,6 +124,9 @@ typedef struct SF_FORMAT_INFO
 } SF_FORMAT_INFO ;
 """)
 
+_FALSE = 0
+_TRUE  = 1
+
 _SUBMASK  = 0x0000FFFF
 _TYPEMASK = 0x0FFF0000
 _ENDMASK  = 0x30000000
@@ -432,10 +435,10 @@ class SoundFile(object):
                 raise ValueError("Invalid subtype")
             if not format & _ENDMASK and endian != FILE:
                 raise ValueError("Invalid endian-ness")
-            self._info.format = format
-            if not _snd.sf_format_check(self._info):
+            if not format_check(format):
                 raise ValueError(
                     "Invalid combination of format, subtype and endian")
+            self._info.format = format
         else:
             if [sample_rate, channels, subtype, endian, original_format] \
                     != [None] * 5:
@@ -862,3 +865,16 @@ def available_subtypes():
 def get_format_string(format):
     """Return the name of a given major format or subtype."""
     return _get_format_info(format)[1]
+
+
+def format_check(format):
+    """Check if the given format is supported.
+
+    format must be a combination (with logical OR) of major format,
+    subtype and (optional) endian-ness.
+
+    """
+    info = _ffi.new("SF_INFO*")
+    info.format = format
+    info.channels = 1
+    return _snd.sf_format_check(info) == _TRUE
