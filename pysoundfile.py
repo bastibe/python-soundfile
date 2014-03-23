@@ -828,7 +828,9 @@ def write(data, file, sample_rate, *args, **kwargs):
     frames = data.shape[0]
     with SoundFile(file, WRITE, sample_rate, channels, *args, **kwargs) as f:
         written = f.write(data)
-    assert frames == written, "Error writing file!"
+    if frames != written:
+        raise RuntimeError("Only %d of %d frames were written" % (written,
+                                                                  frames))
 
 
 def _get_format_info(format, format_flag=_GET_FORMAT_INFO):
