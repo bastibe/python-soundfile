@@ -847,7 +847,7 @@ def _available_formats_helper(count_flag, format_flag):
         _snd.sf_command(_ffi.NULL, count_flag, count, _ffi.sizeof("int"))
         return count[0]
 
-    return [_get_format_info(f, format_flag) for f in range(get_count())]
+    return dict(_get_format_info(f, format_flag) for f in range(get_count()))
 
 
 def available_formats():
