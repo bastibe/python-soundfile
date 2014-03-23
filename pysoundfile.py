@@ -401,7 +401,7 @@ class SoundFile(object):
         """
         for arg in file, sample_rate, channels:
             if isinstance(arg, _Format):
-                raise TypeError("%s is not allowed here!" % repr(arg))
+                raise TypeError("%s is not allowed here" % repr(arg))
 
         mode = _Mode(mode)
 
@@ -457,7 +457,7 @@ class SoundFile(object):
                 if not hasattr(file, attr):
                     msg = "file must be a filename, a file descriptor or " \
                           "a file-like object with the methods " \
-                          "'seek()', 'read()', 'write()' and 'tell()'!"
+                          "'seek()', 'read()', 'write()' and 'tell()'"
                     raise RuntimeError(msg)
             # Note: the callback functions in _vio must be kept alive!
             self._vio = self._init_vio(file)
@@ -567,7 +567,7 @@ class SoundFile(object):
         # check if the file is closed and raise an error if it is.
         # This should be used in every method that tries to access self._file.
         if self.closed:
-            raise ValueError("I/O operation on closed file!")
+            raise ValueError("I/O operation on closed file")
 
     def __setattr__(self, name, value):
         # access text data in the sound file through properties
@@ -603,7 +603,7 @@ class SoundFile(object):
             frame = slice(frame, frame + 1)
         start, stop, step = frame.indices(len(self))
         if step != 1:
-            raise RuntimeError("Step size must be 1!")
+            raise RuntimeError("Step size must be 1")
         if start > stop:
             stop = start
         return start, stop
@@ -632,7 +632,7 @@ class SoundFile(object):
         # array. Data must be in the form (frames x channels).
         # Both open slice bounds and negative values are allowed.
         if self.mode == READ:
-            raise RuntimeError("Cannot write to file opened in READ mode!")
+            raise RuntimeError("Cannot write to file opened in READ mode")
         start, stop = self._get_slice_bounds(frame)
         if stop - start != len(data):
             raise IndexError(
@@ -696,7 +696,7 @@ class SoundFile(object):
         """
         self._check_if_closed()
         if self.mode == WRITE:
-            raise RuntimeError("Cannot read from file opened in WRITE mode!")
+            raise RuntimeError("Cannot read from file opened in WRITE mode")
         formats = {
             _np.float64: 'double[]',
             _np.float32: 'float[]',
@@ -735,7 +735,7 @@ class SoundFile(object):
         """
         self._check_if_closed()
         if self.mode == READ:
-            raise RuntimeError("Cannot write to file opened in READ mode!")
+            raise RuntimeError("Cannot write to file opened in READ mode")
         formats = {
             _np.float64: 'double*',
             _np.float32: 'float*',
@@ -790,7 +790,7 @@ def read(file, frames=None, start=None, stop=None, **kwargs):
 
     """
     if frames is not None and stop is not None:
-        raise RuntimeError("Only one of (frames, stop) may be used!")
+        raise RuntimeError("Only one of (frames, stop) may be used")
     read_kwargs = {}
     if 'dtype' in kwargs:
         read_kwargs['dtype'] = kwargs.pop('dtype')
@@ -824,7 +824,7 @@ def write(data, file, sample_rate, *args, **kwargs):
     elif data.ndim == 2:
         channels = data.shape[1]
     else:
-        raise RuntimeError("Only one- and two-dimensional arrays are allowed!")
+        raise RuntimeError("Only one- and two-dimensional arrays are allowed")
     frames = data.shape[0]
     with SoundFile(file, WRITE, sample_rate, channels, *args, **kwargs) as f:
         written = f.write(data)
