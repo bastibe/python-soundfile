@@ -246,6 +246,13 @@ _default_subtypes = {
     'RF64':  'PCM_16',
 }
 
+_ffi_types = {
+    _np.dtype('float64'): 'double',
+    _np.dtype('float32'): 'float',
+    _np.dtype('int32'): 'int',
+    _np.dtype('int16'): 'short'
+}
+
 _snd = _ffi.dlopen('sndfile')
 
 
@@ -596,30 +603,32 @@ class SoundFile(object):
         self._check_if_closed()
         if self.mode == 'w':
             raise RuntimeError("Cannot read from file opened in write mode")
-        formats = {
-            _np.float64: 'double[]',
-            _np.float32: 'float[]',
-            _np.int32: 'int[]',
-            _np.int16: 'short[]'
-        }
-        readers = {
-            _np.float64: _snd.sf_readf_double,
-            _np.float32: _snd.sf_readf_float,
-            _np.int32: _snd.sf_readf_int,
-            _np.int16: _snd.sf_readf_short
-        }
+
         dtype = _np.dtype(dtype)
-        if dtype.type not in formats:
-            raise ValueError("Can only read int16, int32, float32 and float64")
-        if frames < 0:
-            curr = self.seek(0, SEEK_CUR, 'r')
+        try:
+            ffi_type = _ffi_types[dtype]
+        except KeyError:
+            raise ValueError("dtype must be one of %s" %
+                             repr([dt.name for dt in _ffi_types]))
+
+        curr = self.seek(0, SEEK_CUR, 'r')
+        if frames < 0 or curr + frames > self.frames:
             frames = self.frames - curr
-        data = _ffi.new(formats[dtype.type], frames*self.channels)
-        read = readers[dtype.type](self._file, data, frames)
+
+        data = _np.empty((frames, self.channels), dtype=dtype, order='C')
+
+        assert data.flags['C_CONTIGUOUS']
+        assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
+
+        reader = getattr(_snd, 'sf_readf_' + ffi_type)
+        ptr = _ffi.cast(ffi_type + '*', data.ctypes.data)
+        read = reader(self._file, ptr, frames)
         self._handle_error()
-        np_data = _np.frombuffer(_ffi.buffer(data), dtype=dtype,
-                                 count=read*self.channels)
-        return _np.reshape(np_data, (read, self.channels))
+
+        if frames != read:
+            raise RuntimeError("Only %d of %d frames were read" %
+                               (read, frames))
+        return data
 
     def write(self, data):
         """Write a number of frames to the file.
@@ -635,32 +644,32 @@ class SoundFile(object):
         self._check_if_closed()
         if self.mode == 'r':
             raise RuntimeError("Cannot write to file opened in read mode")
-        formats = {
-            _np.float64: 'double*',
-            _np.float32: 'float*',
-            _np.int32: 'int*',
-            _np.int16: 'short*'
-        }
-        writers = {
-            _np.float64: _snd.sf_writef_double,
-            _np.float32: _snd.sf_writef_float,
-            _np.int32: _snd.sf_writef_int,
-            _np.int16: _snd.sf_writef_short
-        }
-        if data.dtype.type not in writers:
-            raise ValueError("Data must be int16, int32, float32 or float64")
-        raw_data = _ffi.new('char[]', data.flatten().tostring())
-        written = writers[data.dtype.type](self._file,
-                                      _ffi.cast(
-                                          formats[data.dtype.type], raw_data),
-                                      len(data))
+
+        # no copy is made if data has already the correct memory layout:
+        data = _np.ascontiguousarray(data)
+
+        try:
+            ffi_type = _ffi_types[data.dtype]
+        except KeyError:
+            raise ValueError("data.dtype must be one of %s" %
+                             repr([dt.name for dt in _ffi_types]))
+
+        assert data.flags['C_CONTIGUOUS']
+        assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
+
+        frames = len(data)
+        writer = getattr(_snd, 'sf_writef_' + ffi_type)
+        ptr = _ffi.cast(ffi_type + '*', data.ctypes.data)
+        written = writer(self._file, ptr, frames)
         self._handle_error()
 
         curr = self.seek(0, SEEK_CUR, 'w')
         self._info.frames = self.seek(0, SEEK_END, 'w')
         self.seek(curr, SEEK_SET, 'w')
 
-        return written
+        if frames != written:
+            raise RuntimeError("Only %d of %d frames were written" %
+                               (written, frames))
 
 
 def open(*args, **kwargs):
@@ -724,12 +733,8 @@ def write(data, file, sample_rate, *args, **kwargs):
         channels = data.shape[1]
     else:
         raise RuntimeError("Only one- and two-dimensional arrays are allowed")
-    frames = data.shape[0]
     with SoundFile(file, 'w', sample_rate, channels, *args, **kwargs) as f:
-        written = f.write(data)
-    if frames != written:
-        raise RuntimeError("Only %d of %d frames were written" % (written,
-                                                                  frames))
+        f.write(data)
 
 
 def default_subtype(format):
