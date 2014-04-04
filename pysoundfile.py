@@ -844,12 +844,10 @@ def _get_format_info(format, format_flag=_GET_FORMAT_INFO):
 
 
 def _available_formats_helper(count_flag, format_flag):
-    def get_count():
-        count = _ffi.new("int*")
-        _snd.sf_command(_ffi.NULL, count_flag, count, _ffi.sizeof("int"))
-        return count[0]
-
-    return dict(_get_format_info(f, format_flag) for f in range(get_count()))
+    count = _ffi.new("int*")
+    _snd.sf_command(_ffi.NULL, count_flag, count, _ffi.sizeof("int"))
+    count = count[0]
+    return dict(_get_format_info(f, format_flag) for f in range(count))
 
 
 def available_formats():
