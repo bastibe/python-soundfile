@@ -185,13 +185,13 @@ class _Format(int):
             return None
         if isinstance(value, str):
             value = globals().get(value.upper())
-            if type(value) is not _Format:
+            if not isinstance(value, _Format):
                 raise ValueError("Invalid format string: %s" % repr(value))
         return super(_Format, cls).__new__(cls, value)
 
     def __repr__(self):
         for k, v in globals().items():
-            if v == self and type(v) is _Format:
+            if v == self and isinstance(v, _Format):
                 return k
         return super(_Format, self).__repr__()
 
