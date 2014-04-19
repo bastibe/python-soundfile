@@ -456,7 +456,7 @@ class SoundFile(object):
             frame = slice(frame, frame + 1)
         start, stop, step = frame.indices(len(self))
         if step != 1:
-            raise RuntimeError("Step size must be 1!")
+            raise RuntimeError("Step size must be 1")
         if start > stop:
             stop = start
         return start, stop
@@ -485,7 +485,7 @@ class SoundFile(object):
         # array. Data must be in the form (frames x channels).
         # Both open slice bounds and negative values are allowed.
         if self.mode == READ:
-            raise RuntimeError("Cannot write to file opened in READ mode!")
+            raise RuntimeError("Cannot write to file opened in READ mode")
         start, stop = self._get_slice_bounds(frame)
         if stop - start != len(data):
             raise IndexError(
@@ -549,7 +549,7 @@ class SoundFile(object):
         """
         self._check_if_closed()
         if self.mode == WRITE:
-            raise RuntimeError("Cannot read from file opened in WRITE mode!")
+            raise RuntimeError("Cannot read from file opened in WRITE mode")
         formats = {
             np.float64: 'double[]',
             np.float32: 'float[]',
@@ -587,7 +587,7 @@ class SoundFile(object):
         """
         self._check_if_closed()
         if self.mode == READ:
-            raise RuntimeError("Cannot write to file opened in READ mode!")
+            raise RuntimeError("Cannot write to file opened in READ mode")
         formats = {
             np.dtype(np.float64): 'double*',
             np.dtype(np.float32): 'float*',
