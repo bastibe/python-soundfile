@@ -414,6 +414,11 @@ class SoundFile(object):
             err_str = _snd.sf_error_number(err)
             raise RuntimeError(ffi.string(err_str).decode())
 
+    def _getAttributeNames(self):
+        # return all possible attributes used in __setattr__ and __getattr__.
+        # This is useful for auto-completion (e.g. IPython)
+        return _str_types
+
     def _check_if_closed(self):
         # check if the file is closed and raise an error if it is.
         # This should be used in every method that tries to access self._file.
