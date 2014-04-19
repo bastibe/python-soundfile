@@ -443,12 +443,9 @@ class SoundFile(object):
         if name in _str_types:
             self._check_if_closed()
             data = _snd.sf_get_string(self._file, _str_types[name])
-            if data == ffi.NULL:
-                return ""
-            else:
-                return ffi.string(data).decode()
+            return ffi.string(data).decode() if data else ""
         else:
-            raise AttributeError("SoundFile has no attribute %s" % name)
+            raise AttributeError("SoundFile has no attribute %s" % repr(name))
 
     def __len__(self):
         return self.frames
