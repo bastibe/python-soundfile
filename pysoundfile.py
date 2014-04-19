@@ -29,7 +29,7 @@ float32 and float64.
 At the same time, SoundFiles act as sequence types, so you can use
 slices to read or write data as well. Since there is no way of
 specifying data formats for slices, the SoundFile will always return
-float32 data for those.
+float64 data for those.
 
 Note that you need to have libsndfile installed in order to use
 PySoundFile. On Windows, you need to rename the library to
@@ -256,7 +256,7 @@ class SoundFile(object):
     Alternatively, slices can be used to access data at arbitrary
     positions in the file. Note that slices currently only work on
     frame indices, not channels. The quickest way to read in a whole
-    file as a float32 NumPy array is in fact SoundFile('filename')[:].
+    file as a float64 NumPy array is in fact SoundFile('filename')[:].
 
     All data access uses frames as index. A frame is one discrete
     time-step in the sound file. Every frame contains as many samples
@@ -531,7 +531,7 @@ class SoundFile(object):
         self._check_if_closed()
         return _snd.sf_seek(self._file, frames, whence)
 
-    def read(self, frames=-1, format=np.float32):
+    def read(self, frames=-1, format=np.float64):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
