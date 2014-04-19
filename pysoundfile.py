@@ -340,6 +340,11 @@ class SoundFile(object):
         self.sections = info.sections
         self.seekable = info.seekable == 1
 
+    closed = property(lambda self: self._file is None)
+
+    # avoid confusion if something goes wrong before assigning self._file:
+    _file = None
+
     def _init_vio(self, fObj):
         # Define callbacks here, so they can reference fObj / size
         @ffi.callback("sf_vio_get_filelen")
@@ -389,22 +394,17 @@ class SoundFile(object):
         return vio
 
     def __del__(self):
-        # be sure to flush data to disk before closing the file
-        if self._file:
-            _snd.sf_write_sync(self._file)
-            err = _snd.sf_close(self._file)
-            self._handle_error_number(err)
-            self._file = None
+        self.close()
 
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, tb):
-        # flush remaining data to disk and close file
-        self.__del__()
+    def __exit__(self, *args):
+        self.close()
 
     def _handle_error(self):
         # this checks the error flag of the SNDFILE* structure
+        self._check_if_closed()
         err = _snd.sf_error(self._file)
         self._handle_error_number(err)
 
@@ -414,9 +414,16 @@ class SoundFile(object):
             err_str = _snd.sf_error_number(err)
             raise RuntimeError(ffi.string(err_str).decode())
 
+    def _check_if_closed(self):
+        # check if the file is closed and raise an error if it is.
+        # This should be used in every method that tries to access self._file.
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
+
     def __setattr__(self, name, value):
         # access text data in the sound file through properties
         if name in _str_types:
+            self._check_if_closed()
             if self.mode == READ:
                 raise RuntimeError("Can not change %s of file in read mode" %
                                    name)
@@ -429,6 +436,7 @@ class SoundFile(object):
     def __getattr__(self, name):
         # access text data in the sound file through properties
         if name in _str_types:
+            self._check_if_closed()
             data = _snd.sf_get_string(self._file, _str_types[name])
             if data == ffi.NULL:
                 return ""
@@ -489,7 +497,17 @@ class SoundFile(object):
 
     def flush(self):
         """Write unwritten data to disk."""
+        self._check_if_closed()
         _snd.sf_write_sync(self._file)
+
+    def close(self):
+        """Close the file. Can be called multiple times."""
+        if not self.closed:
+            # be sure to flush data to disk before closing the file
+            self.flush()
+            err = _snd.sf_close(self._file)
+            self._file = None
+            self._handle_error_number(err)
 
     def seek(self, frames, whence=SEEK_SET):
         """Set the read and/or write position.
@@ -510,6 +528,7 @@ class SoundFile(object):
         Returns the new absolute read position in frames or a negative
         value on error.
         """
+        self._check_if_closed()
         return _snd.sf_seek(self._file, frames, whence)
 
     def read(self, frames=-1, format=np.float32):
@@ -526,6 +545,7 @@ class SoundFile(object):
         smaller NumPy array will be returned.
 
         """
+        self._check_if_closed()
         if self.mode == WRITE:
             raise RuntimeError("Cannot read from file opened in WRITE mode!")
         formats = {
@@ -563,6 +583,7 @@ class SoundFile(object):
         array.
 
         """
+        self._check_if_closed()
         if self.mode == READ:
             raise RuntimeError("Cannot write to file opened in READ mode!")
         formats = {
