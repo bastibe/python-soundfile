@@ -123,6 +123,19 @@ _open_modes = {
     0x30: 'RDWR'
 }
 
+_str_types = {
+    'title':       0x01,
+    'copyright':   0x02,
+    'software':    0x03,
+    'artist':      0x04,
+    'comment':     0x05,
+    'date':        0x06,
+    'album':       0x07,
+    'license':     0x08,
+    'tracknumber': 0x09,
+    'genre':       0x10,
+}
+
 snd_types = {
     'WAV':   0x010000, # Microsoft WAV format (little endian default).
     'AIFF':  0x020000, # Apple/SGI AIFF format (big endian).
@@ -401,37 +414,22 @@ class SoundFile(object):
             err_str = _snd.sf_error_number(err)
             raise RuntimeError(ffi.string(err_str).decode())
 
-    # these strings are used as properties to access text data n the
-    # sound file
-    _snd_strings = {
-        'title': 0x01,
-        'copyright': 0x02,
-        'software': 0x03,
-        'artist': 0x04,
-        'comment': 0x05,
-        'date': 0x06,
-        'album': 0x07,
-        'license': 0x08,
-        'tracknumber': 0x09,
-        'genre': 0x10
-    }
-
     def __setattr__(self, name, value):
         # access text data in the sound file through properties
-        if name in self._snd_strings:
+        if name in _str_types:
             if self.mode == READ:
                 raise RuntimeError("Can not change %s of file in read mode" %
                                    name)
             data = ffi.new('char[]', value.encode())
-            err = _snd.sf_set_string(self._file, self._snd_strings[name], data)
+            err = _snd.sf_set_string(self._file, _str_types[name], data)
             self._handle_error_number(err)
         else:
             self.__dict__[name] = value
 
     def __getattr__(self, name):
         # access text data in the sound file through properties
-        if name in self._snd_strings:
-            data = _snd.sf_get_string(self._file, self._snd_strings[name])
+        if name in _str_types:
+            data = _snd.sf_get_string(self._file, _str_types[name])
             if data == ffi.NULL:
                 return ""
             else:
