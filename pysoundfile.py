@@ -1,5 +1,5 @@
-import numpy as np
-from cffi import FFI
+import numpy as _np
+from cffi import FFI as _FFI
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
 """PySoundFile is an audio library based on libsndfile, CFFI and Numpy
@@ -29,7 +29,7 @@ float32 and float64.
 At the same time, SoundFiles act as sequence types, so you can use
 slices to read or write data as well. Since there is no way of
 specifying data formats for slices, the SoundFile will always return
-float32 data for those.
+float64 data for those.
 
 Note that you need to have libsndfile installed in order to use
 PySoundFile. On Windows, you need to rename the library to
@@ -40,8 +40,8 @@ PySoundFile is BSD licensed.
 
 """
 
-ffi = FFI()
-ffi.cdef("""
+_ffi = _FFI()
+_ffi.cdef("""
 typedef int64_t sf_count_t ;
 
 typedef struct SNDFILE_tag SNDFILE ;
@@ -114,113 +114,139 @@ typedef struct SF_VIRTUAL_IO
 } SF_VIRTUAL_IO ;
 
 SNDFILE*    sf_open_virtual   (SF_VIRTUAL_IO *sfvirtual, int mode, SF_INFO *sfinfo, void *user_data) ;
+SNDFILE*    sf_open_fd        (int fd, int mode, SF_INFO *sfinfo, int close_desc) ;
 
+typedef struct SF_FORMAT_INFO
+{
+    int         format ;
+    const char* name ;
+    const char* extension ;
+} SF_FORMAT_INFO ;
 """)
 
+_FALSE = 0
+_TRUE  = 1
+
+_SUBMASK  = 0x0000FFFF
+_TYPEMASK = 0x0FFF0000
+_ENDMASK  = 0x30000000
+
+_GET_FORMAT_INFO          = 0x1028
+_GET_FORMAT_MAJOR_COUNT   = 0x1030
+_GET_FORMAT_MAJOR         = 0x1031
+_GET_FORMAT_SUBTYPE_COUNT = 0x1032
+_GET_FORMAT_SUBTYPE       = 0x1033
+
 _open_modes = {
-    0x10: 'READ',
-    0x20: 'WRITE',
-    0x30: 'RDWR'
+    'r':  0x10,
+    'w':  0x20,
+    'rw': 0x30,
 }
 
-snd_types = {
-    'WAV':   0x010000, # Microsoft WAV format (little endian default).
-    'AIFF':  0x020000, # Apple/SGI AIFF format (big endian).
-    'AU':    0x030000, # Sun/NeXT AU format (big endian).
-    'RAW':   0x040000, # RAW PCM data.
-    'PAF':   0x050000, # Ensoniq PARIS file format.
-    'SVX':   0x060000, # Amiga IFF / SVX8 / SV16 format.
-    'NIST':  0x070000, # Sphere NIST format.
-    'VOC':   0x080000, # VOC files.
-    'IRCAM': 0x0A0000, # Berkeley/IRCAM/CARL
-    'W64':   0x0B0000, # Sonic Foundry's 64 bit RIFF/WAV
-    'MAT4':  0x0C0000, # Matlab (tm) V4.2 / GNU Octave 2.0
-    'MAT5':  0x0D0000, # Matlab (tm) V5.0 / GNU Octave 2.1
-    'PVF':   0x0E0000, # Portable Voice Format
-    'XI':    0x0F0000, # Fasttracker 2 Extended Instrument
-    'HTK':   0x100000, # HMM Tool Kit format
-    'SDS':   0x110000, # Midi Sample Dump Standard
-    'AVR':   0x120000, # Audio Visual Research
-    'WAVEX': 0x130000, # MS WAVE with WAVEFORMATEX
-    'SD2':   0x160000, # Sound Designer 2
-    'FLAC':  0x170000, # FLAC lossless file format
-    'CAF':   0x180000, # Core Audio File format
-    'WVE':   0x190000, # Psion WVE format
-    'OGG':   0x200000, # Xiph OGG container
-    'MPC2K': 0x210000, # Akai MPC 2000 sampler
-    'RF64':  0x220000  # RF64 WAV file
+_str_types = {
+    'title':       0x01,
+    'copyright':   0x02,
+    'software':    0x03,
+    'artist':      0x04,
+    'comment':     0x05,
+    'date':        0x06,
+    'album':       0x07,
+    'license':     0x08,
+    'tracknumber': 0x09,
+    'genre':       0x10,
 }
 
-snd_subtypes = {
-    'PCM_S8':    0x0001, # Signed 8 bit data
-    'PCM_16':    0x0002, # Signed 16 bit data
-    'PCM_24':    0x0003, # Signed 24 bit data
-    'PCM_32':    0x0004, # Signed 32 bit data
-    'PCM_U8':    0x0005, # Unsigned 8 bit data (WAV and RAW only)
-    'FLOAT':     0x0006, # 32 bit float data
-    'DOUBLE':    0x0007, # 64 bit float data
-    'ULAW':      0x0010, # U-Law encoded.
-    'ALAW':      0x0011, # A-Law encoded.
-    'IMA_ADPCM': 0x0012, # IMA ADPCM.
-    'MS_ADPCM':  0x0013, # Microsoft ADPCM.
-    'GSM610':    0x0020, # GSM 6.10 encoding.
-    'VOX_ADPCM': 0x0021, # OKI / Dialogix ADPCM
-    'G721_32':   0x0030, # 32kbs G721 ADPCM encoding.
-    'G723_24':   0x0031, # 24kbs G723 ADPCM encoding.
-    'G723_40':   0x0032, # 40kbs G723 ADPCM encoding.
-    'DWVW_12':   0x0040, # 12 bit Delta Width Variable Word encoding.
-    'DWVW_16':   0x0041, # 16 bit Delta Width Variable Word encoding.
-    'DWVW_24':   0x0042, # 24 bit Delta Width Variable Word encoding.
-    'DWVW_N':    0x0043, # N bit Delta Width Variable Word encoding.
-    'DPCM_8':    0x0050, # 8 bit differential PCM (XI only)
-    'DPCM_16':   0x0051, # 16 bit differential PCM (XI only)
-    'VORBIS':    0x0060, # Xiph Vorbis encoding.
+_formats = {
+    'WAV':   0x010000,  # Microsoft WAV format (little endian default).
+    'AIFF':  0x020000,  # Apple/SGI AIFF format (big endian).
+    'AU':    0x030000,  # Sun/NeXT AU format (big endian).
+    'RAW':   0x040000,  # RAW PCM data.
+    'PAF':   0x050000,  # Ensoniq PARIS file format.
+    'SVX':   0x060000,  # Amiga IFF / SVX8 / SV16 format.
+    'NIST':  0x070000,  # Sphere NIST format.
+    'VOC':   0x080000,  # VOC files.
+    'IRCAM': 0x0A0000,  # Berkeley/IRCAM/CARL
+    'W64':   0x0B0000,  # Sonic Foundry's 64 bit RIFF/WAV
+    'MAT4':  0x0C0000,  # Matlab (tm) V4.2 / GNU Octave 2.0
+    'MAT5':  0x0D0000,  # Matlab (tm) V5.0 / GNU Octave 2.1
+    'PVF':   0x0E0000,  # Portable Voice Format
+    'XI':    0x0F0000,  # Fasttracker 2 Extended Instrument
+    'HTK':   0x100000,  # HMM Tool Kit format
+    'SDS':   0x110000,  # Midi Sample Dump Standard
+    'AVR':   0x120000,  # Audio Visual Research
+    'WAVEX': 0x130000,  # MS WAVE with WAVEFORMATEX
+    'SD2':   0x160000,  # Sound Designer 2
+    'FLAC':  0x170000,  # FLAC lossless file format
+    'CAF':   0x180000,  # Core Audio File format
+    'WVE':   0x190000,  # Psion WVE format
+    'OGG':   0x200000,  # Xiph OGG container
+    'MPC2K': 0x210000,  # Akai MPC 2000 sampler
+    'RF64':  0x220000,  # RF64 WAV file
 }
 
-snd_endians = {
-    'FILE':   0x00000000, # Default file endian-ness.
-    'LITTLE': 0x10000000, # Force little endian-ness.
-    'BIG':    0x20000000, # Force big endian-ness.
-    'CPU':    0x30000000, # Force CPU endian-ness.
+_subtypes = {
+    'PCM_S8':    0x0001,  # Signed 8 bit data
+    'PCM_16':    0x0002,  # Signed 16 bit data
+    'PCM_24':    0x0003,  # Signed 24 bit data
+    'PCM_32':    0x0004,  # Signed 32 bit data
+    'PCM_U8':    0x0005,  # Unsigned 8 bit data (WAV and RAW only)
+    'FLOAT':     0x0006,  # 32 bit float data
+    'DOUBLE':    0x0007,  # 64 bit float data
+    'ULAW':      0x0010,  # U-Law encoded.
+    'ALAW':      0x0011,  # A-Law encoded.
+    'IMA_ADPCM': 0x0012,  # IMA ADPCM.
+    'MS_ADPCM':  0x0013,  # Microsoft ADPCM.
+    'GSM610':    0x0020,  # GSM 6.10 encoding.
+    'VOX_ADPCM': 0x0021,  # OKI / Dialogix ADPCM
+    'G721_32':   0x0030,  # 32kbs G721 ADPCM encoding.
+    'G723_24':   0x0031,  # 24kbs G723 ADPCM encoding.
+    'G723_40':   0x0032,  # 40kbs G723 ADPCM encoding.
+    'DWVW_12':   0x0040,  # 12 bit Delta Width Variable Word encoding.
+    'DWVW_16':   0x0041,  # 16 bit Delta Width Variable Word encoding.
+    'DWVW_24':   0x0042,  # 24 bit Delta Width Variable Word encoding.
+    'DWVW_N':    0x0043,  # N bit Delta Width Variable Word encoding.
+    'DPCM_8':    0x0050,  # 8 bit differential PCM (XI only)
+    'DPCM_16':   0x0051,  # 16 bit differential PCM (XI only)
+    'VORBIS':    0x0060,  # Xiph Vorbis encoding.
 }
 
-wave_file = ('WAV', 'PCM_16', 'FILE')
-flac_file = ('FLAC', 'PCM_16', 'FILE')
-matlab_file = ('MAT5', 'DOUBLE', 'FILE')
-ogg_file = ('OGG', 'VORBIS', 'FILE')
+_endians = {
+    'FILE':   0x00000000,  # Default file endian-ness.
+    'LITTLE': 0x10000000,  # Force little endian-ness.
+    'BIG':    0x20000000,  # Force big endian-ness.
+    'CPU':    0x30000000,  # Force CPU endian-ness.
+}
 
-def _encodeformat(format):
-    type = snd_types[format[0]]
-    subtype = snd_subtypes[format[1]]
-    endianness = snd_endians[format[2]]
-    return type|subtype|endianness
+# libsndfile doesn't specify default subtypes, these are somehow arbitrary:
+_default_subtypes = {
+    'WAV':   'PCM_16',
+    'AIFF':  'PCM_16',
+    'AU':    'PCM_16',
+    #'RAW':  # subtype must be explicit!
+    'PAF':   'PCM_16',
+    'SVX':   'PCM_16',
+    'NIST':  'PCM_16',
+    'VOC':   'PCM_16',
+    'IRCAM': 'PCM_16',
+    'W64':   'PCM_16',
+    'MAT4':  'DOUBLE',
+    'MAT5':  'DOUBLE',
+    'PVF':   'PCM_16',
+    'XI':    'DPCM_16',
+    'HTK':   'PCM_16',
+    'SDS':   'PCM_16',
+    'AVR':   'PCM_16',
+    'WAVEX': 'PCM_16',
+    'SD2':   'PCM_16',
+    'FLAC':  'PCM_16',
+    'CAF':   'PCM_16',
+    'WVE':   'ALAW',
+    'OGG':   'VORBIS',
+    'MPC2K': 'PCM_16',
+    'RF64':  'PCM_16',
+}
 
-def _decodeformat(format):
-    sub_mask  = 0x0000FFFF
-    type_mask = 0x0FFF0000
-    end_mask  = 0x30000000
-
-    def reverse_dict(d): return {value:key for key, value in d.items()}
-
-    type = reverse_dict(snd_types)[format & type_mask]
-    subtype = reverse_dict(snd_subtypes)[format & sub_mask]
-    endianness = reverse_dict(snd_endians)[format & end_mask]
-
-    return (type, subtype, endianness)
-
-
-class _ModeType(int):
-    def __repr__(self):
-        return _open_modes.get(self, int.__repr__(self))
-
-
-def _add_constants_to_module_namespace(constants_dict, constants_type):
-    for k, v in constants_dict.items():
-        globals()[v] = constants_type(k)
-
-_add_constants_to_module_namespace(_open_modes, _ModeType)
-
-_snd = ffi.dlopen('sndfile')
+_snd = _ffi.dlopen('sndfile')
 
 
 class SoundFile(object):
@@ -230,7 +256,7 @@ class SoundFile(object):
     Each SoundFile opens one sound file on the disk. This sound file
     has a specific samplerate, data format and a set number of
     channels. Each sound file can be opened with one of the modes
-    READ/WRITE/RDWR. Note that RDWR is unsupported for some formats.
+    'r'/'w'/'rw'. Note that 'rw' is unsupported for some formats.
 
     Data can be written to the file using write(), or read from the
     file using read(). Every read and write operation starts at a
@@ -243,7 +269,7 @@ class SoundFile(object):
     Alternatively, slices can be used to access data at arbitrary
     positions in the file. Note that slices currently only work on
     frame indices, not channels. The quickest way to read in a whole
-    file as a float32 NumPy array is in fact SoundFile('filename')[:].
+    file as a float64 NumPy array is in fact SoundFile('filename')[:].
 
     All data access uses frames as index. A frame is one discrete
     time-step in the sound file. Every frame contains as many samples
@@ -258,140 +284,169 @@ class SoundFile(object):
 
     """
 
-    def __init__(self, name, mode=READ, sample_rate=0, channels=0, format=0,
-                 virtual_io=False):
+    def __init__(self, file, mode='r', sample_rate=None, channels=None,
+                 subtype=None, endian=None, format=None, closefd=True):
         """Open a new SoundFile.
 
-        If a file is opened with mode READ or WRITE,
+        If a file is opened with mode 'r' (the default) or 'rw',
         no sample_rate, channels or file format need to be given. If a
-        file is opened with mode RDWR, you must provide a sample_rate,
+        file is opened with mode 'w', you must provide a sample_rate,
         a number of channels, and a file format. An exception is the
         RAW data format, which requires these data points for reading
         as well.
 
-        Instead of the library constants READ/WRITE/RDWR you can also
-        use the (case-insensitive) strings 'r'/'w'/'rw' or
-        'READ'/'WRITE'/'RDWR'.
+        File formats consist of three case-insensitive strings:
+         - a "major format" which is by default obtained from the
+           extension of the file name (if known) and which can be
+           forced with the format argument (e.g. format='WAVEX').
+         - a "subtype", e.g. 'PCM_24'. Most major formats have a default
+           subtype which is used if no subtype is specified.
+         - an "endian-ness": 'FILE' (default), 'LITTLE', 'BIG' or 'CPU'.
+           In most cases this doesn't have to be specified.
 
-        File formats consist of three parts:
-        - one of the file types from snd_types
-        - one of the data types from snd_subtypes
-        - an endianness from snd_endians
-        and can be either a tuple of three strings indicate the keys,
-        or an OR'ed together integer of them.
-
-        Since this is somewhat burdensome if you have to do it for
-        every new file, you can use one of the commonly used
-        pre-defined types wave_file, flac_file, matlab_file or
-        ogg_file.
+        The functions available_formats() and available_subtypes() can
+        be used to obtain a list of all avaliable major formats and
+        subtypes, respectively.
 
         """
-        info = ffi.new("SF_INFO*")
-        info.samplerate = sample_rate
-        info.channels = channels
-        if hasattr(format, '__getitem__'):
-            format = _encodeformat(format)
-        info.format = format
-
-        if isinstance(mode, str):
-            try:
-                mode = {'read':  READ,  'r':  READ,
-                        'write': WRITE, 'w':  WRITE,
-                        'rdwr':  RDWR,  'rw': RDWR}[mode.lower()]
-            except KeyError:
-                pass
-        if not isinstance(mode, _ModeType):
+        try:
+            self._mode = mode
+            mode_int = _open_modes[self._mode]
+        except KeyError:
             raise ValueError("Invalid mode: %s" % repr(mode))
-        self.mode = mode
 
-        if virtual_io:
-            fObj = name
-            for attr in ('seek', 'read', 'write', 'tell'):
-                if not hasattr(fObj, attr):
-                    msg = 'File-like object must have: "%s"' % attr
-                    raise RuntimeError(msg)
-            self._vio = self._init_vio(fObj)
-            vio = ffi.new("SF_VIRTUAL_IO*", self._vio)
-            self._vio['vio_cdata'] = vio
-            self._file = _snd.sf_open_virtual(vio, mode, info, ffi.NULL)
+        original_format = format
+        if format is None:
+            filename = getattr(file, 'name', file)
+            format = str(filename).rsplit('.', 1)[-1].upper()
+            if self.mode == 'w' and format not in _formats:
+                raise TypeError(
+                    "No format specified and unable to get format from "
+                    "file extension: %s" % repr(filename))
+
+        self._info = _ffi.new("SF_INFO*")
+        if self.mode == 'w' or str(format).upper() == 'RAW':
+            if sample_rate is None:
+                raise TypeError("sample_rate must be specified")
+            self._info.samplerate = sample_rate
+            if channels is None:
+                raise TypeError("channels must be specified")
+            self._info.channels = channels
+            self._info.format = _format_int(format, subtype, endian)
         else:
-            filename = ffi.new('char[]', name.encode())
-            self._file = _snd.sf_open(filename, mode, info)
+            if [sample_rate, channels, original_format, subtype, endian] != \
+                    [None] * 5:
+                raise TypeError("Only allowed if mode='w' or format='RAW': "
+                                "sample_rate, channels, "
+                                "format, subtype, endian")
+
+        self._name = file
+        if isinstance(file, str):
+            file = _ffi.new('char[]', file.encode())
+            self._file = _snd.sf_open(file, mode_int, self._info)
+        elif isinstance(file, int):
+            self._file = _snd.sf_open_fd(file, mode_int, self._info, closefd)
+        else:
+            # Note: readinto() is not checked
+            for attr in ('seek', 'read', 'write', 'tell'):
+                if not hasattr(file, attr):
+                    msg = "file must be a filename, a file descriptor or " \
+                          "a file-like object with the methods " \
+                          "'seek()', 'read()', 'write()' and 'tell()'"
+                    raise RuntimeError(msg)
+            # Note: the callback functions in _vio must be kept alive!
+            self._vio = self._init_vio(file)
+            vio = _ffi.new("SF_VIRTUAL_IO*", self._vio)
+            self._file = _snd.sf_open_virtual(vio, mode_int, self._info,
+                                              _ffi.NULL)
+            self._name = str(file)
 
         self._handle_error()
 
-        self.frames = info.frames
-        self.sample_rate = info.samplerate
-        self.channels = info.channels
-        self.format = _decodeformat(info.format)
-        self.sections = info.sections
-        self.seekable = info.seekable == 1
 
-    def _init_vio(self, fObj):
-        # Define callbacks here, so they can reference fObj / size
-        @ffi.callback("sf_vio_get_filelen")
+    name = property(lambda self: self._name)
+    mode = property(lambda self: self._mode)
+    frames = property(lambda self: self._info.frames)
+    sample_rate = property(lambda self: self._info.samplerate)
+    channels = property(lambda self: self._info.channels)
+    format = property(lambda self: _format_str(self._info.format & _TYPEMASK))
+    subtype = property(lambda self: _format_str(self._info.format & _SUBMASK))
+    endian = property(lambda self: _format_str(self._info.format & _ENDMASK))
+    format_info = property(
+        lambda self: _format_info(self._info.format & _TYPEMASK)[1])
+    subtype_info = property(
+        lambda self: _format_info(self._info.format & _SUBMASK)[1])
+    sections = property(lambda self: self._info.sections)
+    seekable = property(lambda self: self._info.seekable == 1)
+    closed = property(lambda self: self._file is None)
+
+    # avoid confusion if something goes wrong before assigning self._file:
+    _file = None
+
+    def _init_vio(self, file):
+        # Define callbacks here, so they can reference file / size
+        @_ffi.callback("sf_vio_get_filelen")
         def vio_get_filelen(user_data):
             # Streams must set _length or implement __len__
-            if hasattr(fObj, '_length'):
-                size = fObj._length
-            elif not hasattr(fObj, '__len__'):
-                old_file_position = fObj.tell()
-                fObj.seek(0, SEEK_END)
-                size = fObj.tell()
-                fObj.seek(old_file_position, SEEK_SET)
+            if hasattr(file, '_length'):
+                size = file._length
+            elif not hasattr(file, '__len__'):
+                old_file_position = file.tell()
+                file.seek(0, SEEK_END)
+                size = file.tell()
+                file.seek(old_file_position, SEEK_SET)
             else:
-                size = len(fObj)
+                size = len(file)
             return size
 
-        @ffi.callback("sf_vio_seek")
+        @_ffi.callback("sf_vio_seek")
         def vio_seek(offset, whence, user_data):
-            fObj.seek(offset, whence)
-            curr = fObj.tell()
+            file.seek(offset, whence)
+            curr = file.tell()
             return curr
 
-        @ffi.callback("sf_vio_read")
+        @_ffi.callback("sf_vio_read")
         def vio_read(ptr, count, user_data):
-            buf = ffi.buffer(ptr, count)
-            data_read = fObj.readinto(buf)
+            # first try readinto(), if not available fall back to read()
+            try:
+                buf = _ffi.buffer(ptr, count)
+                data_read = file.readinto(buf)
+            except AttributeError:
+                data = file.read(count)
+                buf = _ffi.buffer(ptr, len(data))
+                buf[0:len(data)] = data
+                data_read = len(data)
             return data_read
 
-        @ffi.callback("sf_vio_write")
+        @_ffi.callback("sf_vio_write")
         def vio_write(ptr, count, user_data):
-            buf = ffi.buffer(ptr)
+            buf = _ffi.buffer(ptr, count)
             data = buf[:]
-            length = fObj.write(data)
+            length = file.write(data)
             return length
 
-        @ffi.callback("sf_vio_tell")
+        @_ffi.callback("sf_vio_tell")
         def vio_tell(user_data):
-            return fObj.tell()
+            return file.tell()
 
-        vio = {
-            'get_filelen': vio_get_filelen,
-            'seek': vio_seek,
-            'read': vio_read,
-            'write': vio_write,
-            'tell': vio_tell,
-        }
-        return vio
+        return {'get_filelen': vio_get_filelen,
+                'seek': vio_seek,
+                'read': vio_read,
+                'write': vio_write,
+                'tell': vio_tell}
 
     def __del__(self):
-        # be sure to flush data to disk before closing the file
-        if self._file:
-            _snd.sf_write_sync(self._file)
-            err = _snd.sf_close(self._file)
-            self._handle_error_number(err)
-            self._file = None
+        self.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, tb):
-        # flush remaining data to disk and close file
-        self.__del__()
+        self.close()
 
     def _handle_error(self):
         # this checks the error flag of the SNDFILE* structure
+        self._check_if_closed()
         err = _snd.sf_error(self._file)
         self._handle_error_number(err)
 
@@ -399,48 +454,43 @@ class SoundFile(object):
         # pretty-print a numerical error code
         if err != 0:
             err_str = _snd.sf_error_number(err)
-            raise RuntimeError(ffi.string(err_str).decode())
+            raise RuntimeError(_ffi.string(err_str).decode())
 
-    # these strings are used as properties to access text data n the
-    # sound file
-    _snd_strings = {
-        'title': 0x01,
-        'copyright': 0x02,
-        'software': 0x03,
-        'artist': 0x04,
-        'comment': 0x05,
-        'date': 0x06,
-        'album': 0x07,
-        'license': 0x08,
-        'tracknumber': 0x09,
-        'genre': 0x10
-    }
+    def _getAttributeNames(self):
+        # return all possible attributes used in __setattr__ and __getattr__.
+        # This is useful for auto-completion (e.g. IPython)
+        return _str_types
+
+    def _check_if_closed(self):
+        # check if the file is closed and raise an error if it is.
+        # This should be used in every method that tries to access self._file.
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
 
     def __setattr__(self, name, value):
         # access text data in the sound file through properties
-        if name in self._snd_strings:
-            if self.mode == READ:
+        if name in _str_types:
+            self._check_if_closed()
+            if self.mode == 'r':
                 raise RuntimeError("Can not change %s of file in read mode" %
                                    name)
-            data = ffi.new('char[]', value.encode())
-            err = _snd.sf_set_string(self._file, self._snd_strings[name], data)
+            data = _ffi.new('char[]', value.encode())
+            err = _snd.sf_set_string(self._file, _str_types[name], data)
             self._handle_error_number(err)
         else:
-            self.__dict__[name] = value
+            super(SoundFile, self).__setattr__(name, value)
 
     def __getattr__(self, name):
         # access text data in the sound file through properties
-        if name in self._snd_strings:
-            data = _snd.sf_get_string(self._file, self._snd_strings[name])
-            if data == ffi.NULL:
-                return ""
-            else:
-                return ffi.string(data).decode()
+        if name in _str_types:
+            self._check_if_closed()
+            data = _snd.sf_get_string(self._file, _str_types[name])
+            return _ffi.string(data).decode() if data else ""
         else:
-            raise AttributeError("SoundFile has no attribute %s" % name)
+            raise AttributeError("SoundFile has no attribute %s" % repr(name))
 
     def __len__(self):
-        return(self.frames)
+        return self.frames
 
     def _get_slice_bounds(self, frame):
         # get start and stop index from slice, asserting step==1
@@ -448,7 +498,7 @@ class SoundFile(object):
             frame = slice(frame, frame + 1)
         start, stop, step = frame.indices(len(self))
         if step != 1:
-            raise RuntimeError("Step size must be 1!")
+            raise RuntimeError("Step size must be 1")
         if start > stop:
             stop = start
         return start, stop
@@ -463,10 +513,10 @@ class SoundFile(object):
                     "SoundFile can only be accessed in one or two dimensions")
             frame, second_frame = frame
         start, stop = self._get_slice_bounds(frame)
-        curr = self.seek(0, SEEK_CUR | READ)
-        self.seek(start, SEEK_SET | READ)
+        curr = self.seek(0, SEEK_CUR, 'r')
+        self.seek(start, SEEK_SET, 'r')
         data = self.read(stop - start)
-        self.seek(curr, SEEK_SET | READ)
+        self.seek(curr, SEEK_SET, 'r')
         if second_frame:
             return data[(slice(None), second_frame)]
         else:
@@ -476,24 +526,34 @@ class SoundFile(object):
         # access the file as if it where a one-dimensional Numpy
         # array. Data must be in the form (frames x channels).
         # Both open slice bounds and negative values are allowed.
-        if self.mode == READ:
-            raise RuntimeError("Cannot write to file opened in READ mode!")
+        if self.mode == 'r':
+            raise RuntimeError("Cannot write to file opened in read mode")
         start, stop = self._get_slice_bounds(frame)
         if stop - start != len(data):
             raise IndexError(
                 "Could not fit data of length %i into slice of length %i" %
                 (len(data), stop - start))
-        curr = self.seek(0, SEEK_CUR | WRITE)
-        self.seek(start, SEEK_SET | WRITE)
+        curr = self.seek(0, SEEK_CUR, 'w')
+        self.seek(start, SEEK_SET, 'w')
         self.write(data)
-        self.seek(curr, SEEK_SET | WRITE)
+        self.seek(curr, SEEK_SET, 'w')
         return data
 
     def flush(self):
         """Write unwritten data to disk."""
+        self._check_if_closed()
         _snd.sf_write_sync(self._file)
 
-    def seek(self, frames, whence=SEEK_SET):
+    def close(self):
+        """Close the file. Can be called multiple times."""
+        if not self.closed:
+            # be sure to flush data to disk before closing the file
+            self.flush()
+            err = _snd.sf_close(self._file)
+            self._file = None
+            self._handle_error_number(err)
+
+    def seek(self, frames, whence=SEEK_SET, which=None):
         """Set the read and/or write position.
 
         By default (whence=SEEK_SET), frames are counted from the
@@ -501,9 +561,10 @@ class SoundFile(object):
         (positive and negative values are allowed).
         SEEK_END seeks from the end (use negative values).
 
-        In RDWR mode, the whence argument can be combined (using
-        logical or) with READ or WRITE in order to set only the read
-        or write position, respectively (e.g. SEEK_SET | WRITE).
+        If the file is opened in 'rw' mode, both read and write position
+        are set to the same value by default.
+        Use which='r' or which='w' to set only the read position or the
+        write position, respectively.
 
         To set the read/write position to the beginning of the file,
         use seek(0), to set it to right after the last frame,
@@ -511,10 +572,16 @@ class SoundFile(object):
 
         Returns the new absolute read position in frames or a negative
         value on error.
+
         """
+        self._check_if_closed()
+        if which in ('r', 'w'):
+            whence |= _open_modes[which]
+        elif which is not None:
+            raise ValueError("Invalid which: %s" % repr(which))
         return _snd.sf_seek(self._file, frames, whence)
 
-    def read(self, frames=-1, format=np.float32):
+    def read(self, frames=-1, dtype='float64'):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
@@ -528,31 +595,33 @@ class SoundFile(object):
         smaller NumPy array will be returned.
 
         """
-        if self.mode == WRITE:
-            raise RuntimeError("Cannot read from file opened in WRITE mode!")
+        self._check_if_closed()
+        if self.mode == 'w':
+            raise RuntimeError("Cannot read from file opened in write mode")
         formats = {
-            np.float64: 'double[]',
-            np.float32: 'float[]',
-            np.int32: 'int[]',
-            np.int16: 'short[]'
+            _np.float64: 'double[]',
+            _np.float32: 'float[]',
+            _np.int32: 'int[]',
+            _np.int16: 'short[]'
         }
         readers = {
-            np.float64: _snd.sf_readf_double,
-            np.float32: _snd.sf_readf_float,
-            np.int32: _snd.sf_readf_int,
-            np.int16: _snd.sf_readf_short
+            _np.float64: _snd.sf_readf_double,
+            _np.float32: _snd.sf_readf_float,
+            _np.int32: _snd.sf_readf_int,
+            _np.int16: _snd.sf_readf_short
         }
-        if format not in formats:
+        dtype = _np.dtype(dtype)
+        if dtype.type not in formats:
             raise ValueError("Can only read int16, int32, float32 and float64")
-        if frames == -1:
-            curr = self.seek(0)
+        if frames < 0:
+            curr = self.seek(0, SEEK_CUR, 'r')
             frames = self.frames - curr
-        data = ffi.new(formats[format], frames*self.channels)
-        read = readers[format](self._file, data, frames)
+        data = _ffi.new(formats[dtype.type], frames*self.channels)
+        read = readers[dtype.type](self._file, data, frames)
         self._handle_error()
-        np_data = np.frombuffer(ffi.buffer(data), dtype=format,
-                                count=read*self.channels)
-        return np.reshape(np_data, (read, self.channels))
+        np_data = _np.frombuffer(_ffi.buffer(data), dtype=dtype,
+                                 count=read*self.channels)
+        return _np.reshape(np_data, (read, self.channels))
 
     def write(self, data):
         """Write a number of frames to the file.
@@ -565,25 +634,190 @@ class SoundFile(object):
         array.
 
         """
-        if self.mode == READ:
-            raise RuntimeError("Cannot write to file opened in READ mode!")
+        self._check_if_closed()
+        if self.mode == 'r':
+            raise RuntimeError("Cannot write to file opened in read mode")
         formats = {
-            np.dtype(np.float64): 'double*',
-            np.dtype(np.float32): 'float*',
-            np.dtype(np.int32): 'int*',
-            np.dtype(np.int16): 'short*'
+            _np.float64: 'double*',
+            _np.float32: 'float*',
+            _np.int32: 'int*',
+            _np.int16: 'short*'
         }
         writers = {
-            np.dtype(np.float64): _snd.sf_writef_double,
-            np.dtype(np.float32): _snd.sf_writef_float,
-            np.dtype(np.int32): _snd.sf_writef_int,
-            np.dtype(np.int16): _snd.sf_writef_short
+            _np.float64: _snd.sf_writef_double,
+            _np.float32: _snd.sf_writef_float,
+            _np.int32: _snd.sf_writef_int,
+            _np.int16: _snd.sf_writef_short
         }
-        if data.dtype not in writers:
+        if data.dtype.type not in writers:
             raise ValueError("Data must be int16, int32, float32 or float64")
-        raw_data = ffi.new('char[]', data.flatten().tostring())
-        written = writers[data.dtype](self._file,
-                                      ffi.cast(formats[data.dtype], raw_data),
+        raw_data = _ffi.new('char[]', data.flatten().tostring())
+        written = writers[data.dtype.type](self._file,
+                                      _ffi.cast(
+                                          formats[data.dtype.type], raw_data),
                                       len(data))
         self._handle_error()
+
+        curr = self.seek(0, SEEK_CUR, 'w')
+        self._info.frames = self.seek(0, SEEK_END, 'w')
+        self.seek(curr, SEEK_SET, 'w')
+
         return written
+
+
+def open(*args, **kwargs):
+    """Return a new SoundFile object.
+
+    Takes the same arguments as SoundFile.__init__().
+
+    """
+    return SoundFile(*args, **kwargs)
+
+
+def read(file, frames=None, start=None, stop=None, **kwargs):
+    """Read a sound file and return its contents as NumPy array.
+
+    The number of frames to read can be specified with frames, the
+    position to start reading can be specified with start.
+    By default, the whole file is read from the beginning.
+    Alternatively, a range can be specified with start and stop.
+    Both start and stop accept negative indices to specify positions
+    relative to the end of the file.
+
+    The returned data type can be specified with dtype. See the
+    documentation of SoundFile.read() for details.
+
+    All further arguments are forwarded to SoundFile.__init__().
+
+    """
+    if frames is not None and stop is not None:
+        raise RuntimeError("Only one of (frames, stop) may be used")
+    read_kwargs = {}
+    if 'dtype' in kwargs:
+        read_kwargs['dtype'] = kwargs.pop('dtype')
+    with SoundFile(file, 'r', **kwargs) as f:
+        start, stop, _ = slice(start, stop).indices(f.frames)
+        if frames is None:
+            frames = max(0, stop - start)
+        f.seek(start, SEEK_SET)
+        data = f.read(frames, **read_kwargs)
+    return data, f.sample_rate
+
+
+def write(data, file, sample_rate, *args, **kwargs):
+    """Write data from a NumPy array into a sound file.
+
+    If file exists, it will be overwritten!
+
+    The number of channels is obtained from data, all further arguments
+    are forwarded to SoundFile.__init__(). See its documentation for
+    details.
+
+    Example usage:
+
+        import pysoundfile as sf
+        sf.write(myarray, 'myfile.wav', 44100, 'PCM_24')
+
+    """
+    data = _np.asarray(data)
+    if data.ndim == 1:
+        channels = 1
+    elif data.ndim == 2:
+        channels = data.shape[1]
+    else:
+        raise RuntimeError("Only one- and two-dimensional arrays are allowed")
+    frames = data.shape[0]
+    with SoundFile(file, 'w', sample_rate, channels, *args, **kwargs) as f:
+        written = f.write(data)
+    if frames != written:
+        raise RuntimeError("Only %d of %d frames were written" % (written,
+                                                                  frames))
+
+
+def default_subtype(format):
+    """Return default subtype for given format."""
+    return _default_subtypes.get(str(format).upper())
+
+
+def _format_int(format, subtype, endian):
+    # Return numeric format ID for given format|subtype|endian combo
+    try:
+        result = _formats[str(format).upper()]
+    except KeyError:
+        raise ValueError("Invalid format string: %s" % repr(format))
+    if subtype is None:
+        subtype = default_subtype(format)
+        if subtype is None:
+            raise TypeError(
+                "No default subtype for major format %s" % repr(format))
+    try:
+        result |= _subtypes[str(subtype).upper()]
+    except KeyError:
+        raise ValueError("Invalid subtype string: %s" % repr(subtype))
+    try:
+        result |= _endians[str(endian).upper()
+                           if endian is not None else 'FILE']
+    except KeyError:
+        raise ValueError("Invalid endian-ness: %s" % repr(endian))
+
+    info = _ffi.new("SF_INFO*")
+    info.format = result
+    info.channels = 1
+    if _snd.sf_format_check(info) == _FALSE:
+        raise ValueError(
+            "Invalid combination of format, subtype and endian")
+    return result
+
+
+def format_check(format, subtype=None, endian=None):
+    """Check if the combination of format/subtype/endian is valid."""
+    try:
+        return bool(_format_int(format, subtype, endian))
+    except (ValueError, TypeError):
+        return False
+
+
+def _format_str(format_int):
+    # Return the string representation of a given numeric format
+    for dictionary in _formats, _subtypes, _endians:
+        for k, v in dictionary.items():
+            if v == format_int:
+                return k
+    return hex(format_int)
+
+
+def _format_info(format_int, format_flag=_GET_FORMAT_INFO):
+    # Return the ID and short description of a given format.
+    format_info = _ffi.new("struct SF_FORMAT_INFO*")
+    format_info.format = format_int
+    _snd.sf_command(_ffi.NULL, format_flag, format_info,
+                    _ffi.sizeof("SF_FORMAT_INFO"))
+    name = format_info.name
+    return (_format_str(format_info.format),
+            _ffi.string(name).decode() if name else "")
+
+
+def _available_formats_helper(count_flag, format_flag):
+    # Generator function used in available_formats() and available_subtypes()
+    count = _ffi.new("int*")
+    _snd.sf_command(_ffi.NULL, count_flag, count, _ffi.sizeof("int"))
+    for format_int in range(count[0]):
+        yield _format_info(format_int, format_flag)
+
+
+def available_formats():
+    """Return a dictionary of available major formats."""
+    return dict(_available_formats_helper(_GET_FORMAT_MAJOR_COUNT,
+                                          _GET_FORMAT_MAJOR))
+
+
+def available_subtypes(format=None):
+    """Return a dictionary of available subtypes.
+
+    If format is specified, only compatible subtypes are returned.
+
+    """
+    subtypes = _available_formats_helper(_GET_FORMAT_SUBTYPE_COUNT,
+                                         _GET_FORMAT_SUBTYPE)
+    return dict((subtype, name) for subtype, name in subtypes
+                if format is None or format_check(format, subtype))
