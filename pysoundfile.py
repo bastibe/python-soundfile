@@ -374,53 +374,56 @@ class SoundFile(object):
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
 
-    def _init_vio(self, fObj):
-        # Define callbacks here, so they can reference fObj / size
+    def _init_vio(self, file):
         @_ffi.callback("sf_vio_get_filelen")
         def vio_get_filelen(user_data):
             # Streams must set _length or implement __len__
-            if hasattr(fObj, '_length'):
-                size = fObj._length
-            elif not hasattr(fObj, '__len__'):
-                old_file_position = fObj.tell()
-                fObj.seek(0, SEEK_END)
-                size = fObj.tell()
-                fObj.seek(old_file_position, SEEK_SET)
+            if hasattr(file, '_length'):
+                size = file._length
+            elif not hasattr(file, '__len__'):
+                old_file_position = file.tell()
+                file.seek(0, SEEK_END)
+                size = file.tell()
+                file.seek(old_file_position, SEEK_SET)
             else:
-                size = len(fObj)
+                size = len(file)
             return size
 
         @_ffi.callback("sf_vio_seek")
         def vio_seek(offset, whence, user_data):
-            fObj.seek(offset, whence)
-            curr = fObj.tell()
+            file.seek(offset, whence)
+            curr = file.tell()
             return curr
 
         @_ffi.callback("sf_vio_read")
         def vio_read(ptr, count, user_data):
-            buf = _ffi.buffer(ptr, count)
-            data_read = fObj.readinto(buf)
+            # first try readinto(), if not available fall back to read()
+            try:
+                buf = _ffi.buffer(ptr, count)
+                data_read = file.readinto(buf)
+            except AttributeError:
+                data = file.read(count)
+                data_read = len(data)
+                buf = _ffi.buffer(ptr, data_read)
+                buf[0:data_read] = data
             return data_read
 
         @_ffi.callback("sf_vio_write")
         def vio_write(ptr, count, user_data):
             buf = _ffi.buffer(ptr, count)
             data = buf[:]
-            length = fObj.write(data)
+            length = file.write(data)
             return length
 
         @_ffi.callback("sf_vio_tell")
         def vio_tell(user_data):
-            return fObj.tell()
+            return file.tell()
 
-        vio = {
-            'get_filelen': vio_get_filelen,
-            'seek': vio_seek,
-            'read': vio_read,
-            'write': vio_write,
-            'tell': vio_tell,
-        }
-        return vio
+        return {'get_filelen': vio_get_filelen,
+                'seek': vio_seek,
+                'read': vio_read,
+                'write': vio_write,
+                'tell': vio_tell}
 
     def __del__(self):
         self.close()
