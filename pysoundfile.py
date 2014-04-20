@@ -29,7 +29,7 @@ float32 and float64.
 At the same time, SoundFiles act as sequence types, so you can use
 slices to read or write data as well. Since there is no way of
 specifying data formats for slices, the SoundFile will always return
-float32 data for those.
+float64 data for those.
 
 Note that you need to have libsndfile installed in order to use
 PySoundFile. On Windows, you need to rename the library to
@@ -121,6 +121,19 @@ _open_modes = {
     0x10: 'READ',
     0x20: 'WRITE',
     0x30: 'RDWR'
+}
+
+_str_types = {
+    'title':       0x01,
+    'copyright':   0x02,
+    'software':    0x03,
+    'artist':      0x04,
+    'comment':     0x05,
+    'date':        0x06,
+    'album':       0x07,
+    'license':     0x08,
+    'tracknumber': 0x09,
+    'genre':       0x10,
 }
 
 snd_types = {
@@ -243,7 +256,7 @@ class SoundFile(object):
     Alternatively, slices can be used to access data at arbitrary
     positions in the file. Note that slices currently only work on
     frame indices, not channels. The quickest way to read in a whole
-    file as a float32 NumPy array is in fact SoundFile('filename')[:].
+    file as a float64 NumPy array is in fact SoundFile('filename')[:].
 
     All data access uses frames as index. A frame is one discrete
     time-step in the sound file. Every frame contains as many samples
@@ -327,6 +340,11 @@ class SoundFile(object):
         self.sections = info.sections
         self.seekable = info.seekable == 1
 
+    closed = property(lambda self: self._file is None)
+
+    # avoid confusion if something goes wrong before assigning self._file:
+    _file = None
+
     def _init_vio(self, fObj):
         # Define callbacks here, so they can reference fObj / size
         @ffi.callback("sf_vio_get_filelen")
@@ -357,7 +375,7 @@ class SoundFile(object):
 
         @ffi.callback("sf_vio_write")
         def vio_write(ptr, count, user_data):
-            buf = ffi.buffer(ptr)
+            buf = ffi.buffer(ptr, count)
             data = buf[:]
             length = fObj.write(data)
             return length
@@ -376,22 +394,17 @@ class SoundFile(object):
         return vio
 
     def __del__(self):
-        # be sure to flush data to disk before closing the file
-        if self._file:
-            _snd.sf_write_sync(self._file)
-            err = _snd.sf_close(self._file)
-            self._handle_error_number(err)
-            self._file = None
+        self.close()
 
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, tb):
-        # flush remaining data to disk and close file
-        self.__del__()
+    def __exit__(self, *args):
+        self.close()
 
     def _handle_error(self):
         # this checks the error flag of the SNDFILE* structure
+        self._check_if_closed()
         err = _snd.sf_error(self._file)
         self._handle_error_number(err)
 
@@ -401,46 +414,41 @@ class SoundFile(object):
             err_str = _snd.sf_error_number(err)
             raise RuntimeError(ffi.string(err_str).decode())
 
-    # these strings are used as properties to access text data n the
-    # sound file
-    _snd_strings = {
-        'title': 0x01,
-        'copyright': 0x02,
-        'software': 0x03,
-        'artist': 0x04,
-        'comment': 0x05,
-        'date': 0x06,
-        'album': 0x07,
-        'license': 0x08,
-        'tracknumber': 0x09,
-        'genre': 0x10
-    }
+    def _getAttributeNames(self):
+        # return all possible attributes used in __setattr__ and __getattr__.
+        # This is useful for auto-completion (e.g. IPython)
+        return _str_types
+
+    def _check_if_closed(self):
+        # check if the file is closed and raise an error if it is.
+        # This should be used in every method that tries to access self._file.
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
 
     def __setattr__(self, name, value):
         # access text data in the sound file through properties
-        if name in self._snd_strings:
+        if name in _str_types:
+            self._check_if_closed()
             if self.mode == READ:
                 raise RuntimeError("Can not change %s of file in read mode" %
                                    name)
             data = ffi.new('char[]', value.encode())
-            err = _snd.sf_set_string(self._file, self._snd_strings[name], data)
+            err = _snd.sf_set_string(self._file, _str_types[name], data)
             self._handle_error_number(err)
         else:
-            self.__dict__[name] = value
+            super(SoundFile, self).__setattr__(name, value)
 
     def __getattr__(self, name):
         # access text data in the sound file through properties
-        if name in self._snd_strings:
-            data = _snd.sf_get_string(self._file, self._snd_strings[name])
-            if data == ffi.NULL:
-                return ""
-            else:
-                return ffi.string(data).decode()
+        if name in _str_types:
+            self._check_if_closed()
+            data = _snd.sf_get_string(self._file, _str_types[name])
+            return ffi.string(data).decode() if data else ""
         else:
-            raise AttributeError("SoundFile has no attribute %s" % name)
+            raise AttributeError("SoundFile has no attribute %s" % repr(name))
 
     def __len__(self):
-        return(self.frames)
+        return self.frames
 
     def _get_slice_bounds(self, frame):
         # get start and stop index from slice, asserting step==1
@@ -448,7 +456,7 @@ class SoundFile(object):
             frame = slice(frame, frame + 1)
         start, stop, step = frame.indices(len(self))
         if step != 1:
-            raise RuntimeError("Step size must be 1!")
+            raise RuntimeError("Step size must be 1")
         if start > stop:
             stop = start
         return start, stop
@@ -477,7 +485,7 @@ class SoundFile(object):
         # array. Data must be in the form (frames x channels).
         # Both open slice bounds and negative values are allowed.
         if self.mode == READ:
-            raise RuntimeError("Cannot write to file opened in READ mode!")
+            raise RuntimeError("Cannot write to file opened in READ mode")
         start, stop = self._get_slice_bounds(frame)
         if stop - start != len(data):
             raise IndexError(
@@ -491,7 +499,17 @@ class SoundFile(object):
 
     def flush(self):
         """Write unwritten data to disk."""
+        self._check_if_closed()
         _snd.sf_write_sync(self._file)
+
+    def close(self):
+        """Close the file. Can be called multiple times."""
+        if not self.closed:
+            # be sure to flush data to disk before closing the file
+            self.flush()
+            err = _snd.sf_close(self._file)
+            self._file = None
+            self._handle_error_number(err)
 
     def seek(self, frames, whence=SEEK_SET):
         """Set the read and/or write position.
@@ -512,9 +530,10 @@ class SoundFile(object):
         Returns the new absolute read position in frames or a negative
         value on error.
         """
+        self._check_if_closed()
         return _snd.sf_seek(self._file, frames, whence)
 
-    def read(self, frames=-1, format=np.float32):
+    def read(self, frames=-1, format=np.float64):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
@@ -528,8 +547,9 @@ class SoundFile(object):
         smaller NumPy array will be returned.
 
         """
+        self._check_if_closed()
         if self.mode == WRITE:
-            raise RuntimeError("Cannot read from file opened in WRITE mode!")
+            raise RuntimeError("Cannot read from file opened in WRITE mode")
         formats = {
             np.float64: 'double[]',
             np.float32: 'float[]',
@@ -544,8 +564,8 @@ class SoundFile(object):
         }
         if format not in formats:
             raise ValueError("Can only read int16, int32, float32 and float64")
-        if frames == -1:
-            curr = self.seek(0)
+        if frames < 0:
+            curr = self.seek(0, SEEK_CUR | READ)
             frames = self.frames - curr
         data = ffi.new(formats[format], frames*self.channels)
         read = readers[format](self._file, data, frames)
@@ -565,8 +585,9 @@ class SoundFile(object):
         array.
 
         """
+        self._check_if_closed()
         if self.mode == READ:
-            raise RuntimeError("Cannot write to file opened in READ mode!")
+            raise RuntimeError("Cannot write to file opened in READ mode")
         formats = {
             np.dtype(np.float64): 'double*',
             np.dtype(np.float32): 'float*',
