@@ -132,6 +132,10 @@ _TYPEMASK = 0x0FFF0000
 _ENDMASK  = 0x30000000
 
 _GET_FORMAT_INFO          = 0x1028
+_GET_FORMAT_MAJOR_COUNT   = 0x1030
+_GET_FORMAT_MAJOR         = 0x1031
+_GET_FORMAT_SUBTYPE_COUNT = 0x1032
+_GET_FORMAT_SUBTYPE       = 0x1033
 
 _open_modes = {
     'r':  0x10,
@@ -299,6 +303,10 @@ class SoundFile(object):
            subtype which is used if no subtype is specified.
          - an "endian-ness": 'FILE' (default), 'LITTLE', 'BIG' or 'CPU'.
            In most cases this doesn't have to be specified.
+
+        The functions available_formats() and available_subtypes() can
+        be used to obtain a list of all avaliable major formats and
+        subtypes, respectively.
 
         """
         try:
@@ -690,6 +698,14 @@ def _format_int(format, subtype, endian):
     return result
 
 
+def format_check(format, subtype=None, endian=None):
+    """Check if the combination of format/subtype/endian is valid."""
+    try:
+        return bool(_format_int(format, subtype, endian))
+    except (ValueError, TypeError):
+        return False
+
+
 def _format_str(format_int):
     # Return the string representation of a given numeric format
     for dictionary in _formats, _subtypes, _endians:
@@ -708,3 +724,29 @@ def _format_info(format_int, format_flag=_GET_FORMAT_INFO):
     name = format_info.name
     return (_format_str(format_info.format),
             _ffi.string(name).decode() if name else "")
+
+
+def _available_formats_helper(count_flag, format_flag):
+    # Generator function used in available_formats() and available_subtypes()
+    count = _ffi.new("int*")
+    _snd.sf_command(_ffi.NULL, count_flag, count, _ffi.sizeof("int"))
+    for format_int in range(count[0]):
+        yield _format_info(format_int, format_flag)
+
+
+def available_formats():
+    """Return a dictionary of available major formats."""
+    return dict(_available_formats_helper(_GET_FORMAT_MAJOR_COUNT,
+                                          _GET_FORMAT_MAJOR))
+
+
+def available_subtypes(format=None):
+    """Return a dictionary of available subtypes.
+
+    If format is specified, only compatible subtypes are returned.
+
+    """
+    subtypes = _available_formats_helper(_GET_FORMAT_SUBTYPE_COUNT,
+                                         _GET_FORMAT_SUBTYPE)
+    return dict((subtype, name) for subtype, name in subtypes
+                if format is None or format_check(format, subtype))
