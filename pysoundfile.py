@@ -663,6 +663,75 @@ class SoundFile(object):
         return written
 
 
+def open(*args, **kwargs):
+    """Return a new SoundFile object.
+
+    Takes the same arguments as SoundFile.__init__().
+
+    """
+    return SoundFile(*args, **kwargs)
+
+
+def read(file, frames=-1, start=None, stop=None, **kwargs):
+    """Read a sound file and return its contents as NumPy array.
+
+    The number of frames to read can be specified with frames, the
+    position to start reading can be specified with start.
+    By default, the whole file is read from the beginning.
+    Alternatively, a range can be specified with start and stop.
+    Both start and stop accept negative indices to specify positions
+    relative to the end of the file.
+
+    The returned data type can be specified with dtype. See the
+    documentation of SoundFile.read() for details.
+
+    All further arguments are forwarded to SoundFile.__init__().
+
+    """
+    if frames is not None and stop is not None:
+        raise RuntimeError("Only one of (frames, stop) may be used")
+    read_kwargs = {}
+    if 'dtype' in kwargs:
+        read_kwargs['dtype'] = kwargs.pop('dtype')
+    with SoundFile(file, 'r', **kwargs) as f:
+        start, stop, _ = slice(start, stop).indices(f.frames)
+        if frames is None:
+            frames = max(0, stop - start)
+        f.seek(start, SEEK_SET)
+        data = f.read(frames, **read_kwargs)
+    return data, f.sample_rate
+
+
+def write(data, file, sample_rate, *args, **kwargs):
+    """Write data from a NumPy array into a sound file.
+
+    If file exists, it will be overwritten!
+
+    The number of channels is obtained from data, all further arguments
+    are forwarded to SoundFile.__init__(). See its documentation for
+    details.
+
+    Example usage:
+
+        import pysoundfile as sf
+        sf.write(myarray, 'myfile.wav', 44100, 'PCM_24')
+
+    """
+    data = _np.asarray(data)
+    if data.ndim == 1:
+        channels = 1
+    elif data.ndim == 2:
+        channels = data.shape[1]
+    else:
+        raise RuntimeError("Only one- and two-dimensional arrays are allowed")
+    frames = data.shape[0]
+    with SoundFile(file, 'w', sample_rate, channels, *args, **kwargs) as f:
+        written = f.write(data)
+    if frames != written:
+        raise RuntimeError("Only %d of %d frames were written" % (written,
+                                                                  frames))
+
+
 def default_subtype(format):
     """Return default subtype for given format."""
     return _default_subtypes.get(str(format).upper())
