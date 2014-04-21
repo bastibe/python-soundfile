@@ -593,7 +593,8 @@ class SoundFile(object):
             raise ValueError("Invalid which: %s" % repr(which))
         return _snd.sf_seek(self._file, frames, whence)
 
-    def read(self, frames=-1, dtype='float64'):
+    def read(self, frames=-1, dtype='float64', always_2d=True,
+             fill_value=None, out=None):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
@@ -601,51 +602,72 @@ class SoundFile(object):
         position by the same number of frames.
         Use frames=-1 to read until the end of the file.
 
-        Returns the read data as a (frames x channels) NumPy array.
+        A two-dimensional NumPy array is returned, where the channels
+        are stored along the first dimension, i.e. as columns.
+        A two-dimensional array is returned even if the sound file has
+        only one channel.  Use always_2d=False to return a
+        one-dimensional array in this case.
 
-        If there is not enough data left in the file to read, a
-        smaller NumPy array will be returned.
+        If out is specified, the data is written into the given NumPy
+        array. In this case, the arguments frames, dtype and always_2d
+        are silently ignored!
+
+        If there is less data left in the file than requested, the rest
+        of the frames are filled with fill_value. If fill_value=None, a
+        smaller array is returned.
+        If out is given, only a part of it is overwritten and a view
+        containing all valid frames is returned.
 
         """
         self._check_if_closed()
         if self.mode == 'w':
             raise RuntimeError("Cannot read from file opened in write mode")
 
-        dtype = _np.dtype(dtype)
+        if out is None:
+            remaining_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+            if frames < 0 or (frames > remaining_frames and
+                              fill_value is None):
+                frames = remaining_frames
+            if always_2d or self.channels > 1:
+                shape = frames, self.channels
+            else:
+                shape = frames,
+            out = _np.empty(shape, dtype, order='C')
+        else:
+            frames = len(out)
+            if not out.flags.c_contiguous:
+                raise ValueError("out must be C-contiguous")
+
         try:
-            ffi_type = _ffi_types[dtype]
+            ffi_type = _ffi_types[out.dtype]
         except KeyError:
             raise ValueError("dtype must be one of %s" %
                              repr([dt.name for dt in _ffi_types]))
 
-        curr = self.seek(0, SEEK_CUR, 'r')
-        if frames < 0 or curr + frames > self.frames:
-            frames = self.frames - curr
-
-        data = _np.empty((frames, self.channels), dtype=dtype, order='C')
-
-        assert data.flags['C_CONTIGUOUS']
-        assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
+        assert out.dtype.itemsize == _ffi.sizeof(ffi_type)
 
         reader = getattr(_snd, 'sf_readf_' + ffi_type)
-        ptr = _ffi.cast(ffi_type + '*', data.ctypes.data)
-        read = reader(self._file, ptr, frames)
+        ptr = _ffi.cast(ffi_type + '*', out.ctypes.data)
+        frames = reader(self._file, ptr, frames)
         self._handle_error()
 
-        if frames != read:
-            raise RuntimeError("Only %d of %d frames were read" %
-                               (read, frames))
-        return data
+        if len(out) > frames:
+            if fill_value is None:
+                out = out[:frames]
+            else:
+                out[frames:] = fill_value
+
+        return out
 
     def write(self, data):
         """Write a number of frames to the file.
 
-        Writes a number of frames to the current read position in the
-        file. This also advances the read position by the same number
+        Writes a number of frames to the current write position in the
+        file. This also advances the write position by the same number
         of frames and enlarges the file if necessary.
 
         The data must be provided as a (frames x channels) NumPy
-        array.
+        array or as one-dimensional array for mono signals.
 
         """
         self._check_if_closed()
@@ -661,22 +683,18 @@ class SoundFile(object):
             raise ValueError("data.dtype must be one of %s" %
                              repr([dt.name for dt in _ffi_types]))
 
-        assert data.flags['C_CONTIGUOUS']
+        assert data.flags.c_contiguous
         assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
 
-        frames = len(data)
         writer = getattr(_snd, 'sf_writef_' + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', data.ctypes.data)
-        written = writer(self._file, ptr, frames)
+        written = writer(self._file, ptr, len(data))
         self._handle_error()
+        assert written == len(data)
 
         curr = self.seek(0, SEEK_CUR, 'w')
         self._info.frames = self.seek(0, SEEK_END, 'w')
         self.seek(curr, SEEK_SET, 'w')
-
-        if frames != written:
-            raise RuntimeError("Only %d of %d frames were written" %
-                               (written, frames))
 
 
 def default_subtype(format):
