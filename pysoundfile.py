@@ -622,55 +622,66 @@ class SoundFile(object):
         If there is less data left in the file than requested, the rest
         of the frames are filled with fill_value. If fill_value=None, a
         smaller array is returned.
-        Note: If out is given, fill_value cannot be None!
+        If out is given, only a part of it is overwritten and a view
+        containing all valid frames is returned.
 
         """
         self._check_if_closed()
         if self.mode == 'w':
             raise RuntimeError("Cannot read from file opened in write mode")
 
-        if out is not None:
-            if fill_value is None:
-                raise ValueError(
-                    "If out is given, fill_value cannot be None")
-            dtype = out.dtype
-            frames = out.shape[not channels_first]
-        else:
-            dtype = _np.dtype(dtype)
-
+        dtype = _np.dtype(dtype) if out is None else out.dtype
         try:
             ffi_type = _ffi_types[dtype]
         except KeyError:
             raise ValueError("dtype must be one of %s" %
                              repr([dt.name for dt in _ffi_types]))
 
-        max_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
-        if out is None:
-            if frames < 0 or fill_value is None and frames > max_frames:
-                frames = max_frames
-            out = self._create_out_array(frames, dtype,
-                                         channels_first, always_2d)
-        else:
-            if out.size / frames != self.channels:
+        if out is not None:
+            if out.ndim not in (1, 2):
+                raise ValueError("out must be one- or two-dimensional")
+            if channels_first and not out.flags.c_contiguous:
+                raise ValueError(
+                    "out must be C-contiguous for channels_first=True")
+            if not channels_first and not out.flags.f_contiguous:
+                raise ValueError(
+                    "out must be Fortran-contiguous for channels_first=False")
+            frames = out.shape[not channels_first]
+            if frames and out.size / frames != self.channels:
                 raise ValueError("Invalid out.shape: %s" % repr(out.shape))
 
-        if channels_first and not out.flags.c_contiguous:
-            raise ValueError(
-                "out must be C-contiguous for channels_first=True")
-        if not channels_first and not out.flags.f_contiguous:
-            raise ValueError(
-                "out must be Fortran-contiguous for channels_first=False")
+        max_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+        if frames < 0:
+            frames = max_frames
+        valid_frames = frames
+        if frames > max_frames:
+            valid_frames = max_frames
+
+        if out is None:
+            out = self._create_out_array(frames, dtype,
+                                         channels_first, always_2d)
 
         assert out.dtype.itemsize == _ffi.sizeof(ffi_type)
 
         reader = getattr(_snd, 'sf_readf_' + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', out.ctypes.data)
-        read = reader(self._file, ptr, frames)
+        read = reader(self._file, ptr, valid_frames)
         self._handle_error()
+        assert read == valid_frames
 
-        idx = [Ellipsis, Ellipsis]
-        idx[not channels_first] = slice(read, None)
-        out[idx] = fill_value
+        if frames > valid_frames:
+            def multichannel_slice(start, stop):
+                """Return a slice of frames, considering channels_first"""
+                if channels_first:
+                    idx = slice(start, stop)
+                else:
+                    idx = Ellipsis, slice(start, stop)
+                return idx
+
+            if fill_value is None:
+                out = out[multichannel_slice(None, valid_frames)]
+            else:
+                out[multichannel_slice(valid_frames, None)] = fill_value
 
         return out
 
@@ -717,21 +728,18 @@ class SoundFile(object):
                 "Wrong number of channels (%d expected, %d given)" %
                 (self.channels, channels))
 
-        assert data.flags[('C_CONTIGUOUS', 'F_CONTIGUOUS')[not channels_first]]
+        assert data.flags['C_CONTIGUOUS' if channels_first else 'F_CONTIGUOUS']
         assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
 
         writer = getattr(_snd, 'sf_writef_' + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', data.ctypes.data)
         written = writer(self._file, ptr, frames)
         self._handle_error()
+        assert written == frames
 
         curr = self.seek(0, SEEK_CUR, 'w')
         self._info.frames = self.seek(0, SEEK_END, 'w')
         self.seek(curr, SEEK_SET, 'w')
-
-        if frames != written:
-            raise RuntimeError("Only %d of %d frames were written" %
-                               (written, frames))
 
 
 def open(*args, **kwargs):
