@@ -42,6 +42,29 @@ PySoundFile is BSD licensed.
 
 _ffi = _FFI()
 _ffi.cdef("""
+enum
+{
+    SF_FORMAT_SUBMASK       = 0x0000FFFF,
+    SF_FORMAT_TYPEMASK      = 0x0FFF0000,
+    SF_FORMAT_ENDMASK       = 0x30000000
+} ;
+
+enum
+{
+    SFC_GET_FORMAT_INFO             = 0x1028,
+
+    SFC_GET_FORMAT_MAJOR_COUNT      = 0x1030,
+    SFC_GET_FORMAT_MAJOR            = 0x1031,
+    SFC_GET_FORMAT_SUBTYPE_COUNT    = 0x1032,
+    SFC_GET_FORMAT_SUBTYPE          = 0x1033,
+} ;
+
+enum
+{
+    SF_FALSE    = 0,
+    SF_TRUE     = 1,
+} ;
+
 typedef int64_t sf_count_t ;
 
 typedef struct SNDFILE_tag SNDFILE ;
@@ -123,19 +146,6 @@ typedef struct SF_FORMAT_INFO
     const char* extension ;
 } SF_FORMAT_INFO ;
 """)
-
-_FALSE = 0
-_TRUE  = 1
-
-_SUBMASK  = 0x0000FFFF
-_TYPEMASK = 0x0FFF0000
-_ENDMASK  = 0x30000000
-
-_GET_FORMAT_INFO          = 0x1028
-_GET_FORMAT_MAJOR_COUNT   = 0x1030
-_GET_FORMAT_MAJOR         = 0x1031
-_GET_FORMAT_SUBTYPE_COUNT = 0x1032
-_GET_FORMAT_SUBTYPE       = 0x1033
 
 _open_modes = {
     'r':  0x10,
@@ -368,15 +378,20 @@ class SoundFile(object):
     frames = property(lambda self: self._info.frames)
     sample_rate = property(lambda self: self._info.samplerate)
     channels = property(lambda self: self._info.channels)
-    format = property(lambda self: _format_str(self._info.format & _TYPEMASK))
-    subtype = property(lambda self: _format_str(self._info.format & _SUBMASK))
-    endian = property(lambda self: _format_str(self._info.format & _ENDMASK))
+    format = property(
+        lambda self: _format_str(self._info.format & _snd.SF_FORMAT_TYPEMASK))
+    subtype = property(
+        lambda self: _format_str(self._info.format & _snd.SF_FORMAT_SUBMASK))
+    endian = property(
+        lambda self: _format_str(self._info.format & _snd.SF_FORMAT_ENDMASK))
     format_info = property(
-        lambda self: _format_info(self._info.format & _TYPEMASK)[1])
+        lambda self: _format_info(self._info.format &
+                                  _snd.SF_FORMAT_TYPEMASK)[1])
     subtype_info = property(
-        lambda self: _format_info(self._info.format & _SUBMASK)[1])
+        lambda self: _format_info(self._info.format &
+                                  _snd.SF_FORMAT_SUBMASK)[1])
     sections = property(lambda self: self._info.sections)
-    seekable = property(lambda self: self._info.seekable == _TRUE)
+    seekable = property(lambda self: self._info.seekable == _snd.SF_TRUE)
     closed = property(lambda self: self._file is None)
 
     # avoid confusion if something goes wrong before assigning self._file:
@@ -692,7 +707,7 @@ def _format_int(format, subtype, endian):
     info = _ffi.new("SF_INFO*")
     info.format = result
     info.channels = 1
-    if _snd.sf_format_check(info) == _FALSE:
+    if _snd.sf_format_check(info) == _snd.SF_FALSE:
         raise ValueError(
             "Invalid combination of format, subtype and endian")
     return result
@@ -715,7 +730,7 @@ def _format_str(format_int):
     return hex(format_int)
 
 
-def _format_info(format_int, format_flag=_GET_FORMAT_INFO):
+def _format_info(format_int, format_flag=_snd.SFC_GET_FORMAT_INFO):
     # Return the ID and short description of a given format.
     format_info = _ffi.new("SF_FORMAT_INFO*")
     format_info.format = format_int
@@ -736,8 +751,8 @@ def _available_formats_helper(count_flag, format_flag):
 
 def available_formats():
     """Return a dictionary of available major formats."""
-    return dict(_available_formats_helper(_GET_FORMAT_MAJOR_COUNT,
-                                          _GET_FORMAT_MAJOR))
+    return dict(_available_formats_helper(_snd.SFC_GET_FORMAT_MAJOR_COUNT,
+                                          _snd.SFC_GET_FORMAT_MAJOR))
 
 
 def available_subtypes(format=None):
@@ -746,7 +761,7 @@ def available_subtypes(format=None):
     If format is specified, only compatible subtypes are returned.
 
     """
-    subtypes = _available_formats_helper(_GET_FORMAT_SUBTYPE_COUNT,
-                                         _GET_FORMAT_SUBTYPE)
+    subtypes = _available_formats_helper(_snd.SFC_GET_FORMAT_SUBTYPE_COUNT,
+                                         _snd.SFC_GET_FORMAT_SUBTYPE)
     return dict((subtype, name) for subtype, name in subtypes
                 if format is None or format_check(format, subtype))
