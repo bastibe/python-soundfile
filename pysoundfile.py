@@ -406,8 +406,7 @@ class SoundFile(object):
         @_ffi.callback("sf_vio_seek")
         def vio_seek(offset, whence, user_data):
             file.seek(offset, whence)
-            curr = file.tell()
-            return curr
+            return file.tell()
 
         @_ffi.callback("sf_vio_read")
         def vio_read(ptr, count, user_data):
@@ -426,8 +425,7 @@ class SoundFile(object):
         def vio_write(ptr, count, user_data):
             buf = _ffi.buffer(ptr, count)
             data = buf[:]
-            length = file.write(data)
-            return length
+            return file.write(data)
 
         @_ffi.callback("sf_vio_tell")
         def vio_tell(user_data):
