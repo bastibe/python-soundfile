@@ -358,7 +358,7 @@ class SoundFile(object):
             self._file = _snd.sf_open_fd(file, mode_int, self._info, closefd)
         elif all(hasattr(file, a) for a in ('seek', 'read', 'write', 'tell')):
             self._file = _snd.sf_open_virtual(
-                self._init_vio(file), mode_int, self._info, _ffi.NULL)
+                self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
             self._name = str(file)
         else:
             raise RuntimeError("file must be a filename, a file descriptor or "
@@ -390,7 +390,7 @@ class SoundFile(object):
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
 
-    def _init_vio(self, file):
+    def _init_virtual_io(self, file):
         @_ffi.callback("sf_vio_get_filelen")
         def vio_get_filelen(user_data):
             # first try __len__(), if not available fall back to seek()/tell()
@@ -432,13 +432,13 @@ class SoundFile(object):
             return file.tell()
 
         # Note: the callback functions must be kept alive!
-        self._vio = {'get_filelen': vio_get_filelen,
-                     'seek': vio_seek,
-                     'read': vio_read,
-                     'write': vio_write,
-                     'tell': vio_tell}
+        self._virtual_io = {'get_filelen': vio_get_filelen,
+                            'seek': vio_seek,
+                            'read': vio_read,
+                            'write': vio_write,
+                            'tell': vio_tell}
 
-        return _ffi.new("SF_VIRTUAL_IO*", self._vio)
+        return _ffi.new("SF_VIRTUAL_IO*", self._virtual_io)
 
     def __del__(self):
         self.close()
