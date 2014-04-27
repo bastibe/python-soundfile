@@ -356,21 +356,14 @@ class SoundFile(object):
             self._file = _snd.sf_open(file, mode_int, self._info)
         elif isinstance(file, int):
             self._file = _snd.sf_open_fd(file, mode_int, self._info, closefd)
-        else:
-            # Note: readinto() is not checked
-            for attr in ('seek', 'read', 'write', 'tell'):
-                if not hasattr(file, attr):
-                    raise RuntimeError(
-                        "file must be a filename, a file descriptor or "
-                        "a file-like object with the methods "
-                        "'seek()', 'read()', 'write()' and 'tell()'")
-            # Note: the callback functions in _vio must be kept alive!
-            self._vio = self._init_vio(file)
-            vio = _ffi.new("SF_VIRTUAL_IO*", self._vio)
-            self._file = _snd.sf_open_virtual(vio, mode_int, self._info,
-                                              _ffi.NULL)
+        elif all(hasattr(file, a) for a in ('seek', 'read', 'write', 'tell')):
+            self._file = _snd.sf_open_virtual(
+                self._init_vio(file), mode_int, self._info, _ffi.NULL)
             self._name = str(file)
-
+        else:
+            raise RuntimeError("file must be a filename, a file descriptor or "
+                               "a file-like object with the methods "
+                               "'seek()', 'read()', 'write()' and 'tell()'")
         self._handle_error()
 
     name = property(lambda self: self._name)
@@ -442,11 +435,14 @@ class SoundFile(object):
         def vio_tell(user_data):
             return file.tell()
 
-        return {'get_filelen': vio_get_filelen,
-                'seek': vio_seek,
-                'read': vio_read,
-                'write': vio_write,
-                'tell': vio_tell}
+        # Note: the callback functions must be kept alive!
+        self._vio = {'get_filelen': vio_get_filelen,
+                     'seek': vio_seek,
+                     'read': vio_read,
+                     'write': vio_write,
+                     'tell': vio_tell}
+
+        return _ffi.new("SF_VIRTUAL_IO*", self._vio)
 
     def __del__(self):
         self.close()
