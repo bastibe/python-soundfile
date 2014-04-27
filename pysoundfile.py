@@ -393,16 +393,14 @@ class SoundFile(object):
     def _init_vio(self, file):
         @_ffi.callback("sf_vio_get_filelen")
         def vio_get_filelen(user_data):
-            # Streams must set _length or implement __len__
-            if hasattr(file, '_length'):
-                size = file._length
-            elif not hasattr(file, '__len__'):
-                old_file_position = file.tell()
+            # first try __len__(), if not available fall back to seek()/tell()
+            try:
+                size = len(file)
+            except TypeError:
+                curr = file.tell()
                 file.seek(0, SEEK_END)
                 size = file.tell()
-                file.seek(old_file_position, SEEK_SET)
-            else:
-                size = len(file)
+                file.seek(curr, SEEK_SET)
             return size
 
         @_ffi.callback("sf_vio_seek")
