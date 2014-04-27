@@ -638,17 +638,14 @@ class SoundFile(object):
                              repr([dt.name for dt in _ffi_types]))
 
         if out is not None:
-            if out.ndim not in (1, 2):
-                raise ValueError("out must be one- or two-dimensional")
+            frames = _check_frames_and_channels(
+                out, "out", channels_first, channels=self.channels)
             if channels_first and not out.flags.c_contiguous:
                 raise ValueError(
                     "out must be C-contiguous for channels_first=True")
             if not channels_first and not out.flags.f_contiguous:
                 raise ValueError(
                     "out must be Fortran-contiguous for channels_first=False")
-            frames = out.shape[not channels_first]
-            if frames and out.size / frames != self.channels:
-                raise ValueError("Invalid out.shape: %s" % repr(out.shape))
 
         max_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
         if frames < 0:
@@ -705,8 +702,6 @@ class SoundFile(object):
         if channels_first:
             # no copy is made if data has already the correct memory layout:
             data = _np.ascontiguousarray(data)
-            if data.ndim not in (1, 2):
-                raise ValueError("data must be one- or two-dimensional")
         else:
             # this shouldn't make a copy either if already in Fortran order:
             data = _np.asfortranarray(data)
@@ -720,13 +715,8 @@ class SoundFile(object):
             raise ValueError("data.dtype must be one of %s" %
                              repr([dt.name for dt in _ffi_types]))
 
-        frames = data.shape[not channels_first]
-        channels = data.size / frames
-
-        if channels != self.channels:
-            raise ValueError(
-                "Wrong number of channels (%d expected, %d given)" %
-                (self.channels, channels))
+        frames = _check_frames_and_channels(
+            data, "data", channels_first, channels=self.channels)
 
         assert data.flags['C_CONTIGUOUS' if channels_first else 'F_CONTIGUOUS']
         assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
@@ -740,6 +730,28 @@ class SoundFile(object):
         curr = self.seek(0, SEEK_CUR, 'w')
         self._info.frames = self.seek(0, SEEK_END, 'w')
         self.seek(curr, SEEK_SET, 'w')
+
+
+def _check_frames_and_channels(array, name, channels_first, channels=None):
+    # Return frames and channels for a given array. If channels is given (and
+    # if the number of channels matches), return only frames.
+    if array.ndim not in (1, 2):
+        raise ValueError("%s must be one- or two-dimensional" % repr(name))
+    frames = array.shape[not channels_first]
+    if frames == 0:
+        raise ValueError("%s is empty" % repr(name))
+
+    expected_channels = channels
+    channels = array.size / frames
+
+    if expected_channels is None:
+        return frames, channels
+    elif channels == expected_channels:
+        return frames
+    else:
+        raise ValueError(
+            "Wrong number of channels in %s: %d (instead of %d)" %
+            (repr(name), channels, expected_channels))
 
 
 def open(*args, **kwargs):
@@ -799,10 +811,8 @@ def write(data, file, sample_rate, *args, **kwargs):
 
     """
     data = _np.asarray(data)
-    if data.ndim not in (1, 2):
-        raise ValueError("data must be one- or two-dimensional")
     channels_first = kwargs.pop('channels_first', True)
-    channels = data.size / data.shape[not channels_first]
+    _, channels = _check_frames_and_channels(data, "data", channels_first)
     with SoundFile(file, 'w', sample_rate, channels, *args, **kwargs) as f:
         f.write(data, channels_first=channels_first)
 
