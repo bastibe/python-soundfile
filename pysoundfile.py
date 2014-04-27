@@ -471,7 +471,7 @@ class SoundFile(object):
             self._check_if_closed()
             if self.mode == 'r':
                 raise RuntimeError("Can not change %s of file in read mode" %
-                                   name)
+                                   repr(name))
             data = _ffi.new('char[]', value.encode())
             err = _snd.sf_set_string(self._file, _str_types[name], data)
             self._handle_error_number(err)
