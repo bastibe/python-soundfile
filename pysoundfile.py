@@ -717,7 +717,7 @@ def _format_str(format_int):
 
 def _format_info(format_int, format_flag=_GET_FORMAT_INFO):
     # Return the ID and short description of a given format.
-    format_info = _ffi.new("struct SF_FORMAT_INFO*")
+    format_info = _ffi.new("SF_FORMAT_INFO*")
     format_info.format = format_int
     _snd.sf_command(_ffi.NULL, format_flag, format_info,
                     _ffi.sizeof("SF_FORMAT_INFO"))
