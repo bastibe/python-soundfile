@@ -586,21 +586,8 @@ class SoundFile(object):
             raise ValueError("Invalid which: %s" % repr(which))
         return _snd.sf_seek(self._file, frames, whence)
 
-    def _create_out_array(self, frames, dtype, channels_first, always_2d):
-        # Helper function for read()
-        if channels_first:
-            order = 'C'
-            if self.channels == 1 and not always_2d:
-                shape = frames,
-            else:
-                shape = frames, self.channels
-        else:
-            order = 'F'
-            shape = self.channels, frames
-        return _np.empty(shape, dtype, order)
-
-    def read(self, frames=-1, dtype='float64', channels_first=True,
-             always_2d=True, out=None, fill_value=None):
+    def read(self, frames=-1, dtype='float64', always_2d=True,
+             fill_value=None):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
@@ -608,81 +595,75 @@ class SoundFile(object):
         position by the same number of frames.
         Use frames=-1 to read until the end of the file.
 
-        By default, a two-dimensional NumPy array is returned, where the
-        channels are stored along the first dimension, i.e. as columns.
-        Use channels_first=False to store the channels along the second
-        dimension, i.e. as rows.  A two-dimensional array is returned
-        even if the sound file has only one channel.  Use
-        always_2d=False to return a one-dimensional array in this case.
+        By default, a two-dimensional array is returned even if the
+        sound file has only one channel. Use always_2d=False to return
+        a one-dimensional array in this case.
 
-        If out is specified, the data is written into the given NumPy
-        array. In this case, the arguments frames, dtype and always_2d
-        are silently ignored!
+        If there is less data left in the file than requested, a
+        shorter array is returned. Use fill_value to always return the
+        given number of frames and fill all remaining frames with
+        fill_value.
 
-        If there is less data left in the file than requested, the rest
-        of the frames are filled with fill_value. If fill_value=None, a
-        smaller array is returned.
-        If out is given, only a part of it is overwritten and a view
-        containing all valid frames is returned.
+        """
+        if frames < 0:
+            frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+        out = _np.empty((frames, self.channels), dtype)
+        if not always_2d and out.shape[1] == 1:
+            out = out.flatten()
+
+        try:
+            out = self.readinto(out, fill_value)
+        except Exception as e:
+            raise e
+
+        return out
+
+    def readinto(self, out, fill_value=None):
+        """Read a number of frames from the file into an array.
+
+        Reads the given number of frames in the given data format from
+        the current read position. This also advances the read
+        position by the same number of frames.
+
+        The data is written into the given NumPy array. If there is
+        not enough data left in the file to fill the array, the rest
+        of the frames are ignored and a smaller view to the array is
+        returned. Use fill_value to fill the rest of the array and
+        return the full-length array.
 
         """
         self._check_if_closed()
         if self.mode == 'w':
             raise RuntimeError("Cannot read from file opened in write mode")
 
-        dtype = _np.dtype(dtype) if out is None else out.dtype
         try:
-            ffi_type = _ffi_types[dtype]
+            ffi_type = _ffi_types[out.dtype]
         except KeyError:
             raise ValueError("dtype must be one of %s" %
                              repr([dt.name for dt in _ffi_types]))
 
-        if out is not None:
-            frames = _check_frames_and_channels(
-                out, "out", channels_first, channels=self.channels)
-            if channels_first and not out.flags.c_contiguous:
-                raise ValueError(
-                    "out must be C-contiguous for channels_first=True")
-            if not channels_first and not out.flags.f_contiguous:
-                raise ValueError(
-                    "out must be Fortran-contiguous for channels_first=False")
+        if not out.flags.c_contiguous:
+            raise ValueError("out must be C-contiguous")
 
-        max_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
-        if frames < 0:
-            frames = max_frames
-        valid_frames = frames
-        if frames > max_frames:
-            valid_frames = max_frames
-
-        if out is None:
-            out = self._create_out_array(frames, dtype,
-                                         channels_first, always_2d)
+        read_frames = len(out)
+        if read_frames + self.seek(0, SEEK_CUR, 'r') > self.frames:
+            read_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
 
         assert out.dtype.itemsize == _ffi.sizeof(ffi_type)
 
         reader = getattr(_snd, 'sf_readf_' + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', out.ctypes.data)
-        read = reader(self._file, ptr, valid_frames)
+        read = reader(self._file, ptr, read_frames)
         self._handle_error()
-        assert read == valid_frames
+        assert read == read_frames
 
-        if frames > valid_frames:
-            def multichannel_slice(start, stop):
-                """Return a slice of frames, considering channels_first"""
-                if channels_first:
-                    idx = slice(start, stop)
-                else:
-                    idx = Ellipsis, slice(start, stop)
-                return idx
+        if fill_value is None:
+            return out[:read_frames]
+        else:
+            out[read_frames:] = fill_value
+            return out
 
-            if fill_value is None:
-                out = out[multichannel_slice(None, valid_frames)]
-            else:
-                out[multichannel_slice(valid_frames, None)] = fill_value
-
-        return out
-
-    def write(self, data, channels_first=True):
+    def write(self, data):
         """Write a number of frames to the file.
 
         Writes a number of frames to the current write position in the
@@ -699,15 +680,7 @@ class SoundFile(object):
         if self.mode == 'r':
             raise RuntimeError("Cannot write to file opened in read mode")
 
-        if channels_first:
-            # no copy is made if data has already the correct memory layout:
-            data = _np.ascontiguousarray(data)
-        else:
-            # this shouldn't make a copy either if already in Fortran order:
-            data = _np.asfortranarray(data)
-            if data.ndim != 2:
-                raise ValueError(
-                    "data.ndim must be 2 for channels_first=False")
+        data = _np.ascontiguousarray(data)
 
         try:
             ffi_type = _ffi_types[data.dtype]
@@ -715,43 +688,18 @@ class SoundFile(object):
             raise ValueError("data.dtype must be one of %s" %
                              repr([dt.name for dt in _ffi_types]))
 
-        frames = _check_frames_and_channels(
-            data, "data", channels_first, channels=self.channels)
-
-        assert data.flags['C_CONTIGUOUS' if channels_first else 'F_CONTIGUOUS']
+        assert data.flags['C_CONTIGUOUS']
         assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
 
         writer = getattr(_snd, 'sf_writef_' + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', data.ctypes.data)
-        written = writer(self._file, ptr, frames)
+        written = writer(self._file, ptr, len(data))
         self._handle_error()
-        assert written == frames
+        assert written == len(data)
 
         curr = self.seek(0, SEEK_CUR, 'w')
         self._info.frames = self.seek(0, SEEK_END, 'w')
         self.seek(curr, SEEK_SET, 'w')
-
-
-def _check_frames_and_channels(array, name, channels_first, channels=None):
-    # Return frames and channels for a given array. If channels is given (and
-    # if the number of channels matches), return only frames.
-    if array.ndim not in (1, 2):
-        raise ValueError("%s must be one- or two-dimensional" % repr(name))
-    frames = array.shape[not channels_first]
-    if frames == 0:
-        raise ValueError("%s is empty" % repr(name))
-
-    expected_channels = channels
-    channels = array.size / frames
-
-    if expected_channels is None:
-        return frames, channels
-    elif channels == expected_channels:
-        return frames
-    else:
-        raise ValueError(
-            "Wrong number of channels in %s: %d (instead of %d)" %
-            (repr(name), channels, expected_channels))
 
 
 def open(*args, **kwargs):

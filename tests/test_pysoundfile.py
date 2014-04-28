@@ -190,6 +190,47 @@ class TestSeekWaveFile(TestWaveFile):
             self.assertTrue(np.all(f[:100] == self.data[:100]))
             self.assertEqual(0, f.seek(0, sf.SEEK_CUR))
 
+    def test_read_number_of_frames(self):
+        """Reading N frames should return N frames"""
+        with sf.SoundFile(self.filename) as f:
+            data = f.read(100)
+            self.assertEqual(len(data), 100)
+
+    def test_read_all_frames(self):
+        """Reading should return all remaining frames"""
+        with sf.SoundFile(self.filename) as f:
+            f.seek(-100, sf.SEEK_END)
+            data = f.read()
+            self.assertEqual(len(data), 100)
+
+    def test_read_number_of_frames_over_end(self):
+        """Reading N frames at EOF should return only remaining frames"""
+        with sf.SoundFile(self.filename) as f:
+            f.seek(-50, sf.SEEK_END)
+            data = f.read(100)
+            self.assertEqual(len(data), 50)
+
+    def test_read_number_of_frames_over_end_with_fill(self):
+        """Reading N frames with fill at EOF should return N frames"""
+        with sf.SoundFile(self.filename) as f:
+            f.seek(-50, sf.SEEK_END)
+            data = f.read(100, fill_value=0)
+            self.assertEqual(len(data), 100)
+            self.assertTrue(np.all(data[50:] == 0))
+
+    def test_read_mono_as_array(self):
+        """Reading N frames with fill at EOF should return N frames"""
+        # create a dummy mono wave file
+        self.sample_rate = 44100
+        self.channels = 1
+        self.filename = 'test.wav'
+        self.data = np.ones((self.sample_rate, self.channels))*0.5
+        with sf.SoundFile(self.filename, 'w', self.sample_rate, self.channels) as f:
+            f.write(self.data)
+
+        with sf.SoundFile(self.filename) as f:
+            data = f.read(100, always_2d=False)
+            self.assertEqual(data.shape, (100,))
 
 class TestWriteWaveFile(TestWaveFile):
     def test_write(self):
