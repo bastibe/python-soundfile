@@ -587,7 +587,7 @@ class SoundFile(object):
         return _snd.sf_seek(self._file, frames, whence)
 
     def read(self, frames=-1, dtype='float64', always_2d=True,
-             fill_value=None):
+             fill_value=None, out=None):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
@@ -604,21 +604,29 @@ class SoundFile(object):
         given number of frames and fill all remaining frames with
         fill_value.
 
+        If out is given as a numpy array, the data is written into
+        that array. If there is not enough data left in the file to
+        fill the array, the rest of the frames are ignored and a
+        smaller view to the array is returned. Use fill_value to fill
+        the rest of the array and always return the full-length array.
+
         """
-        if frames < 0:
-            frames = self.frames - self.seek(0, SEEK_CUR, 'r')
-        out = _np.empty((frames, self.channels), dtype)
-        if not always_2d and out.shape[1] == 1:
-            out = out.flatten()
+
+        if out is None:
+            if frames < 0:
+                frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+            out = _np.empty((frames, self.channels), dtype)
+            if not always_2d and out.shape[1] == 1:
+                out = out.flatten()
 
         try:
-            out = self.readinto(out, fill_value)
+            out = self._readinto(out, fill_value)
         except Exception as e:
             raise e
 
         return out
 
-    def readinto(self, out, fill_value=None):
+    def _readinto(self, out, fill_value=None):
         """Read a number of frames from the file into an array.
 
         Reads the given number of frames in the given data format from
