@@ -219,7 +219,7 @@ class TestSeekWaveFile(TestWaveFile):
             self.assertTrue(np.all(data[50:] == 0))
 
     def test_read_mono_as_array(self):
-        """Reading N frames with fill at EOF should return N frames"""
+        """Reading with always_2d=False should return array"""
         # create a dummy mono wave file
         self.sample_rate = 44100
         self.channels = 1
