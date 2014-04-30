@@ -612,37 +612,16 @@ class SoundFile(object):
 
         """
 
+        self._check_if_closed()
+        if self.mode == 'w':
+            raise RuntimeError("Cannot read from file opened in write mode")
+
         if out is None:
             if frames < 0:
                 frames = self.frames - self.seek(0, SEEK_CUR, 'r')
             out = _np.empty((frames, self.channels), dtype)
             if not always_2d and out.shape[1] == 1:
                 out = out.flatten()
-
-        try:
-            out = self._readinto(out, fill_value)
-        except Exception as e:
-            raise e
-
-        return out
-
-    def _readinto(self, out, fill_value=None):
-        """Read a number of frames from the file into an array.
-
-        Reads the given number of frames in the given data format from
-        the current read position. This also advances the read
-        position by the same number of frames.
-
-        The data is written into the given NumPy array. If there is
-        not enough data left in the file to fill the array, the rest
-        of the frames are ignored and a smaller view to the array is
-        returned. Use fill_value to fill the rest of the array and
-        return the full-length array.
-
-        """
-        self._check_if_closed()
-        if self.mode == 'w':
-            raise RuntimeError("Cannot read from file opened in write mode")
 
         try:
             ffi_type = _ffi_types[out.dtype]
