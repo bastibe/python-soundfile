@@ -218,6 +218,32 @@ class TestSeekWaveFile(TestWaveFile):
             self.assertEqual(len(data), 100)
             self.assertTrue(np.all(data[50:] == 0))
 
+    def test_read_into_out(self):
+        """Reading into out should return data and write into out"""
+        with sf.SoundFile(self.filename) as f:
+            data = np.empty((100, f.channels), dtype='float64')
+            out_data = f.read(out=data)
+            self.assertTrue(np.all(data == out_data))
+
+    def test_read_into_out_over_end(self):
+        """Reading into out over end should return shorter data and write into out"""
+        with sf.SoundFile(self.filename) as f:
+            data = np.empty((100, f.channels), dtype='float64')
+            f.seek(-50, sf.SEEK_END)
+            out_data = f.read(out=data)
+            self.assertTrue(np.all(data[:50] == out_data[:50]))
+            self.assertEqual(out_data.shape, (50,2))
+            self.assertEqual(data.shape, (100,2))
+
+    def test_read_into_out_over_end_with_fill(self):
+        """Reading into out over end with fill should return padded data and write into out"""
+        with sf.SoundFile(self.filename) as f:
+            data = np.empty((100, f.channels), dtype='float64')
+            f.seek(-50, sf.SEEK_END)
+            out_data = f.read(out=data, fill_value=0)
+            self.assertTrue(np.all(data == out_data))
+            self.assertTrue(np.all(data[50:] == 0))
+
     def test_read_mono_as_array(self):
         """Reading with always_2d=False should return array"""
         # create a dummy mono wave file
