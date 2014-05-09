@@ -616,9 +616,11 @@ class SoundFile(object):
         if self.mode == 'w':
             raise RuntimeError("Cannot read from file opened in write mode")
 
+        current_frame = self.seek(0, SEEK_CUR, 'r')
+
         if out is None:
             if frames < 0:
-                frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+                frames = self.frames - current_frame
             out = _np.empty((frames, self.channels), dtype)
             if not always_2d and out.shape[1] == 1:
                 out = out.flatten()
@@ -633,8 +635,8 @@ class SoundFile(object):
             raise ValueError("out must be C-contiguous")
 
         read_frames = len(out)
-        if read_frames + self.seek(0, SEEK_CUR, 'r') > self.frames:
-            read_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+        if read_frames + current_frame > self.frames:
+            read_frames = self.frames - current_frame
 
         assert out.dtype.itemsize == _ffi.sizeof(ffi_type)
 
