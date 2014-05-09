@@ -755,7 +755,10 @@ def write(data, file, sample_rate, *args, **kwargs):
     """
     data = _np.asarray(data)
     channels_first = kwargs.pop('channels_first', True)
-    _, channels = _check_frames_and_channels(data, "data", channels_first)
+    if len(data.shape) == 1:
+        channels = 1
+    else:
+        channels = data.shape[1]
     with SoundFile(file, 'w', sample_rate, channels, *args, **kwargs) as f:
         f.write(data, channels_first=channels_first)
 
