@@ -621,9 +621,10 @@ class SoundFile(object):
         if out is None:
             if frames < 0:
                 frames = self.frames - current_frame
-            out = _np.empty((frames, self.channels), dtype)
-            if not always_2d and out.shape[1] == 1:
-                out = out.flatten()
+            if always_2d or self.channels > 1:
+                out = _np.empty((frames, self.channels), dtype)
+            else:
+                out = _np.empty(frames, dtype)
 
         try:
             ffi_type = _ffi_types[out.dtype]
