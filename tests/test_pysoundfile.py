@@ -300,3 +300,10 @@ class TestWriteWaveFile(TestWaveFile):
             f[:100] = data
             self.assertEqual(position, f.seek(0, sf.SEEK_CUR))
             self.assertTrue(np.all(data == f[:100]))
+
+class TestWriteFunctions(TestWaveFile):
+    def test_write(self):
+        """write should write data"""
+        data = np.ones((100,2))
+        sf.write(data, self.filename, self.sample_rate)
+        self.assertTrue(np.allclose(sf.read(self.filename)[0], data, atol=2**-15))
