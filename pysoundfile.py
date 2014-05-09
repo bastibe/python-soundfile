@@ -621,6 +621,8 @@ class SoundFile(object):
         if out is None:
             if frames < 0:
                 frames = self.frames - current_frame
+            if current_frame + frames > self.frames and fill_value is None:
+                frames = self.frames - current_frame
             if always_2d or self.channels > 1:
                 out = _np.empty((frames, self.channels), dtype)
             else:
