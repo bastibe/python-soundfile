@@ -649,7 +649,9 @@ class SoundFile(object):
         self._handle_error()
         assert read == read_frames
 
-        if fill_value is None:
+        if read_frames == len(out):
+            return out
+        elif fill_value is None:
             return out[:read_frames]
         else:
             out[read_frames:] = fill_value
