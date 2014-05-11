@@ -616,12 +616,12 @@ class SoundFile(object):
         if self.mode == 'w':
             raise RuntimeError("Cannot read from file opened in write mode")
 
-        current_frame = self.seek(0, SEEK_CUR, 'r')
+        remaining_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
 
         if frames < 0:
-            frames = self.frames - current_frame
-        if current_frame + frames > self.frames and fill_value is None:
-            frames = self.frames - current_frame
+            frames = remaining_frames
+        if frames > remaining_frames and fill_value is None:
+            frames = remaining_frames
 
         if out is None:
             if always_2d or self.channels > 1:
@@ -638,9 +638,7 @@ class SoundFile(object):
         if not out.flags.c_contiguous:
             raise ValueError("out must be C-contiguous")
 
-        read_frames = len(out)
-        if read_frames + current_frame > self.frames:
-            read_frames = self.frames - current_frame
+        read_frames = min(len(out), remaining_frames)
 
         assert out.dtype.itemsize == _ffi.sizeof(ffi_type)
 
@@ -683,7 +681,7 @@ class SoundFile(object):
             raise ValueError("data.dtype must be one of %s" %
                              repr([dt.name for dt in _ffi_types]))
 
-        assert data.flags['C_CONTIGUOUS']
+        assert data.flags.c_contiguous
         assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
 
         writer = getattr(_snd, 'sf_writef_' + ffi_type)
@@ -754,7 +752,7 @@ def write(data, file, sample_rate, *args, **kwargs):
 
     """
     data = _np.asarray(data)
-    if len(data.shape) == 1:
+    if data.ndim == 1:
         channels = 1
     else:
         channels = data.shape[1]
