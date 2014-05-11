@@ -225,6 +225,13 @@ class TestSeekWaveFile(TestWaveFile):
             out_data = f.read(out=data)
             self.assertTrue(np.all(data == out_data))
 
+    def test_read_into_zero_len_out(self):
+        """Reading into aa zero len out should not read anything"""
+        with sf.SoundFile(self.filename) as f:
+            data = np.empty((0, f.channels), dtype='float64')
+            out_data = f.read(out=data)
+            self.assertTrue(np.all(data == out_data))
+
     def test_read_into_out_over_end(self):
         """Reading into out over end should return shorter data and write into out"""
         with sf.SoundFile(self.filename) as f:
