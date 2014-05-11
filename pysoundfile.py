@@ -665,8 +665,6 @@ class SoundFile(object):
 
         The data must be provided as a (frames x channels) NumPy
         array or as one-dimensional array for mono signals.
-        Use channels_first=False if you want to provide a (channels x
-        frames) array.
 
         """
         self._check_if_closed()
