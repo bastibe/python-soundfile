@@ -225,6 +225,35 @@ class TestSeekWaveFile(TestWaveFile):
             out_data = f.read(out=data)
             self.assertTrue(np.all(data == out_data))
 
+    def test_read_mono_into_out(self):
+        """Reading mono signal into out should return data and write into out"""
+        # create a dummy mono wave file
+        self.sample_rate = 44100
+        self.channels = 1
+        self.filename = 'test.wav'
+        self.data = np.ones((self.sample_rate, self.channels))*0.5
+        with sf.SoundFile(self.filename, 'w', self.sample_rate, self.channels) as f:
+            f.write(self.data)
+
+        with sf.SoundFile(self.filename) as f:
+            data = np.empty((100, f.channels), dtype='float64')
+            out_data = f.read(out=data)
+            self.assertTrue(np.all(data == out_data))
+
+    def test_read_into_out_with_too_many_channels(self):
+        """Reading into malformed out should throw an error"""
+        with sf.SoundFile(self.filename) as f:
+            data = np.empty((100, f.channels+1), dtype='float64')
+            with self.assertRaises(ValueError) as err:
+                out_data = f.read(out=data)
+
+    def test_read_into_out_with_too_many_dimensions(self):
+        """Reading into malformed out should throw an error"""
+        with sf.SoundFile(self.filename) as f:
+            data = np.empty((100, f.channels, 1), dtype='float64')
+            with self.assertRaises(ValueError) as err:
+                out_data = f.read(out=data)
+
     def test_read_into_zero_len_out(self):
         """Reading into aa zero len out should not read anything"""
         with sf.SoundFile(self.filename) as f:

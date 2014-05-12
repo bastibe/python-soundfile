@@ -628,6 +628,13 @@ class SoundFile(object):
                 out = _np.empty((frames, self.channels), dtype)
             else:
                 out = _np.empty(frames, dtype)
+        elif out.ndim not in (1, 2):
+            raise ValueError("out must be one- or two-dimensional")
+        elif out.ndim == 1 and self.channels != 1:
+            raise ValueError("out must have 2 dimensions for non-mono signals")
+        elif out.ndim == 2 and out.shape[1] != self.channels:
+            raise ValueError("two-dimensional out must have %i columns" %
+                             self.channels)
 
         try:
             ffi_type = _ffi_types[out.dtype]
