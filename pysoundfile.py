@@ -628,27 +628,12 @@ class SoundFile(object):
                 out = _np.empty((frames, self.channels), dtype)
             else:
                 out = _np.empty(frames, dtype)
-        elif out.ndim not in (1, 2):
-            raise ValueError("out must be one- or two-dimensional")
-        elif out.ndim == 1 and self.channels != 1:
-            raise ValueError("out must have 2 dimensions for non-mono signals")
-        elif out.ndim == 2 and out.shape[1] != self.channels:
-            raise ValueError("two-dimensional out must have %i columns" %
-                             self.channels)
 
-        try:
-            ffi_type = _ffi_types[out.dtype]
-        except KeyError:
-            raise ValueError("dtype must be one of %s" %
-                             repr([dt.name for dt in _ffi_types]))
-
-        if not out.flags.c_contiguous:
-            raise ValueError("out must be C-contiguous")
+        self._check_frames_and_channels(out)
 
         frames_to_read = min(len(out), remaining_frames)
 
-        assert out.dtype.itemsize == _ffi.sizeof(ffi_type)
-
+        ffi_type = _ffi_types[out.dtype]
         reader = getattr(_snd, 'sf_readf_' + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', out.ctypes.data)
         read_frames = reader(self._file, ptr, frames_to_read)
@@ -680,15 +665,9 @@ class SoundFile(object):
 
         data = _np.ascontiguousarray(data)
 
-        try:
-            ffi_type = _ffi_types[data.dtype]
-        except KeyError:
-            raise ValueError("data.dtype must be one of %s" %
-                             repr([dt.name for dt in _ffi_types]))
+        self._check_frames_and_channels(data)
 
-        assert data.flags.c_contiguous
-        assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
-
+        ffi_type = _ffi_types[data.dtype]
         writer = getattr(_snd, 'sf_writef_' + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', data.ctypes.data)
         written = writer(self._file, ptr, len(data))
@@ -698,6 +677,25 @@ class SoundFile(object):
         curr = self.seek(0, SEEK_CUR, 'w')
         self._info.frames = self.seek(0, SEEK_END, 'w')
         self.seek(curr, SEEK_SET, 'w')
+
+    def _check_frames_and_channels(self, data):
+        """Error if data is not compatible with the shape of the sound file.
+
+        """
+        if data.dtype not in _ffi_types:
+            raise ValueError("data.dtype must be one of %s" %
+                             repr([dt.name for dt in _ffi_types]))
+
+        if not data.flags.c_contiguous:
+            raise ValueError("data must be c_contiguous")
+
+        if data.ndim not in (1, 2):
+            raise ValueError("data must be one- or two-dimensional")
+        elif data.ndim == 1 and self.channels != 1:
+            raise ValueError("data must have 2 dimensions for non-mono signals")
+        elif data.ndim == 2 and data.shape[1] != self.channels:
+            raise ValueError("two-dimensional data must have %i columns" %
+                             self.channels)
 
 
 def open(*args, **kwargs):
