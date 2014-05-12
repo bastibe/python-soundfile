@@ -638,22 +638,22 @@ class SoundFile(object):
         if not out.flags.c_contiguous:
             raise ValueError("out must be C-contiguous")
 
-        read_frames = min(len(out), remaining_frames)
+        frames_to_read = min(len(out), remaining_frames)
 
         assert out.dtype.itemsize == _ffi.sizeof(ffi_type)
 
         reader = getattr(_snd, 'sf_readf_' + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', out.ctypes.data)
-        read = reader(self._file, ptr, read_frames)
+        read_frames = reader(self._file, ptr, frames_to_read)
         self._handle_error()
-        assert read == read_frames
+        assert read_frames == frames_to_read
 
-        if read_frames == len(out):
+        if frames_to_read == len(out):
             return out
         elif fill_value is None:
-            return out[:read_frames]
+            return out[:frames_to_read]
         else:
-            out[read_frames:] = fill_value
+            out[frames_to_read:] = fill_value
             return out
 
     def write(self, data):
