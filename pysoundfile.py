@@ -593,6 +593,22 @@ class SoundFile(object):
             raise ValueError("Invalid which: %s" % repr(which))
         return _snd.sf_seek(self._file, frames, whence)
 
+    def _read_or_write(self, funcname, array, frames):
+        try:
+            ffi_type = _ffi_types[array.dtype]
+        except KeyError:
+            raise ValueError("dtype must be one of %s" %
+                             repr([dt.name for dt in _ffi_types]))
+
+        assert array.flags.c_contiguous
+        assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
+
+        func = getattr(_snd, funcname + ffi_type)
+        ptr = _ffi.cast(ffi_type + '*', array.ctypes.data)
+        frames = func(self._file, ptr, frames)
+        self._handle_error()
+        return frames
+
     def read(self, frames=-1, dtype='float64', always_2d=True,
              fill_value=None, out=None):
         """Read a number of frames from the file.
@@ -638,18 +654,7 @@ class SoundFile(object):
             if not out.flags.c_contiguous:
                 raise ValueError("out must be C-contiguous")
 
-        try:
-            ffi_type = _ffi_types[out.dtype]
-        except KeyError:
-            raise ValueError("dtype must be one of %s" %
-                             repr([dt.name for dt in _ffi_types]))
-
-        assert out.dtype.itemsize == _ffi.sizeof(ffi_type)
-
-        reader = getattr(_snd, 'sf_readf_' + ffi_type)
-        ptr = _ffi.cast(ffi_type + '*', out.ctypes.data)
-        frames = reader(self._file, ptr, frames)
-        self._handle_error()
+        frames = self._read_or_write('sf_readf_', out, frames)
 
         if len(out) > frames:
             if fill_value is None:
@@ -677,19 +682,7 @@ class SoundFile(object):
         # no copy is made if data has already the correct memory layout:
         data = _np.ascontiguousarray(data)
 
-        try:
-            ffi_type = _ffi_types[data.dtype]
-        except KeyError:
-            raise ValueError("data.dtype must be one of %s" %
-                             repr([dt.name for dt in _ffi_types]))
-
-        assert data.flags.c_contiguous
-        assert data.dtype.itemsize == _ffi.sizeof(ffi_type)
-
-        writer = getattr(_snd, 'sf_writef_' + ffi_type)
-        ptr = _ffi.cast(ffi_type + '*', data.ctypes.data)
-        written = writer(self._file, ptr, len(data))
-        self._handle_error()
+        written = self._read_or_write('sf_writef_', data, len(data))
         assert written == len(data)
 
         curr = self.seek(0, SEEK_CUR, 'w')
