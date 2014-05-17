@@ -587,6 +587,12 @@ class SoundFile(object):
         return _snd.sf_seek(self._file, frames, whence)
 
     def _read_or_write(self, funcname, array, frames):
+        # Do some error checking and call into libsndfile
+        if (array.ndim not in (1, 2) or
+                array.ndim == 1 and self.channels != 1 or
+                array.ndim == 2 and array.shape[1] != self.channels):
+            raise ValueError("Invalid shape: %s" % repr(array.shape))
+
         try:
             ffi_type = _ffi_types[array.dtype]
         except KeyError:
@@ -595,6 +601,7 @@ class SoundFile(object):
 
         assert array.flags.c_contiguous
         assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
+        assert array.size == frames * self.channels
 
         func = getattr(_snd, funcname + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', array.ctypes.data)
