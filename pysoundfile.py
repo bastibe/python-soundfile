@@ -256,6 +256,13 @@ _default_subtypes = {
     'RF64':  'PCM_16',
 }
 
+_ffi_types = {
+    _np.dtype('float64'): 'double',
+    _np.dtype('float32'): 'float',
+    _np.dtype('int32'): 'int',
+    _np.dtype('int16'): 'short'
+}
+
 _snd = _ffi.dlopen('sndfile')
 
 
@@ -586,7 +593,8 @@ class SoundFile(object):
             raise ValueError("Invalid which: %s" % repr(which))
         return _snd.sf_seek(self._file, frames, whence)
 
-    def read(self, frames=-1, dtype='float64'):
+    def read(self, frames=-1, dtype='float64', always_2d=True,
+             fill_value=None, out=None):
         """Read a number of frames from the file.
 
         Reads the given number of frames in the given data format from
@@ -594,80 +602,172 @@ class SoundFile(object):
         position by the same number of frames.
         Use frames=-1 to read until the end of the file.
 
-        Returns the read data as a (frames x channels) NumPy array.
+        By default, a two-dimensional array is returned even if the
+        sound file has only one channel. Use always_2d=False to return
+        a one-dimensional array in this case.
 
-        If there is not enough data left in the file to read, a
-        smaller NumPy array will be returned.
+        If there is less data left in the file than requested, a
+        shorter array is returned. Use fill_value to always return the
+        given number of frames and fill all remaining frames with
+        fill_value.
+
+        If out is given as a numpy array, the data is written into
+        that array. If there is not enough data left in the file to
+        fill the array, the rest of the frames are ignored and a
+        smaller view to the array is returned. Use fill_value to fill
+        the rest of the array and always return the full-length array.
 
         """
+
         self._check_if_closed()
         if self.mode == 'w':
             raise RuntimeError("Cannot read from file opened in write mode")
-        formats = {
-            _np.float64: 'double[]',
-            _np.float32: 'float[]',
-            _np.int32: 'int[]',
-            _np.int16: 'short[]'
-        }
-        readers = {
-            _np.float64: _snd.sf_readf_double,
-            _np.float32: _snd.sf_readf_float,
-            _np.int32: _snd.sf_readf_int,
-            _np.int16: _snd.sf_readf_short
-        }
-        dtype = _np.dtype(dtype)
-        if dtype.type not in formats:
-            raise ValueError("Can only read int16, int32, float32 and float64")
+
+        remaining_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+
         if frames < 0:
-            curr = self.seek(0, SEEK_CUR, 'r')
-            frames = self.frames - curr
-        data = _ffi.new(formats[dtype.type], frames*self.channels)
-        read = readers[dtype.type](self._file, data, frames)
+            frames = remaining_frames
+        if frames > remaining_frames and fill_value is None:
+            frames = remaining_frames
+
+        if out is None:
+            if always_2d or self.channels > 1:
+                out = _np.empty((frames, self.channels), dtype)
+            else:
+                out = _np.empty(frames, dtype)
+
+        self._check_frames_and_channels(out)
+
+        frames_to_read = min(len(out), remaining_frames)
+
+        ffi_type = _ffi_types[out.dtype]
+        reader = getattr(_snd, 'sf_readf_' + ffi_type)
+        ptr = _ffi.cast(ffi_type + '*', out.ctypes.data)
+        read_frames = reader(self._file, ptr, frames_to_read)
         self._handle_error()
-        np_data = _np.frombuffer(_ffi.buffer(data), dtype=dtype,
-                                 count=read*self.channels)
-        return _np.reshape(np_data, (read, self.channels))
+        assert read_frames == frames_to_read
+
+        if frames_to_read == len(out):
+            return out
+        elif fill_value is None:
+            return out[:frames_to_read]
+        else:
+            out[frames_to_read:] = fill_value
+            return out
 
     def write(self, data):
         """Write a number of frames to the file.
 
-        Writes a number of frames to the current read position in the
-        file. This also advances the read position by the same number
+        Writes a number of frames to the current write position in the
+        file. This also advances the write position by the same number
         of frames and enlarges the file if necessary.
 
         The data must be provided as a (frames x channels) NumPy
-        array.
+        array or as one-dimensional array for mono signals.
 
         """
         self._check_if_closed()
         if self.mode == 'r':
             raise RuntimeError("Cannot write to file opened in read mode")
-        formats = {
-            _np.float64: 'double*',
-            _np.float32: 'float*',
-            _np.int32: 'int*',
-            _np.int16: 'short*'
-        }
-        writers = {
-            _np.float64: _snd.sf_writef_double,
-            _np.float32: _snd.sf_writef_float,
-            _np.int32: _snd.sf_writef_int,
-            _np.int16: _snd.sf_writef_short
-        }
-        if data.dtype.type not in writers:
-            raise ValueError("Data must be int16, int32, float32 or float64")
-        raw_data = _ffi.new('char[]', data.flatten().tostring())
-        written = writers[data.dtype.type](self._file,
-                                      _ffi.cast(
-                                          formats[data.dtype.type], raw_data),
-                                      len(data))
+
+        data = _np.ascontiguousarray(data)
+
+        self._check_frames_and_channels(data)
+
+        ffi_type = _ffi_types[data.dtype]
+        writer = getattr(_snd, 'sf_writef_' + ffi_type)
+        ptr = _ffi.cast(ffi_type + '*', data.ctypes.data)
+        written = writer(self._file, ptr, len(data))
         self._handle_error()
+        assert written == len(data)
 
         curr = self.seek(0, SEEK_CUR, 'w')
         self._info.frames = self.seek(0, SEEK_END, 'w')
         self.seek(curr, SEEK_SET, 'w')
 
-        return written
+    def _check_frames_and_channels(self, data):
+        """Error if data is not compatible with the shape of the sound file.
+
+        """
+        if data.dtype not in _ffi_types:
+            raise ValueError("data.dtype must be one of %s" %
+                             repr([dt.name for dt in _ffi_types]))
+
+        if not data.flags.c_contiguous:
+            raise ValueError("data must be c_contiguous")
+
+        if data.ndim not in (1, 2):
+            raise ValueError("data must be one- or two-dimensional")
+        elif data.ndim == 1 and self.channels != 1:
+            raise ValueError("data must have 2 dimensions for non-mono signals")
+        elif data.ndim == 2 and data.shape[1] != self.channels:
+            raise ValueError("two-dimensional data must have %i columns" %
+                             self.channels)
+
+
+def open(*args, **kwargs):
+    """Return a new SoundFile object.
+
+    Takes the same arguments as SoundFile.__init__().
+
+    """
+    return SoundFile(*args, **kwargs)
+
+
+def read(file, frames=-1, start=None, stop=None, **kwargs):
+    """Read a sound file and return its contents as NumPy array.
+
+    The number of frames to read can be specified with frames, the
+    position to start reading can be specified with start.
+    By default, the whole file is read from the beginning.
+    Alternatively, a range can be specified with start and stop.
+    Both start and stop accept negative indices to specify positions
+    relative to the end of the file.
+
+    The keyword arguments out, dtype, fill_value, channels_first and
+    always_2d are forwarded to SoundFile.read().
+    All further arguments are forwarded to SoundFile.__init__().
+
+    """
+    from inspect import getargspec
+
+    if frames >= 0 and stop is not None:
+        raise RuntimeError("Only one of (frames, stop) may be used")
+
+    read_kwargs = {}
+    for arg in getargspec(SoundFile.read).args:
+        if arg in kwargs:
+            read_kwargs[arg] = kwargs.pop(arg)
+    with SoundFile(file, 'r', **kwargs) as f:
+        start, stop, _ = slice(start, stop).indices(f.frames)
+        f.seek(start, SEEK_SET)
+        data = f.read(frames, **read_kwargs)
+    return data, f.sample_rate
+
+
+def write(data, file, sample_rate, *args, **kwargs):
+    """Write data from a NumPy array into a sound file.
+
+    If file exists, it will be overwritten!
+
+    If data is one-dimensional, a mono file is written.
+    For two-dimensional data, the columns are interpreted as channels by
+    default. Use channels_first=False to interpret the rows as channels.
+    All further arguments are forwarded to SoundFile.__init__().
+
+    Example usage:
+
+        import pysoundfile as sf
+        sf.write(myarray, 'myfile.wav', 44100, 'PCM_24')
+
+    """
+    data = _np.asarray(data)
+    if data.ndim == 1:
+        channels = 1
+    else:
+        channels = data.shape[1]
+    with SoundFile(file, 'w', sample_rate, channels, *args, **kwargs) as f:
+        f.write(data)
 
 
 def default_subtype(format):
