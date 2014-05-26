@@ -586,19 +586,20 @@ class SoundFile(object):
             raise ValueError("Invalid which: %s" % repr(which))
         return _snd.sf_seek(self._file, frames, whence)
 
-    def _read_or_write(self, funcname, array, frames):
-        # Do some error checking and call into libsndfile
+    def _check_array(self, array):
+        # Do some error checking
         if (array.ndim not in (1, 2) or
                 array.ndim == 1 and self.channels != 1 or
                 array.ndim == 2 and array.shape[1] != self.channels):
             raise ValueError("Invalid shape: %s" % repr(array.shape))
 
-        try:
-            ffi_type = _ffi_types[array.dtype]
-        except KeyError:
+        if array.dtype not in _ffi_types:
             raise ValueError("dtype must be one of %s" %
                              repr([dt.name for dt in _ffi_types]))
 
+    def _read_or_write(self, funcname, array, frames):
+        # Call into libsndfile
+        ffi_type = _ffi_types[array.dtype]
         assert array.flags.c_contiguous
         assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
         assert array.size == frames * self.channels
@@ -654,6 +655,7 @@ class SoundFile(object):
             if not out.flags.c_contiguous:
                 raise ValueError("out must be C-contiguous")
 
+        self._check_array(out)
         frames = self._read_or_write('sf_readf_', out, frames)
 
         if len(out) > frames:
@@ -682,6 +684,7 @@ class SoundFile(object):
         # no copy is made if data has already the correct memory layout:
         data = _np.ascontiguousarray(data)
 
+        self._check_array(data)
         written = self._read_or_write('sf_writef_', data, len(data))
         assert written == len(data)
 
