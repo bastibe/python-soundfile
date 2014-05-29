@@ -43,7 +43,74 @@ PySoundFile is BSD licensed.
 _ffi = _FFI()
 _ffi.cdef("""
 enum
-{
+{   /* Major formats. */
+    SF_FORMAT_WAV           = 0x010000,     /* Microsoft WAV format (little endian default). */
+    SF_FORMAT_AIFF          = 0x020000,     /* Apple/SGI AIFF format (big endian). */
+    SF_FORMAT_AU            = 0x030000,     /* Sun/NeXT AU format (big endian). */
+    SF_FORMAT_RAW           = 0x040000,     /* RAW PCM data. */
+    SF_FORMAT_PAF           = 0x050000,     /* Ensoniq PARIS file format. */
+    SF_FORMAT_SVX           = 0x060000,     /* Amiga IFF / SVX8 / SV16 format. */
+    SF_FORMAT_NIST          = 0x070000,     /* Sphere NIST format. */
+    SF_FORMAT_VOC           = 0x080000,     /* VOC files. */
+    SF_FORMAT_IRCAM         = 0x0A0000,     /* Berkeley/IRCAM/CARL */
+    SF_FORMAT_W64           = 0x0B0000,     /* Sonic Foundry's 64 bit RIFF/WAV */
+    SF_FORMAT_MAT4          = 0x0C0000,     /* Matlab (tm) V4.2 / GNU Octave 2.0 */
+    SF_FORMAT_MAT5          = 0x0D0000,     /* Matlab (tm) V5.0 / GNU Octave 2.1 */
+    SF_FORMAT_PVF           = 0x0E0000,     /* Portable Voice Format */
+    SF_FORMAT_XI            = 0x0F0000,     /* Fasttracker 2 Extended Instrument */
+    SF_FORMAT_HTK           = 0x100000,     /* HMM Tool Kit format */
+    SF_FORMAT_SDS           = 0x110000,     /* Midi Sample Dump Standard */
+    SF_FORMAT_AVR           = 0x120000,     /* Audio Visual Research */
+    SF_FORMAT_WAVEX         = 0x130000,     /* MS WAVE with WAVEFORMATEX */
+    SF_FORMAT_SD2           = 0x160000,     /* Sound Designer 2 */
+    SF_FORMAT_FLAC          = 0x170000,     /* FLAC lossless file format */
+    SF_FORMAT_CAF           = 0x180000,     /* Core Audio File format */
+    SF_FORMAT_WVE           = 0x190000,     /* Psion WVE format */
+    SF_FORMAT_OGG           = 0x200000,     /* Xiph OGG container */
+    SF_FORMAT_MPC2K         = 0x210000,     /* Akai MPC 2000 sampler */
+    SF_FORMAT_RF64          = 0x220000,     /* RF64 WAV file */
+
+    /* Subtypes from here on. */
+
+    SF_FORMAT_PCM_S8        = 0x0001,       /* Signed 8 bit data */
+    SF_FORMAT_PCM_16        = 0x0002,       /* Signed 16 bit data */
+    SF_FORMAT_PCM_24        = 0x0003,       /* Signed 24 bit data */
+    SF_FORMAT_PCM_32        = 0x0004,       /* Signed 32 bit data */
+
+    SF_FORMAT_PCM_U8        = 0x0005,       /* Unsigned 8 bit data (WAV and RAW only) */
+
+    SF_FORMAT_FLOAT         = 0x0006,       /* 32 bit float data */
+    SF_FORMAT_DOUBLE        = 0x0007,       /* 64 bit float data */
+
+    SF_FORMAT_ULAW          = 0x0010,       /* U-Law encoded. */
+    SF_FORMAT_ALAW          = 0x0011,       /* A-Law encoded. */
+    SF_FORMAT_IMA_ADPCM     = 0x0012,       /* IMA ADPCM. */
+    SF_FORMAT_MS_ADPCM      = 0x0013,       /* Microsoft ADPCM. */
+
+    SF_FORMAT_GSM610        = 0x0020,       /* GSM 6.10 encoding. */
+    SF_FORMAT_VOX_ADPCM     = 0x0021,       /* OKI / Dialogix ADPCM */
+
+    SF_FORMAT_G721_32       = 0x0030,       /* 32kbs G721 ADPCM encoding. */
+    SF_FORMAT_G723_24       = 0x0031,       /* 24kbs G723 ADPCM encoding. */
+    SF_FORMAT_G723_40       = 0x0032,       /* 40kbs G723 ADPCM encoding. */
+
+    SF_FORMAT_DWVW_12       = 0x0040,       /* 12 bit Delta Width Variable Word encoding. */
+    SF_FORMAT_DWVW_16       = 0x0041,       /* 16 bit Delta Width Variable Word encoding. */
+    SF_FORMAT_DWVW_24       = 0x0042,       /* 24 bit Delta Width Variable Word encoding. */
+    SF_FORMAT_DWVW_N        = 0x0043,       /* N bit Delta Width Variable Word encoding. */
+
+    SF_FORMAT_DPCM_8        = 0x0050,       /* 8 bit differential PCM (XI only) */
+    SF_FORMAT_DPCM_16       = 0x0051,       /* 16 bit differential PCM (XI only) */
+
+    SF_FORMAT_VORBIS        = 0x0060,       /* Xiph Vorbis encoding. */
+
+    /* Endian-ness options. */
+
+    SF_ENDIAN_FILE          = 0x00000000,   /* Default file endian-ness. */
+    SF_ENDIAN_LITTLE        = 0x10000000,   /* Force little endian-ness. */
+    SF_ENDIAN_BIG           = 0x20000000,   /* Force big endian-ness. */
+    SF_ENDIAN_CPU           = 0x30000000,   /* Force CPU endian-ness. */
+
     SF_FORMAT_SUBMASK       = 0x0000FFFF,
     SF_FORMAT_TYPEMASK      = 0x0FFF0000,
     SF_FORMAT_ENDMASK       = 0x30000000
@@ -59,10 +126,34 @@ enum
     SFC_GET_FORMAT_SUBTYPE          = 0x1033,
 } ;
 
+/*
+** String types that can be set and read from files. Not all file types
+** support this and even the file types which support one, may not support
+** all string types.
+*/
+
 enum
-{
+{   SF_STR_TITLE                    = 0x01,
+    SF_STR_COPYRIGHT                = 0x02,
+    SF_STR_SOFTWARE                 = 0x03,
+    SF_STR_ARTIST                   = 0x04,
+    SF_STR_COMMENT                  = 0x05,
+    SF_STR_DATE                     = 0x06,
+    SF_STR_ALBUM                    = 0x07,
+    SF_STR_LICENSE                  = 0x08,
+    SF_STR_TRACKNUMBER              = 0x09,
+    SF_STR_GENRE                    = 0x10
+} ;
+
+enum
+{   /* True and false */
     SF_FALSE    = 0,
     SF_TRUE     = 1,
+
+    /* Modes for opening files. */
+    SFM_READ    = 0x10,
+    SFM_WRITE   = 0x20,
+    SFM_RDWR    = 0x30,
 } ;
 
 typedef int64_t sf_count_t ;
@@ -147,85 +238,32 @@ typedef struct SF_FORMAT_INFO
 } SF_FORMAT_INFO ;
 """)
 
+_snd = _ffi.dlopen('sndfile')
+
 _open_modes = {
-    'r':  0x10,
-    'w':  0x20,
-    'rw': 0x30,
+    'r':  _snd.SFM_READ,
+    'w':  _snd.SFM_WRITE,
+    'rw': _snd.SFM_RDWR,
 }
 
-_str_types = {
-    'title':       0x01,
-    'copyright':   0x02,
-    'software':    0x03,
-    'artist':      0x04,
-    'comment':     0x05,
-    'date':        0x06,
-    'album':       0x07,
-    'license':     0x08,
-    'tracknumber': 0x09,
-    'genre':       0x10,
-}
+_formats = {}
+_subtypes = {}
+_endians = {}
+_str_types = {}
 
-_formats = {
-    'WAV':   0x010000, # Microsoft WAV format (little endian default).
-    'AIFF':  0x020000, # Apple/SGI AIFF format (big endian).
-    'AU':    0x030000, # Sun/NeXT AU format (big endian).
-    'RAW':   0x040000, # RAW PCM data.
-    'PAF':   0x050000, # Ensoniq PARIS file format.
-    'SVX':   0x060000, # Amiga IFF / SVX8 / SV16 format.
-    'NIST':  0x070000, # Sphere NIST format.
-    'VOC':   0x080000, # VOC files.
-    'IRCAM': 0x0A0000, # Berkeley/IRCAM/CARL
-    'W64':   0x0B0000, # Sonic Foundry's 64 bit RIFF/WAV
-    'MAT4':  0x0C0000, # Matlab (tm) V4.2 / GNU Octave 2.0
-    'MAT5':  0x0D0000, # Matlab (tm) V5.0 / GNU Octave 2.1
-    'PVF':   0x0E0000, # Portable Voice Format
-    'XI':    0x0F0000, # Fasttracker 2 Extended Instrument
-    'HTK':   0x100000, # HMM Tool Kit format
-    'SDS':   0x110000, # Midi Sample Dump Standard
-    'AVR':   0x120000, # Audio Visual Research
-    'WAVEX': 0x130000, # MS WAVE with WAVEFORMATEX
-    'SD2':   0x160000, # Sound Designer 2
-    'FLAC':  0x170000, # FLAC lossless file format
-    'CAF':   0x180000, # Core Audio File format
-    'WVE':   0x190000, # Psion WVE format
-    'OGG':   0x200000, # Xiph OGG container
-    'MPC2K': 0x210000, # Akai MPC 2000 sampler
-    'RF64':  0x220000, # RF64 WAV file
-}
+for k, v in vars(_snd).items():
+    if k.startswith('SF_FORMAT_'):
+        name = k[len('SF_FORMAT_'):]
+        if v & _snd.SF_FORMAT_TYPEMASK:
+            _formats[name] = v
+        elif v & _snd.SF_FORMAT_SUBMASK:
+            _subtypes[name] = v
+    elif k.startswith('SF_ENDIAN_'):
+        _endians[k[len('SF_ENDIAN_'):]] = v
+    elif k.startswith('SF_STR_'):
+        _str_types[k[len('SF_STR_'):].lower()] = v
 
-_subtypes = {
-    'PCM_S8':    0x0001, # Signed 8 bit data
-    'PCM_16':    0x0002, # Signed 16 bit data
-    'PCM_24':    0x0003, # Signed 24 bit data
-    'PCM_32':    0x0004, # Signed 32 bit data
-    'PCM_U8':    0x0005, # Unsigned 8 bit data (WAV and RAW only)
-    'FLOAT':     0x0006, # 32 bit float data
-    'DOUBLE':    0x0007, # 64 bit float data
-    'ULAW':      0x0010, # U-Law encoded.
-    'ALAW':      0x0011, # A-Law encoded.
-    'IMA_ADPCM': 0x0012, # IMA ADPCM.
-    'MS_ADPCM':  0x0013, # Microsoft ADPCM.
-    'GSM610':    0x0020, # GSM 6.10 encoding.
-    'VOX_ADPCM': 0x0021, # OKI / Dialogix ADPCM
-    'G721_32':   0x0030, # 32kbs G721 ADPCM encoding.
-    'G723_24':   0x0031, # 24kbs G723 ADPCM encoding.
-    'G723_40':   0x0032, # 40kbs G723 ADPCM encoding.
-    'DWVW_12':   0x0040, # 12 bit Delta Width Variable Word encoding.
-    'DWVW_16':   0x0041, # 16 bit Delta Width Variable Word encoding.
-    'DWVW_24':   0x0042, # 24 bit Delta Width Variable Word encoding.
-    'DWVW_N':    0x0043, # N bit Delta Width Variable Word encoding.
-    'DPCM_8':    0x0050, # 8 bit differential PCM (XI only)
-    'DPCM_16':   0x0051, # 16 bit differential PCM (XI only)
-    'VORBIS':    0x0060, # Xiph Vorbis encoding.
-}
-
-_endians = {
-    'FILE':   0x00000000, # Default file endian-ness.
-    'LITTLE': 0x10000000, # Force little endian-ness.
-    'BIG':    0x20000000, # Force big endian-ness.
-    'CPU':    0x30000000, # Force CPU endian-ness.
-}
+del k, v, name
 
 # libsndfile doesn't specify default subtypes, these are somehow arbitrary:
 _default_subtypes = {
@@ -262,8 +300,6 @@ _ffi_types = {
     _np.dtype('int32'): 'int',
     _np.dtype('int16'): 'short'
 }
-
-_snd = _ffi.dlopen('sndfile')
 
 
 class SoundFile(object):
