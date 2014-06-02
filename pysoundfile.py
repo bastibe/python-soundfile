@@ -700,16 +700,21 @@ class SoundFile(object):
         self.seek(curr, SEEK_SET, 'w')
 
 
-def open(*args, **kwargs):
+def open(file, mode='r', sample_rate=None, channels=None,
+         subtype=None, endian=None, format=None, closefd=True):
     """Return a new SoundFile object.
 
     Takes the same arguments as SoundFile.__init__().
 
     """
-    return SoundFile(*args, **kwargs)
+    return SoundFile(file, mode, sample_rate, channels,
+                     subtype, endian, format, closefd)
 
 
-def read(file, frames=-1, start=None, stop=None, **kwargs):
+def read(file, frames=-1, start=None, stop=None,
+         dtype='float64', always_2d=True, fill_value=None, out=None,
+         sample_rate=None, channels=None,
+         subtype=None, endian=None, format=None, closefd=True):
     """Read a sound file and return its contents as NumPy array.
 
     The number of frames to read can be specified with frames, the
@@ -724,34 +729,31 @@ def read(file, frames=-1, start=None, stop=None, **kwargs):
     All further arguments are forwarded to SoundFile.__init__().
 
     """
-    from inspect import getargspec
-
     if frames >= 0 and stop is not None:
         raise RuntimeError("Only one of {frames, stop} may be used")
 
-    read_kwargs = {}
-    for arg in getargspec(SoundFile.read).args:
-        if arg in kwargs:
-            read_kwargs[arg] = kwargs.pop(arg)
-    with SoundFile(file, 'r', **kwargs) as f:
+    with SoundFile(file, 'r', sample_rate, channels,
+                   subtype, endian, format, closefd) as f:
         start, stop, _ = slice(start, stop).indices(f.frames)
         if stop < start:
             stop = start
         if frames < 0:
             frames = stop - start
         f.seek(start, SEEK_SET)
-        data = f.read(frames, **read_kwargs)
+        data = f.read(frames, dtype, always_2d, fill_value, out)
     return data, f.sample_rate
 
 
-def write(data, file, sample_rate, *args, **kwargs):
+def write(data, file, sample_rate,
+          subtype=None, endian=None, format=None, closefd=True):
     """Write data from a NumPy array into a sound file.
 
     If file exists, it will be overwritten!
 
     If data is one-dimensional, a mono file is written.
     For two-dimensional data, the columns are interpreted as channels.
-    All further arguments are forwarded to SoundFile.__init__().
+
+    All further arguments are forwarded to open().
 
     Example usage:
 
@@ -764,7 +766,8 @@ def write(data, file, sample_rate, *args, **kwargs):
         channels = 1
     else:
         channels = data.shape[1]
-    with SoundFile(file, 'w', sample_rate, channels, *args, **kwargs) as f:
+    with open(file, 'w', sample_rate, channels,
+              subtype, endian, format, closefd) as f:
         f.write(data)
 
 
