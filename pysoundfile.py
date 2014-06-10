@@ -303,7 +303,7 @@ class SoundFile(object):
 
     def __init__(self, file, mode='r', sample_rate=None, channels=None,
                  subtype=None, endian=None, format=None, closefd=True):
-        """Open a new SoundFile.
+        """Open a sound file.
 
         If a file is opened with mode 'r' (the default) or 'rw',
         no sample_rate, channels or file format need to be given. If a
@@ -626,21 +626,8 @@ class SoundFile(object):
         position by the same number of frames.
         Use frames=-1 to read until the end of the file.
 
-        A two-dimensional NumPy array is returned, where the channels
-        are stored along the first dimension, i.e. as columns.
-        A two-dimensional array is returned even if the sound file has
-        only one channel.  Use always_2d=False to return a
-        one-dimensional array in this case.
-
-        If out is specified, the data is written into the given NumPy
-        array. In this case, the arguments frames, dtype and always_2d
-        are silently ignored!
-
-        If there is less data left in the file than requested, the rest
-        of the frames are filled with fill_value. If fill_value=None, a
-        smaller array is returned.
-        If out is given, only a part of it is overwritten and a view
-        containing all valid frames is returned.
+        For further keyword arguments see the module-level function
+        read().
 
         """
         self._check_if_closed()
@@ -702,13 +689,10 @@ class SoundFile(object):
 
 def open(file, mode='r', sample_rate=None, channels=None,
          subtype=None, endian=None, format=None, closefd=True):
-    """Return a new SoundFile object.
-
-    Takes the same arguments as SoundFile.__init__().
-
-    """
     return SoundFile(file, mode, sample_rate, channels,
                      subtype, endian, format, closefd)
+
+open.__doc__ = SoundFile.__init__.__doc__
 
 
 def read(file, frames=-1, start=None, stop=None,
@@ -724,9 +708,24 @@ def read(file, frames=-1, start=None, stop=None,
     Both start and stop accept negative indices to specify positions
     relative to the end of the file.
 
-    The keyword arguments out, dtype, fill_value and always_2d are
-    forwarded to SoundFile.read().
-    All further arguments are forwarded to SoundFile.__init__().
+    A two-dimensional NumPy array is returned, where the channels are
+    stored along the first dimension, i.e. as columns.
+    A two-dimensional array is returned even if the sound file has only
+    one channel.
+    Use always_2d=False to return a one-dimensional array in this case.
+
+    If out is specified, the data is written into the given NumPy array.
+    In this case, the arguments frames, dtype and always_2d are silently
+    ignored!
+
+    If there is less data left in the file than requested, the rest of
+    the frames are filled with fill_value. If fill_value=None, a smaller
+    array is returned.
+    If out is given, only a part of it is overwritten and a view
+    containing all valid frames is returned.
+
+    The keyword arguments sample_rate, channels, format, subtype and
+    endian are only needed for 'RAW' files. See open() for details.
 
     """
     if frames >= 0 and stop is not None:
