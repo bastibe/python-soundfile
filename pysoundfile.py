@@ -303,7 +303,7 @@ class SoundFile(object):
 
     def __init__(self, file, mode='r', sample_rate=None, channels=None,
                  subtype=None, endian=None, format=None, closefd=True):
-        """Open a new SoundFile.
+        """Open a sound file.
 
         If a file is opened with mode 'r' (the default) or 'rw',
         no sample_rate, channels or file format need to be given. If a
@@ -633,7 +633,7 @@ class SoundFile(object):
         one-dimensional array in this case.
 
         If out is specified, the data is written into the given NumPy
-        array. In this case, the arguments frames, dtype and always_2d
+        array.  In this case, the arguments frames, dtype and always_2d
         are silently ignored!
 
         If there is less data left in the file than requested, the rest
@@ -698,6 +698,89 @@ class SoundFile(object):
         curr = self.seek(0, SEEK_CUR, 'w')
         self._info.frames = self.seek(0, SEEK_END, 'w')
         self.seek(curr, SEEK_SET, 'w')
+
+
+def open(file, mode='r', sample_rate=None, channels=None,
+         subtype=None, endian=None, format=None, closefd=True):
+    return SoundFile(file, mode, sample_rate, channels,
+                     subtype, endian, format, closefd)
+
+open.__doc__ = SoundFile.__init__.__doc__
+
+
+def read(file, frames=-1, start=None, stop=None,
+         dtype='float64', always_2d=True, fill_value=None, out=None,
+         sample_rate=None, channels=None,
+         subtype=None, endian=None, format=None, closefd=True):
+    """Read a sound file and return its contents as NumPy array.
+
+    The number of frames to read can be specified with frames, the
+    position to start reading can be specified with start.
+    By default, the whole file is read from the beginning.
+    Alternatively, a range can be specified with start and stop.
+    Both start and stop accept negative indices to specify positions
+    relative to the end of the file.
+
+    A two-dimensional NumPy array is returned, where the channels are
+    stored along the first dimension, i.e. as columns.
+    A two-dimensional array is returned even if the sound file has only
+    one channel.
+    Use always_2d=False to return a one-dimensional array in this case.
+
+    If out is specified, the data is written into the given NumPy array.
+    In this case, the arguments frames, dtype and always_2d are silently
+    ignored!
+
+    If there is less data left in the file than requested, the rest of
+    the frames are filled with fill_value. If fill_value=None, a smaller
+    array is returned.
+    If out is given, only a part of it is overwritten and a view
+    containing all valid frames is returned.
+
+    The keyword arguments sample_rate, channels, format, subtype and
+    endian are only needed for 'RAW' files. See open() for details.
+
+    """
+    if frames >= 0 and stop is not None:
+        raise RuntimeError("Only one of {frames, stop} may be used")
+
+    with SoundFile(file, 'r', sample_rate, channels,
+                   subtype, endian, format, closefd) as f:
+        start, stop, _ = slice(start, stop).indices(f.frames)
+        if stop < start:
+            stop = start
+        if frames < 0:
+            frames = stop - start
+        f.seek(start, SEEK_SET)
+        data = f.read(frames, dtype, always_2d, fill_value, out)
+    return data, f.sample_rate
+
+
+def write(data, file, sample_rate,
+          subtype=None, endian=None, format=None, closefd=True):
+    """Write data from a NumPy array into a sound file.
+
+    If file exists, it will be overwritten!
+
+    If data is one-dimensional, a mono file is written.
+    For two-dimensional data, the columns are interpreted as channels.
+
+    All further arguments are forwarded to open().
+
+    Example usage:
+
+        import pysoundfile as sf
+        sf.write(myarray, 'myfile.wav', 44100, 'PCM_24')
+
+    """
+    data = _np.asarray(data)
+    if data.ndim == 1:
+        channels = 1
+    else:
+        channels = data.shape[1]
+    with open(file, 'w', sample_rate, channels,
+              subtype, endian, format, closefd) as f:
+        f.write(data)
 
 
 def default_subtype(format):
