@@ -3,6 +3,238 @@ import pysoundfile as sf
 import numpy as np
 import os
 import io
+import pytest
+
+data_05 = np.ones((5,2))*0.5
+file_05 = 'tests/test_0.5.wav'
+file_w  = 'tests/test_w.wav'
+
+@pytest.fixture(params=['filename', 'filehandle', 'bytestream'])
+def wavefile_r(request):
+    if request.param == 'filename':
+        file = sf.SoundFile(file_05)
+    elif request.param == 'filehandle':
+        handle = os.open(file_05, os.O_RDONLY)
+        file = sf.SoundFile(handle)
+        # TODO: does sf.SoundFile auto-close the handle???
+        # request.addfinalizer(lambda: os.close(handle))
+    elif request.param =='bytestream':
+        bytesio = open(file_05, 'rb')
+        file = sf.SoundFile(bytesio)
+        request.addfinalizer(bytesio.close)
+    request.addfinalizer(file.close)
+    return file
+
+@pytest.fixture(params=['filename', 'filehandle', 'bytestream'])
+def wavefile_w(request):
+    if request.param == 'filename':
+        file = sf.SoundFile(file_w, mode='w', sample_rate=44100, channels=2)
+    elif request.param == 'filehandle':
+        handle = os.open(file_w, os.O_CREAT | os.O_WRONLY)
+        file = sf.SoundFile(handle, mode='w', sample_rate=44100, channels=2, format='wav')
+        # TODO: does sf.SoundFile auto-close the handle???
+        # request.addfinalizer(lambda: os.close(handle))
+    elif request.param =='bytestream':
+        bytesio = open(file_w, 'wb')
+        file = sf.SoundFile(bytesio, mode='w', sample_rate=44100, channels=2, format='wav')
+        request.addfinalizer(bytesio.close)
+    request.addfinalizer(file.close)
+    request.addfinalizer(lambda: os.remove(file_w))
+    return file
+
+@pytest.fixture(params=[('r', 'filename'),
+                        ('w', 'filename'),
+                        ('r', 'filehandle'),
+                        ('w', 'filehandle'),
+                        ('r', 'bytestream'),
+                        ('w', 'bytestream')])
+def wavefile_all(request):
+    if request.param == ('r', 'filename'):
+        file = sf.SoundFile(file_05)
+    elif request.param == ('r', 'filehandle'):
+        handle = os.open(file_05, os.O_RDONLY)
+        file = sf.SoundFile(handle)
+        # TODO: does sf.SoundFile auto-close the handle???
+        # request.addfinalizer(lambda: os.close(handle))
+    elif request.param == ('r', 'bytestream'):
+        bytesio = open(file_05, 'rb')
+        file = sf.SoundFile(bytesio)
+        request.addfinalizer(bytesio.close)
+    if request.param == ('w', 'filename'):
+        file = sf.SoundFile(file_w, mode='w', sample_rate=44100, channels=2)
+    elif request.param == ('w', 'filehandle'):
+        handle = os.open(file_w, os.O_CREAT | os.O_WRONLY)
+        file = sf.SoundFile(handle, mode='w', sample_rate=44100, channels=2, format='wav')
+        # TODO: does sf.SoundFile auto-close the handle???
+        # request.addfinalizer(lambda: os.close(handle))
+    elif request.param ==('w', 'bytestream'):
+        bytesio = open(file_w, 'wb')
+        file = sf.SoundFile(bytesio, mode='w', sample_rate=44100, channels=2, format='wav')
+        request.addfinalizer(bytesio.close)
+    request.addfinalizer(file.close)
+    if request.param[0] == 'w':
+        request.addfinalizer(lambda: os.remove(file_w))
+    return file
+
+# ------------------------------------------------------------------------------
+# Test file metadata
+# ------------------------------------------------------------------------------
+
+def test_file_content(wavefile_r):
+    assert np.all(data_05 == wavefile_r[:])
+
+def test_mode_should_be_in_read_mode(wavefile_r):
+    assert wavefile_r.mode == 'r'
+
+def test_mode_should_be_in_read_mode(wavefile_w):
+    assert wavefile_w.mode == 'w'
+
+def test_mode_should_start_at_beginning(wavefile_all):
+    assert wavefile_all.seek(0, sf.SEEK_CUR) == 0
+
+def test_number_of_channels(wavefile_all):
+    assert wavefile_all.channels == 2
+
+def test_sample_rate(wavefile_all):
+    assert wavefile_all.sample_rate == 44100
+
+def test_format_metadata(wavefile_all):
+    assert wavefile_all.format == 'WAV'
+    assert wavefile_all.subtype == 'PCM_16'
+    assert wavefile_all.endian == 'FILE'
+    assert wavefile_all.format_info == 'WAV (Microsoft)'
+    assert wavefile_all.subtype_info == 'Signed 16 bit PCM'
+
+def test_data_length(wavefile_r):
+    assert len(wavefile_r) == len(data_05)
+
+def test_data_length(wavefile_w):
+    assert len(wavefile_w) == 0
+
+def test_file_exists(wavefile_w):
+    assert os.path.isfile(file_w)
+
+# ------------------------------------------------------------------------------
+# Test seek
+# ------------------------------------------------------------------------------
+
+def test_seek_should_advance_read_pointer(wavefile_r):
+    assert wavefile_r.seek(2) == 2
+
+def test_seek_multiple_times_should_advance_read_pointer(wavefile_r):
+    wavefile_r.seek(2)
+    assert wavefile_r.seek(2, whence=sf.SEEK_CUR) == 4
+
+def test_seek_to_end_should_advance_read_pointer_to_end(wavefile_r):
+    assert wavefile_r.seek(-2, whence=sf.SEEK_END) == 3
+
+def test_seek_read_pointer_should_advance_read_pointer(wavefile_r):
+    assert wavefile_r.seek(2, which='r') == 2
+
+def test_seek_read_pointer_should_advance_read_pointer(wavefile_w):
+    assert wavefile_w.seek(2, which='w') == 2
+
+# ------------------------------------------------------------------------------
+# Test read
+# ------------------------------------------------------------------------------
+
+def test_read_write_only(wavefile_w):
+    with pytest.raises(RuntimeError):
+        wavefile_w.read(2)
+
+def test_read_should_read_data_and_advance_read_pointer(wavefile_r):
+    data = wavefile_r.read(2)
+    assert np.all(data == data_05[:2])
+    assert wavefile_r.seek(0, sf.SEEK_CUR) == 2
+
+def test_read_should_read_float64_data(wavefile_r):
+    assert wavefile_r[:].dtype == np.float64
+
+def test_read_int16_should_read_int16_data(wavefile_r):
+    assert wavefile_r.read(2, dtype='int16').dtype == np.int16
+
+def test_read_int32_should_read_int32_data(wavefile_r):
+    assert wavefile_r.read(2, dtype='int32').dtype == np.int32
+
+def test_read_float32_should_read_float32_data(wavefile_r):
+    assert wavefile_r.read(2, dtype='float32').dtype == np.float32
+
+def test_read_by_indexing_should_read_but_not_advance_read_pointer(wavefile_r):
+    assert np.all(wavefile_r[:2] == data_05[:2])
+    assert wavefile_r.seek(0, sf.SEEK_CUR) == 0
+
+def test_read_n_frames_should_return_n_frames(wavefile_r):
+    assert len(wavefile_r.read(2)) == 2
+
+def test_read_all_frames_should_read_all_remaining_frames(wavefile_r):
+    wavefile_r.seek(-2, sf.SEEK_END)
+    assert np.all(wavefile_r.read() == data_05[-2:])
+
+def test_read_over_end_should_return_only_remaining_frames(wavefile_r):
+    wavefile_r.seek(-2, sf.SEEK_END)
+    assert np.all(wavefile_r.read(4) == data_05[-2:])
+
+def test_read_over_end_with_fill_should_reaturn_asked_frames(wavefile_r):
+    wavefile_r.seek(-2, sf.SEEK_END)
+    data = wavefile_r.read(4, fill_value=0)
+    assert np.all(data[:2] == data_05[-2:])
+    assert np.all(data[2:] == 0)
+    assert len(data) == 4
+
+def test_read_into_out_should_return_data_and_write_into_out(wavefile_r):
+    out = np.empty((2, wavefile_r.channels), dtype='float64')
+    data = wavefile_r.read(out=out)
+    assert np.all(data == out)
+
+def test_read_into_malformed_out_should_fail(wavefile_r):
+    out = np.empty((2, wavefile_r.channels+1), dtype='float64')
+    with pytest.raises(ValueError):
+        wavefile_r.read(out=out)
+
+def test_read_into_out_with_too_many_dimensions_should_fail(wavefile_r):
+    out = np.empty((2, wavefile_r.channels, 1), dtype='float64')
+    with pytest.raises(ValueError):
+        wavefile_r.read(out=out)
+
+def test_read_into_zero_len_out_should_not_read_anything(wavefile_r):
+    out = np.empty((0, wavefile_r.channels), dtype='float64')
+    data = wavefile_r.read(out=out)
+    assert len(data) == 0
+    assert len(out) == 0
+    assert wavefile_r.seek(0, sf.SEEK_CUR) == 0
+
+def test_read_into_out_over_end_should_return_shorter_data_and_write_into_out(wavefile_r):
+    out = np.ones((4, wavefile_r.channels), dtype='float64')
+    wavefile_r.seek(-2, sf.SEEK_END)
+    data = wavefile_r.read(out=out)
+    assert np.all(data[:2] == out[:2])
+    assert np.all(data[2:] == 1)
+    assert out.shape == (4, wavefile_r.channels)
+    assert data.shape == (2, wavefile_r.channels)
+
+def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into_out(wavefile_r):
+    out = np.ones((4, wavefile_r.channels), dtype='float64')
+    wavefile_r.seek(-2, sf.SEEK_END)
+    data = wavefile_r.read(out=out, fill_value=0)
+    assert np.all(data == out)
+    assert np.all(data[2:] == 0)
+    assert out.shape == (4, wavefile_r.channels)
+
+# ------------------------------------------------------------------------------
+# Test write
+# ------------------------------------------------------------------------------
+
+def test_write_to_read_only_file_should_fail(wavefile_r):
+    with pytest.raises(RuntimeError):
+        wavefile_r.write(data_05)
+
+def test_write_should_write_and_advance_write_pointer(wavefile_w):
+    wavefile_w.write(data_05)
+    assert wavefile_w.seek(0, sf.SEEK_CUR) == 5
+
+# ------------------------------------------------------------------------------
+# Legacy tests
+# ------------------------------------------------------------------------------
 
 class TestWaveFile(unittest.TestCase):
     def setUp(self):
@@ -19,58 +251,12 @@ class TestWaveFile(unittest.TestCase):
 
 
 class TestBasicAttributesOfWaveFile(TestWaveFile):
-    def test_file_exists(self):
-        """The test file should exist"""
-        self.assertTrue(os.path.isfile(self.filename))
-
-    def test_open_file_descriptor(self):
-        """Opening a file handle should work"""
-        handle = os.open(self.filename, os.O_RDONLY)
-        with sf.SoundFile(handle) as f:
-            self.assertTrue(np.all(self.data == f[:]))
-
-    def test_open_virtual_io(self):
-        """Opening a file-like object should work"""
-        with open(self.filename, 'rb') as bytesio:
-            with sf.SoundFile(bytesio) as f:
-                self.assertTrue(np.all(self.data == f[:]))
-
-    def test_read_mode(self):
-        """Opening the file in read mode should open in read mode from beginning"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(f.mode, 'r')
-            self.assertEqual(f.seek(0, sf.SEEK_CUR), 0)
-
-    def test_write_mode(self):
-        """Opening the file in write mode should open in write mode from beginning"""
-        with sf.SoundFile(self.filename, 'w', self.sample_rate, self.channels) as f:
-            self.assertEqual(f.mode, 'w')
-            self.assertEqual(f.seek(0, sf.SEEK_CUR), 0)
 
     def test_rw_mode(self):
         """Opening the file in rw mode should open in rw mode from end"""
         with sf.SoundFile(self.filename, 'rw') as f:
             self.assertEqual(f.mode, 'rw')
             self.assertEqual(f.seek(0, sf.SEEK_CUR), len(f))
-
-    def test_channels(self):
-        """The test file should have the correct number of channels"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(f.channels, self.channels)
-
-    def test_sample_rate(self):
-        """The test file should have the correct number of sample rate"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(f.sample_rate, self.sample_rate)
-
-    def test_format(self):
-        """The test file should be a wave file"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(f.format, 'WAV')
-            self.assertEqual(f.subtype, 'PCM_16')
-            self.assertEqual(f.endian, 'FILE')
-            self.assertEqual(f.format_info, 'WAV (Microsoft)')
-            self.assertEqual(f.subtype_info, 'Signed 16 bit PCM')
 
     def test_context_manager(self):
         """The context manager should close the file"""
@@ -84,16 +270,6 @@ class TestBasicAttributesOfWaveFile(TestWaveFile):
         self.assertFalse(f.closed)
         f.close()
         self.assertTrue(f.closed)
-
-    def test_file_length(self):
-        """The file should have the correct length"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(len(f), self.sample_rate)
-
-    def test_file_contents(self):
-        """The file should contain the correct data"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertTrue(np.all(self.data == f[:]))
 
     def test_file_attributes(self):
         """Changing a file attribute should save it on disk"""
@@ -112,27 +288,6 @@ class TestBasicAttributesOfWaveFile(TestWaveFile):
 
 
 class TestSeekWaveFile(TestWaveFile):
-    def test_seek(self):
-        """Seeking should advance the read/write pointer"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(f.seek(100), 100)
-
-    def test_seek_cur(self):
-        """seeking multiple times should advance the read/write pointer"""
-        with sf.SoundFile(self.filename) as f:
-            f.seek(100)
-            self.assertEqual(f.seek(100, whence=sf.SEEK_CUR), 200)
-
-    def test_seek_end(self):
-        """seeking from end should advance the read/write pointer"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(f.seek(-100, whence=SEEK_END), self.sample_rate-100)
-
-    def test_seek_read(self):
-        """Read-seeking should advance the read pointer"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(f.seek(100, which='r'), 100)
-
     def test_seek_write(self):
         """write-seeking should advance the write pointer"""
         with sf.SoundFile(self.filename, 'rw') as f:
@@ -148,83 +303,6 @@ class TestSeekWaveFile(TestWaveFile):
 
 
 class TestSeekWaveFile(TestWaveFile):
-    def test_read(self):
-        """read should read data and advance the read pointer"""
-        with sf.SoundFile(self.filename) as f:
-            data = f.read(100)
-            self.assertTrue(np.all(data == self.data[:100]))
-            self.assertEqual(100, f.seek(0, sf.SEEK_CUR))
-
-    def test_read_write_only(self):
-        """reading a write-only file should not work"""
-        with sf.SoundFile(self.filename, 'w', self.sample_rate, self.channels) as f:
-            with self.assertRaises(RuntimeError) as err:
-                f.read(100)
-
-    def test_default_read_format(self):
-        """By default, np.float64 should be read"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(f[:].dtype, np.float64)
-
-    def test_read_int16(self):
-        """reading 16 bit integers should read np.int16"""
-        with sf.SoundFile(self.filename) as f:
-            data = f.read(100, dtype='int16')
-            self.assertEqual(data.dtype, np.int16)
-
-    def test_read_int32(self):
-        """reading 32 bit integers should read np.int32"""
-        with sf.SoundFile(self.filename) as f:
-            data = f.read(100, dtype='int32')
-            self.assertEqual(data.dtype, np.int32)
-
-    def test_read_float32(self):
-        """reading 32 bit floats should read np.float32"""
-        with sf.SoundFile(self.filename) as f:
-            data = f.read(100, dtype='float32')
-            self.assertEqual(data.dtype, np.float32)
-
-    def test_read_indexing(self):
-        """Reading using indexing should read but not advance read pointer"""
-        with sf.SoundFile(self.filename) as f:
-            self.assertTrue(np.all(f[:100] == self.data[:100]))
-            self.assertEqual(0, f.seek(0, sf.SEEK_CUR))
-
-    def test_read_number_of_frames(self):
-        """Reading N frames should return N frames"""
-        with sf.SoundFile(self.filename) as f:
-            data = f.read(100)
-            self.assertEqual(len(data), 100)
-
-    def test_read_all_frames(self):
-        """Reading should return all remaining frames"""
-        with sf.SoundFile(self.filename) as f:
-            f.seek(-100, sf.SEEK_END)
-            data = f.read()
-            self.assertEqual(len(data), 100)
-
-    def test_read_number_of_frames_over_end(self):
-        """Reading N frames at EOF should return only remaining frames"""
-        with sf.SoundFile(self.filename) as f:
-            f.seek(-50, sf.SEEK_END)
-            data = f.read(100)
-            self.assertEqual(len(data), 50)
-
-    def test_read_number_of_frames_over_end_with_fill(self):
-        """Reading N frames with fill at EOF should return N frames"""
-        with sf.SoundFile(self.filename) as f:
-            f.seek(-50, sf.SEEK_END)
-            data = f.read(100, fill_value=0)
-            self.assertEqual(len(data), 100)
-            self.assertTrue(np.all(data[50:] == 0))
-
-    def test_read_into_out(self):
-        """Reading into out should return data and write into out"""
-        with sf.SoundFile(self.filename) as f:
-            data = np.empty((100, f.channels), dtype='float64')
-            out_data = f.read(out=data)
-            self.assertTrue(np.all(data == out_data))
-
     def test_read_mono_into_out(self):
         """Reading mono signal into out should return data and write into out"""
         # create a dummy mono wave file
@@ -239,46 +317,6 @@ class TestSeekWaveFile(TestWaveFile):
             data = np.empty((100, f.channels), dtype='float64')
             out_data = f.read(out=data)
             self.assertTrue(np.all(data == out_data))
-
-    def test_read_into_out_with_too_many_channels(self):
-        """Reading into malformed out should throw an error"""
-        with sf.SoundFile(self.filename) as f:
-            data = np.empty((100, f.channels+1), dtype='float64')
-            with self.assertRaises(ValueError) as err:
-                out_data = f.read(out=data)
-
-    def test_read_into_out_with_too_many_dimensions(self):
-        """Reading into malformed out should throw an error"""
-        with sf.SoundFile(self.filename) as f:
-            data = np.empty((100, f.channels, 1), dtype='float64')
-            with self.assertRaises(ValueError) as err:
-                out_data = f.read(out=data)
-
-    def test_read_into_zero_len_out(self):
-        """Reading into aa zero len out should not read anything"""
-        with sf.SoundFile(self.filename) as f:
-            data = np.empty((0, f.channels), dtype='float64')
-            out_data = f.read(out=data)
-            self.assertTrue(np.all(data == out_data))
-
-    def test_read_into_out_over_end(self):
-        """Reading into out over end should return shorter data and write into out"""
-        with sf.SoundFile(self.filename) as f:
-            data = np.empty((100, f.channels), dtype='float64')
-            f.seek(-50, sf.SEEK_END)
-            out_data = f.read(out=data)
-            self.assertTrue(np.all(data[:50] == out_data[:50]))
-            self.assertEqual(out_data.shape, (50,2))
-            self.assertEqual(data.shape, (100,2))
-
-    def test_read_into_out_over_end_with_fill(self):
-        """Reading into out over end with fill should return padded data and write into out"""
-        with sf.SoundFile(self.filename) as f:
-            data = np.empty((100, f.channels), dtype='float64')
-            f.seek(-50, sf.SEEK_END)
-            out_data = f.read(out=data, fill_value=0)
-            self.assertTrue(np.all(data == out_data))
-            self.assertTrue(np.all(data[50:] == 0))
 
     def test_read_mono_as_array(self):
         """Reading with always_2d=False should return array"""
@@ -295,21 +333,6 @@ class TestSeekWaveFile(TestWaveFile):
             self.assertEqual(data.shape, (100,))
 
 class TestWriteWaveFile(TestWaveFile):
-    def test_write(self):
-        """write should write data and advance the write pointer"""
-        with sf.SoundFile(self.filename, 'rw') as f:
-            data = np.zeros((100,2))
-            position = f.seek(0, sf.SEEK_CUR)
-            f.write(data)
-            self.assertTrue(np.all(f[-100:] == data))
-            self.assertEqual(100, f.seek(0, sf.SEEK_CUR)-position)
-
-    def test_write_read_only(self):
-        """writing to a read-only file should not work"""
-        with sf.SoundFile(self.filename) as f:
-            with self.assertRaises(RuntimeError) as err:
-                f.write(np.ones((100,2)))
-
     def test_write_float_precision(self):
         """Written float data should be written at most 2**-15 off"""
         with sf.SoundFile(self.filename, 'rw') as f:
