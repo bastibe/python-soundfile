@@ -626,8 +626,21 @@ class SoundFile(object):
         position by the same number of frames.
         Use frames=-1 to read until the end of the file.
 
-        For further keyword arguments see the module-level function
-        read().
+        A two-dimensional NumPy array is returned, where the channels
+        are stored along the first dimension, i.e. as columns.
+        A two-dimensional array is returned even if the sound file has
+        only one channel.  Use always_2d=False to return a
+        one-dimensional array in this case.
+
+        If out is specified, the data is written into the given NumPy
+        array.  In this case, the arguments frames, dtype and always_2d
+        are silently ignored!
+
+        If there is less data left in the file than requested, the rest
+        of the frames are filled with fill_value. If fill_value=None, a
+        smaller array is returned.
+        If out is given, only a part of it is overwritten and a view
+        containing all valid frames is returned.
 
         """
         self._check_if_closed()
