@@ -9,70 +9,59 @@ data_05 = np.ones((5,2))*0.5
 file_05 = 'tests/test_0.5.wav'
 file_w  = 'tests/test_w.wav'
 
-@pytest.fixture(params=['filename', 'filehandle', 'bytestream'])
-def wavefile_r(request):
-    if request.param == 'filename':
-        file = sf.SoundFile(file_05)
-    elif request.param == 'filehandle':
-        handle = os.open(file_05, os.O_RDONLY)
-        file = sf.SoundFile(handle)
-        # TODO: does sf.SoundFile auto-close the handle???
-        # request.addfinalizer(lambda: os.close(handle))
-    elif request.param =='bytestream':
-        bytesio = open(file_05, 'rb')
+def open_filename(filename, rw, _):
+    if rw == 'r':
+        return sf.SoundFile(filename)
+    elif rw == 'w':
+        return sf.SoundFile(filename, mode='w', sample_rate=44100, channels=2)
+
+def open_filehandle(filename, rw, _):
+    # TODO: does sf.SoundFile auto-close the handle???
+    # request.addfinalizer(lambda: os.close(handle))
+    if rw == 'r':
+        handle = os.open(filename, os.O_RDONLY)
+        return sf.SoundFile(handle)
+    elif rw == 'w':
+        handle = os.open(filename, os.O_CREAT | os.O_WRONLY)
+        return sf.SoundFile(handle, mode='w', sample_rate=44100, channels=2, format='wav')
+
+def open_bytestream(filename, rw, request):
+    if rw == 'r':
+        bytesio = open(filename, 'rb')
         file = sf.SoundFile(bytesio)
-        request.addfinalizer(bytesio.close)
+    elif rw == 'w':
+        bytesio = open(filename, 'wb')
+        file = sf.SoundFile(bytesio, mode='w', sample_rate=44100, channels=2, format='wav')
+    request.addfinalizer(bytesio.close)
+    return file
+
+@pytest.fixture(params=[open_filename, open_filehandle, open_bytestream])
+def wavefile_r(request):
+    file = request.param(file_05, 'r', request)
     request.addfinalizer(file.close)
     return file
 
-@pytest.fixture(params=['filename', 'filehandle', 'bytestream'])
+@pytest.fixture(params=[open_filename, open_filehandle, open_bytestream])
 def wavefile_w(request):
-    if request.param == 'filename':
-        file = sf.SoundFile(file_w, mode='w', sample_rate=44100, channels=2)
-    elif request.param == 'filehandle':
-        handle = os.open(file_w, os.O_CREAT | os.O_WRONLY)
-        file = sf.SoundFile(handle, mode='w', sample_rate=44100, channels=2, format='wav')
-        # TODO: does sf.SoundFile auto-close the handle???
-        # request.addfinalizer(lambda: os.close(handle))
-    elif request.param =='bytestream':
-        bytesio = open(file_w, 'wb')
-        file = sf.SoundFile(bytesio, mode='w', sample_rate=44100, channels=2, format='wav')
-        request.addfinalizer(bytesio.close)
+    file = request.param(file_w, 'w', request)
     request.addfinalizer(file.close)
     request.addfinalizer(lambda: os.remove(file_w))
     return file
 
-@pytest.fixture(params=[('r', 'filename'),
-                        ('w', 'filename'),
-                        ('r', 'filehandle'),
-                        ('w', 'filehandle'),
-                        ('r', 'bytestream'),
-                        ('w', 'bytestream')])
+@pytest.fixture(params=[('r', open_filename),
+                        ('w', open_filename),
+                        ('r', open_filehandle),
+                        ('w', open_filehandle),
+                        ('r', open_bytestream),
+                        ('w', open_bytestream)])
 def wavefile_all(request):
-    if request.param == ('r', 'filename'):
-        file = sf.SoundFile(file_05)
-    elif request.param == ('r', 'filehandle'):
-        handle = os.open(file_05, os.O_RDONLY)
-        file = sf.SoundFile(handle)
-        # TODO: does sf.SoundFile auto-close the handle???
-        # request.addfinalizer(lambda: os.close(handle))
-    elif request.param == ('r', 'bytestream'):
-        bytesio = open(file_05, 'rb')
-        file = sf.SoundFile(bytesio)
-        request.addfinalizer(bytesio.close)
-    if request.param == ('w', 'filename'):
-        file = sf.SoundFile(file_w, mode='w', sample_rate=44100, channels=2)
-    elif request.param == ('w', 'filehandle'):
-        handle = os.open(file_w, os.O_CREAT | os.O_WRONLY)
-        file = sf.SoundFile(handle, mode='w', sample_rate=44100, channels=2, format='wav')
-        # TODO: does sf.SoundFile auto-close the handle???
-        # request.addfinalizer(lambda: os.close(handle))
-    elif request.param ==('w', 'bytestream'):
-        bytesio = open(file_w, 'wb')
-        file = sf.SoundFile(bytesio, mode='w', sample_rate=44100, channels=2, format='wav')
-        request.addfinalizer(bytesio.close)
+    rw, open_func = request.param
+    if rw == 'r':
+        file = open_func(file_05, rw, request)
+    elif rw == 'w':
+        file = open_func(file_w, rw, request)
     request.addfinalizer(file.close)
-    if request.param[0] == 'w':
+    if rw == 'w':
         request.addfinalizer(lambda: os.remove(file_w))
     return file
 
