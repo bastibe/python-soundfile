@@ -762,7 +762,7 @@ def read(file, sample_rate=None, channels=None, subtype=None, endian=None,
 
     """
     if frames >= 0 and stop is not None:
-        raise RuntimeError("Only one of {frames, stop} may be used")
+        raise TypeError("Only one of {frames, stop} may be used")
 
     with SoundFile(file, 'r', sample_rate, channels,
                    subtype, endian, format, closefd) as f:
