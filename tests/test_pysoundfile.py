@@ -196,6 +196,163 @@ def test_write_function(file_w):
 
 
 # -----------------------------------------------------------------------------
+# Test blocks() function
+# -----------------------------------------------------------------------------
+
+
+def assert_equal_list_of_arrays(list1, list2):
+    """Helper function to assert equality of all list items."""
+    for item1, item2 in zip(list1, list2):
+        assert np.all(item1 == item2)
+
+
+def test_blocks_full_last_block():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])
+
+
+def test_blocks_partial_last_block():
+    blocks = list(sf.blocks(filename_stereo, blocksize=3))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], data_stereo[3:4]])
+
+
+def test_blocks_fill_last_block():
+    blocks = list(sf.blocks(filename_stereo, blocksize=3, fill_value=0))
+    last_block = np.row_stack((data_stereo[3:4], np.zeros((2, 2))))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], last_block])
+
+
+def test_blocks_with_overlap():
+    blocks = list(sf.blocks(filename_stereo, blocksize=3, overlap=2))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], data_stereo[1:4]])
+
+
+def test_blocks_with_start():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=2))
+    assert_equal_list_of_arrays(blocks, [data_stereo[2:4]])
+
+
+def test_blocks_with_stop():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, stop=2))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2]])
+
+    with pytest.raises(TypeError):
+        list(sf.blocks(filename_stereo, blocksize=2, frames=2, stop=2))
+
+
+def test_blocks_with_too_large_start():
+    blocks = list(sf.blocks(filename_stereo, start=666))
+    assert_equal_list_of_arrays(blocks, [[]])
+
+
+def test_blocks_with_too_large_stop():
+    blocks = list(sf.blocks(filename_stereo, blocksize=3, stop=666))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], data_stereo[3:4]])
+
+
+def test_blocks_with_negative_start_and_stop():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=-2, stop=-1))
+    assert_equal_list_of_arrays(blocks, [data_stereo[-2:-1]])
+
+
+def test_blocks_with_stop_smaller_than_start():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=2, stop=1))
+    assert blocks == []
+
+
+def test_blocks_with_frames():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, frames=3))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:3]])
+
+
+def test_blocks_with_out():
+    out = np.empty((3, 2))
+    blocks = list(sf.blocks(filename_stereo, out=out))
+    assert blocks[0] is out
+    # First frame was overwritten by second block:
+    assert np.all(blocks[0] == [[0.25, -0.25], [0.75, -0.75], [0.5, -0.5]])
+    assert blocks[1].base is out
+    assert np.all(blocks[1] == [[0.25, -0.25]])
+
+    with pytest.raises(TypeError):
+        list(sf.blocks(filename_stereo, blocksize=3, out=out))
+
+
+def test_blocks_mono():
+    blocks = list(sf.blocks(filename_mono, blocksize=3, dtype='int16',
+                            always_2d=False, fill_value=0))
+    assert_equal_list_of_arrays(blocks, [[0, 1, 2], [-2, -1, 0]])
+
+
+def test_blocks_write_interrupted(file_w):
+    for block in sf.blocks(file_w, 'w', 44100, 2, blocksize=len(data_stereo),
+                           format='WAV', subtype='FLOAT'):
+        block[:] = data_stereo
+        break  # Raises GeneratorExit
+    data, fs = sf.read(filename_new)
+    assert fs == 44100
+    assert np.all(data == data_stereo)
+
+
+def test_blocks_write_partial_last_block(file_w):
+    for i, block in enumerate(
+        sf.blocks(file_w, 'w', 44100, 2, blocksize=3,
+                  format='WAV', subtype='FLOAT', frames=len(data_stereo))):
+        if i == 0:
+            block[:] = data_stereo[0:3]
+        else:
+            block[:] = data_stereo[3:4]
+    data, fs = sf.read(filename_new)
+    assert fs == 44100
+    assert np.all(data == data_stereo)
+
+
+def test_blocks_write_with_start(file_w):
+    with pytest.raises(TypeError):
+        list(sf.blocks(file_w, 'w', 44100, 2, blocksize=3,
+                       format='WAV', subtype='FLOAT', start=1))
+
+
+def test_blocks_write_with_stop(file_w):
+    with pytest.raises(TypeError):
+        list(sf.blocks(file_w, 'w', 44100, 2, blocksize=3,
+                       format='WAV', subtype='FLOAT', stop=1))
+
+
+def test_blocks_rw_existing(file_stereo_rw_existing):
+    for block in sf.blocks(file_stereo_rw_existing, 'rw', blocksize=3):
+        block[:] = block / 2
+
+    data, fs = sf.read(tempfilename)
+    assert fs == 44100
+    assert np.all(data == data_stereo / 2)
+
+
+def test_blocks_rw_existing_with_start_and_stop(file_stereo_rw_existing):
+    for block in sf.blocks(file_stereo_rw_existing, 'rw', blocksize=2,
+                           start=1, stop=-1):
+        block[:] = block / 2
+
+    data, fs = sf.read(tempfilename)
+    assert fs == 44100
+    assert np.all(data[:1] == data_stereo[:1])
+    assert np.all(data[1:-1] == data_stereo[1:-1] / 2)
+    assert np.all(data[-1:] == data_stereo[-1:])
+
+
+def test_blocks_rw_overlap(file_stereo_rw_existing):
+    with pytest.raises(TypeError):
+        list(sf.blocks(file_stereo_rw_existing, 'rw', blocksize=3, overlap=1))
+
+
+def test_blocks_rw_new(file_rw_new):
+    """There is nothing to yield in a new 'rw' file."""
+    blocks = list(sf.blocks(file_rw_new, 'rw', 44100, 2, format='WAV',
+                            blocksize=2, frames=666))
+    assert blocks == []
+
+
+# -----------------------------------------------------------------------------
 # Test file metadata
 # -----------------------------------------------------------------------------
 
