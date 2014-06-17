@@ -609,7 +609,7 @@ class SoundFile(object):
         ffi_type = _ffi_types[array.dtype]
         assert array.flags.c_contiguous
         assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
-        assert array.size == frames * self.channels
+        assert array.size >= frames * self.channels
 
         func = getattr(_snd, funcname + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', array.ctypes.data)
@@ -633,8 +633,8 @@ class SoundFile(object):
         one-dimensional array in this case.
 
         If out is specified, the data is written into the given NumPy
-        array.  In this case, the arguments frames, dtype and always_2d
-        are silently ignored!
+        array.  In this case, the arguments dtype and always_2d are
+        silently ignored!
 
         If there is less data left in the file than requested, the rest
         of the frames are filled with fill_value. If fill_value=None, a
@@ -658,7 +658,8 @@ class SoundFile(object):
                 shape = frames,
             out = _np.empty(shape, dtype, order='C')
         else:
-            frames = len(out)
+            if frames < 0 or frames > len(out):
+                frames = len(out)
             if not out.flags.c_contiguous:
                 raise ValueError("out must be C-contiguous")
 
