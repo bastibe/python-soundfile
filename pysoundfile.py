@@ -730,7 +730,7 @@ open.__doc__ = SoundFile.__init__.__doc__
 
 
 def read(file, sample_rate=None, channels=None, subtype=None, endian=None,
-         format=None, closefd=True, start=None, stop=None, frames=-1,
+         format=None, closefd=True, start=0, stop=None, frames=-1,
          dtype='float64', always_2d=True, fill_value=None, out=None):
     """Read a sound file and return its contents as NumPy array.
 
