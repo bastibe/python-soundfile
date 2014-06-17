@@ -222,6 +222,34 @@ def test_write_should_write_and_advance_write_pointer(wavefile_w):
     assert wavefile_w.seek(0, sf.SEEK_CUR) == 5
 
 # ------------------------------------------------------------------------------
+# Other tests
+# ------------------------------------------------------------------------------
+
+def test_context_manager_should_open_and_close_file():
+    with open_filename(file_05, 'r', None) as f:
+        assert not f.closed
+    assert f.closed
+
+def test_closing_should_close_file():
+    f = open_filename(file_05, 'r', None)
+    assert not f.closed
+    f.close()
+    assert f.closed
+
+def test_file_attributes_should_save_to_disk():
+    with open_filename(file_w, 'w', None) as f:
+        f.title = 'testing'
+    with open_filename(file_w, 'r', None) as f:
+        assert f.title == 'testing'
+
+def test_non_file_attributes_should_not_save_to_disk():
+    with open_filename(file_w, 'w', None) as f:
+        f.foobar = 'testing'
+    with open_filename(file_w, 'r', None) as f:
+        with pytest.raises(AttributeError):
+            f.foobar
+
+# ------------------------------------------------------------------------------
 # Legacy tests
 # ------------------------------------------------------------------------------
 
@@ -246,34 +274,6 @@ class TestBasicAttributesOfWaveFile(TestWaveFile):
         with sf.SoundFile(self.filename, 'rw') as f:
             self.assertEqual(f.mode, 'rw')
             self.assertEqual(f.seek(0, sf.SEEK_CUR), len(f))
-
-    def test_context_manager(self):
-        """The context manager should close the file"""
-        with sf.SoundFile(self.filename) as f:
-            pass
-        self.assertTrue(f.closed)
-
-    def test_closing(self):
-        """Closing a file should close it"""
-        f = sf.SoundFile(self.filename)
-        self.assertFalse(f.closed)
-        f.close()
-        self.assertTrue(f.closed)
-
-    def test_file_attributes(self):
-        """Changing a file attribute should save it on disk"""
-        with sf.SoundFile(self.filename, 'rw') as f:
-            f.title = 'testing'
-        with sf.SoundFile(self.filename) as f:
-            self.assertEqual(f.title, 'testing')
-
-    def test_non_file_attributes(self):
-        """Changing a non-file attribute should not save to disk"""
-        with sf.SoundFile(self.filename, 'rw') as f:
-            f.foobar = 'testing'
-        with sf.SoundFile(self.filename) as f:
-            with self.assertRaises(AttributeError):
-                f.foobar
 
 
 class TestSeekWaveFile(TestWaveFile):
