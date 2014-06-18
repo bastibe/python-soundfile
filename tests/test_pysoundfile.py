@@ -1,8 +1,6 @@
-import unittest
 import pysoundfile as sf
 import numpy as np
 import os
-import io
 import pytest
 
 data_r = np.ones((5,2))*0.5
