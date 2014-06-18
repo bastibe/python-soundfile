@@ -7,6 +7,8 @@ import pytest
 
 data_r = np.ones((5,2))*0.5
 file_r = 'tests/test_r.wav'
+data_r_mono = np.ones(5)*0.5
+file_r_mono = 'tests/test_r_mono.wav'
 file_w  = 'tests/test_w.wav'
 
 def open_filename(filename, rw, _):
@@ -14,9 +16,9 @@ def open_filename(filename, rw, _):
         return sf.SoundFile(filename)
     elif rw == 'w':
         return sf.SoundFile(filename, mode=rw, sample_rate=44100, channels=2)
-    elif rw == 'rw' and filename == file_r:
+    elif rw == 'rw' and 'test_r' in filename:
         return sf.SoundFile(filename, mode=rw)
-    elif rw == 'rw' and filename == file_w:
+    elif rw == 'rw' and 'test_w' in filename:
         return sf.SoundFile(filename, mode=rw, sample_rate=44100, channels=2)
 
 def open_filehandle(filename, rw, _):
@@ -30,9 +32,9 @@ def open_filehandle(filename, rw, _):
         handle = os.open(filename, os.O_RDWR)
     elif rw =='rw' and filename == file_w:
         handle = os.open(filename, os.O_CREAT | os.O_RDWR)
-    if filename == file_r:
+    if 'test_r' in filename:
         return sf.SoundFile(handle, mode=rw)
-    elif filename == file_w:
+    elif 'test_w' in filename:
         return sf.SoundFile(handle, mode=rw, sample_rate=44100, channels=2, format='wav')
 
 def open_bytestream(filename, rw, request):
@@ -44,9 +46,9 @@ def open_bytestream(filename, rw, request):
         bytesio = open(filename, 'a+b')
     elif rw == 'rw' and filename == file_w:
         bytesio = open(filename, 'w+b')
-    if filename == file_r:
+    if 'test_r' in filename:
         file = sf.SoundFile(bytesio, mode=rw)
-    elif filename == file_w:
+    elif 'test_w' in filename:
         file = sf.SoundFile(bytesio, mode=rw, sample_rate=44100, channels=2, format='wav')
     request.addfinalizer(bytesio.close)
     return file
@@ -57,6 +59,15 @@ def open_bytestream(filename, rw, request):
 def wavefile_r(request):
     rw, open_func = request.param
     file = open_func(file_r, rw, request)
+    request.addfinalizer(file.close)
+    return file
+
+@pytest.fixture(params=[('r', open_filename),
+                        ('r', open_filehandle),
+                        ('r', open_bytestream)])
+def wavefile_r_mono(request):
+    rw, open_func = request.param
+    file = open_func(file_r_mono, rw, request)
     request.addfinalizer(file.close)
     return file
 
@@ -356,50 +367,24 @@ def test_non_file_attributes_should_not_save_to_disk():
             f.foobar
     os.remove(file_w)
 
-# ------------------------------------------------------------------------------
-# Legacy tests
-# ------------------------------------------------------------------------------
+def test_read_mono_without_always2d_should_read_array(wavefile_r_mono):
+    out_data = wavefile_r_mono.read(always_2d=False)
+    assert np.all(out_data == data_r_mono)
+    assert out_data.ndim == 1
 
-class TestWaveFile(unittest.TestCase):
-    def setUp(self):
-        """create a dummy wave file"""
-        self.sample_rate = 44100
-        self.channels = 2
-        self.filename = 'test.wav'
-        self.data = np.ones((self.sample_rate, self.channels))*0.5
-        with sf.SoundFile(self.filename, 'w', self.sample_rate, self.channels) as f:
-            f.write(self.data)
+def test_read_mono_should_read_matrix(wavefile_r_mono):
+    out_data = wavefile_r_mono.read()
+    assert np.all(out_data == data_r_mono)
+    assert out_data.ndim == 2
 
-    def tearDown(self):
-        os.remove(self.filename)
+def test_read_mono_into_mono_out_should_read_into_out(wavefile_r_mono):
+    data = np.empty(5, dtype='float64')
+    out_data = wavefile_r_mono.read(out=data)
+    assert np.all(data == out_data)
+    assert id(data) == id(out_data)
 
-
-class TestSeekWaveFile(TestWaveFile):
-    def test_read_mono_into_out(self):
-        """Reading mono signal into out should return data and write into out"""
-        # create a dummy mono wave file
-        self.sample_rate = 44100
-        self.channels = 1
-        self.filename = 'test.wav'
-        self.data = np.ones((self.sample_rate, self.channels))*0.5
-        with sf.SoundFile(self.filename, 'w', self.sample_rate, self.channels) as f:
-            f.write(self.data)
-
-        with sf.SoundFile(self.filename) as f:
-            data = np.empty((100, f.channels), dtype='float64')
-            out_data = f.read(out=data)
-            self.assertTrue(np.all(data == out_data))
-
-    def test_read_mono_as_array(self):
-        """Reading with always_2d=False should return array"""
-        # create a dummy mono wave file
-        self.sample_rate = 44100
-        self.channels = 1
-        self.filename = 'test.wav'
-        self.data = np.ones((self.sample_rate, self.channels))*0.5
-        with sf.SoundFile(self.filename, 'w', self.sample_rate, self.channels) as f:
-            f.write(self.data)
-
-        with sf.SoundFile(self.filename) as f:
-            data = f.read(100, always_2d=False)
-            self.assertEqual(data.shape, (100,))
+def test_read_mono_into_out_should_read_into_out(wavefile_r_mono):
+    data = np.empty((5, 1), dtype='float64')
+    out_data = wavefile_r_mono.read(out=data)
+    assert np.all(data == out_data)
+    assert id(data) == id(out_data)
