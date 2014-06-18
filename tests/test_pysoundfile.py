@@ -5,8 +5,8 @@ import os
 import io
 import pytest
 
-data_05 = np.ones((5,2))*0.5
-file_05 = 'tests/test_0.5.wav'
+data_r = np.ones((5,2))*0.5
+file_r = 'tests/test_r.wav'
 file_w  = 'tests/test_w.wav'
 
 def open_filename(filename, rw, _):
@@ -37,7 +37,7 @@ def open_bytestream(filename, rw, request):
 
 @pytest.fixture(params=[open_filename, open_filehandle, open_bytestream])
 def wavefile_r(request):
-    file = request.param(file_05, 'r', request)
+    file = request.param(file_r, 'r', request)
     request.addfinalizer(file.close)
     return file
 
@@ -57,7 +57,7 @@ def wavefile_w(request):
 def wavefile_all(request):
     rw, open_func = request.param
     if rw == 'r':
-        file = open_func(file_05, rw, request)
+        file = open_func(file_r, rw, request)
     elif rw == 'w':
         file = open_func(file_w, rw, request)
     request.addfinalizer(file.close)
@@ -70,7 +70,7 @@ def wavefile_all(request):
 # ------------------------------------------------------------------------------
 
 def test_file_content(wavefile_r):
-    assert np.all(data_05 == wavefile_r[:])
+    assert np.all(data_r == wavefile_r[:])
 
 def test_mode_should_be_in_read_mode(wavefile_r):
     assert wavefile_r.mode == 'r'
@@ -95,7 +95,7 @@ def test_format_metadata(wavefile_all):
     assert wavefile_all.subtype_info == 'Signed 16 bit PCM'
 
 def test_data_length(wavefile_r):
-    assert len(wavefile_r) == len(data_05)
+    assert len(wavefile_r) == len(data_r)
 
 def test_data_length(wavefile_w):
     assert len(wavefile_w) == 0
@@ -133,7 +133,7 @@ def test_read_write_only(wavefile_w):
 
 def test_read_should_read_data_and_advance_read_pointer(wavefile_r):
     data = wavefile_r.read(2)
-    assert np.all(data == data_05[:2])
+    assert np.all(data == data_r[:2])
     assert wavefile_r.seek(0, sf.SEEK_CUR) == 2
 
 def test_read_should_read_float64_data(wavefile_r):
@@ -149,7 +149,7 @@ def test_read_float32_should_read_float32_data(wavefile_r):
     assert wavefile_r.read(2, dtype='float32').dtype == np.float32
 
 def test_read_by_indexing_should_read_but_not_advance_read_pointer(wavefile_r):
-    assert np.all(wavefile_r[:2] == data_05[:2])
+    assert np.all(wavefile_r[:2] == data_r[:2])
     assert wavefile_r.seek(0, sf.SEEK_CUR) == 0
 
 def test_read_n_frames_should_return_n_frames(wavefile_r):
@@ -157,16 +157,16 @@ def test_read_n_frames_should_return_n_frames(wavefile_r):
 
 def test_read_all_frames_should_read_all_remaining_frames(wavefile_r):
     wavefile_r.seek(-2, sf.SEEK_END)
-    assert np.all(wavefile_r.read() == data_05[-2:])
+    assert np.all(wavefile_r.read() == data_r[-2:])
 
 def test_read_over_end_should_return_only_remaining_frames(wavefile_r):
     wavefile_r.seek(-2, sf.SEEK_END)
-    assert np.all(wavefile_r.read(4) == data_05[-2:])
+    assert np.all(wavefile_r.read(4) == data_r[-2:])
 
 def test_read_over_end_with_fill_should_reaturn_asked_frames(wavefile_r):
     wavefile_r.seek(-2, sf.SEEK_END)
     data = wavefile_r.read(4, fill_value=0)
-    assert np.all(data[:2] == data_05[-2:])
+    assert np.all(data[:2] == data_r[-2:])
     assert np.all(data[2:] == 0)
     assert len(data) == 4
 
@@ -215,10 +215,10 @@ def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into
 
 def test_write_to_read_only_file_should_fail(wavefile_r):
     with pytest.raises(RuntimeError):
-        wavefile_r.write(data_05)
+        wavefile_r.write(data_r)
 
 def test_write_should_write_and_advance_write_pointer(wavefile_w):
-    wavefile_w.write(data_05)
+    wavefile_w.write(data_r)
     assert wavefile_w.seek(0, sf.SEEK_CUR) == 5
 
 # ------------------------------------------------------------------------------
@@ -226,12 +226,12 @@ def test_write_should_write_and_advance_write_pointer(wavefile_w):
 # ------------------------------------------------------------------------------
 
 def test_context_manager_should_open_and_close_file():
-    with open_filename(file_05, 'r', None) as f:
+    with open_filename(file_r, 'r', None) as f:
         assert not f.closed
     assert f.closed
 
 def test_closing_should_close_file():
-    f = open_filename(file_05, 'r', None)
+    f = open_filename(file_r, 'r', None)
     assert not f.closed
     f.close()
     assert f.closed
