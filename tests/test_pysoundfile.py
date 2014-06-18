@@ -74,12 +74,22 @@ def wavefile_w(request):
                         ('rw', open_filehandle),
                         # rw is not permissable with bytestreams
                         ])
-def wavefile_rw(request):
+def wavefile_rw_existing(request):
     rw, open_func = request.param
     file = open_func(file_r, rw, request)
     request.addfinalizer(file.close)
     return file
 
+@pytest.fixture(params=[('rw', open_filename),
+                        ('rw', open_filehandle),
+                        # rw is not permissable with bytestreams
+                        ])
+def wavefile_rw_new(request):
+    rw, open_func = request.param
+    file = open_func(file_w, rw, request)
+    request.addfinalizer(file.close)
+    request.addfinalizer(lambda: os.remove(file_w))
+    return file
 
 @pytest.fixture(params=[('r', open_filename),
                         ('w', open_filename),
@@ -115,14 +125,17 @@ def test_mode_should_be_in_read_mode(wavefile_r):
 def test_mode_should_be_in_read_mode(wavefile_w):
     assert wavefile_w.mode == 'w'
 
+def test_mode_should_be_in_read_mode(wavefile_rw_existing):
+    assert wavefile_rw_existing.mode == 'rw'
+
 def test_mode_read_should_start_at_beginning(wavefile_r):
     assert wavefile_r.seek(0, sf.SEEK_CUR) == 0
 
 def test_mode_write_should_start_at_beginning(wavefile_w):
     assert wavefile_w.seek(0, sf.SEEK_CUR) == 0
 
-def test_mode_rw_should_start_at_end(wavefile_rw):
-    assert wavefile_rw.seek(0, sf.SEEK_CUR) == 5
+def test_mode_rw_should_start_at_end(wavefile_rw_existing):
+    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR) == 5
 
 def test_number_of_channels(wavefile_all):
     assert wavefile_all.channels == 2
@@ -261,8 +274,57 @@ def test_write_to_read_only_file_should_fail(wavefile_r):
         wavefile_r.write(data_r)
 
 def test_write_should_write_and_advance_write_pointer(wavefile_w):
+    position_w = wavefile_w.seek(0, sf.SEEK_CUR, which='w')
+    position_r = wavefile_w.seek(0, sf.SEEK_CUR, which='r')
     wavefile_w.write(data_r)
-    assert wavefile_w.seek(0, sf.SEEK_CUR) == 5
+    assert wavefile_w.seek(0, sf.SEEK_CUR, which='w') == position_w+len(data_r)
+    assert wavefile_w.seek(0, sf.SEEK_CUR, which='r') == position_r
+
+def test_write_flush_should_write_to_disk(wavefile_w):
+    wavefile_w.flush()
+    size = os.path.getsize(file_w)
+    wavefile_w.write(data_r)
+    wavefile_w.flush()
+    assert os.path.getsize(file_w) == size + data_r.size*2 # 16 bit integer
+
+# ------------------------------------------------------------------------------
+# Test read/write
+# ------------------------------------------------------------------------------
+
+def test_rw_initial_read_and_write_pointer(wavefile_rw_existing):
+    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR, which='w') == 5
+    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR, which='r') == 0
+
+def test_rw_seek_write_should_advance_write_pointer(wavefile_rw_existing):
+    assert wavefile_rw_existing.seek(2, which='w') == 2
+    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR, which='r') == 0
+
+def test_rw_seek_read_should_advance_read_pointer(wavefile_rw_existing):
+    assert wavefile_rw_existing.seek(2, which='r') == 2
+    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR, which='w') == 5
+
+def test_rw_writing_float_should_be_written_approximately_correct(wavefile_rw_new):
+    data = np.ones((5,2), dtype='float64')
+    wavefile_rw_new.seek(0, which='w')
+    wavefile_rw_new.write(data)
+    written_data = wavefile_rw_new[-len(data):]
+    assert np.allclose(data, written_data, atol=2**-15)
+
+def test_rw_writing_int_should_be_written_exactly_correct(wavefile_rw_new):
+    data = np.zeros((5,2)) + 2**15-1 # full scale int16
+    wavefile_rw_new.seek(0, which='w')
+    wavefile_rw_new.write(np.array(data, dtype='int16'))
+    written_data = wavefile_rw_new.read(dtype='int16')
+    assert np.all(data == written_data)
+
+def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(wavefile_rw_new):
+    data = np.ones((5,2))
+    wavefile_rw_new.write(np.zeros((5,2))) # grow file to make room for indexing
+    position = wavefile_rw_new.seek(0, sf.SEEK_CUR, which='w')
+    wavefile_rw_new[:len(data)] = data
+    written_data = wavefile_rw_new[:len(data)]
+    assert np.allclose(data, written_data, atol=2**-15)
+    assert position == wavefile_rw_new.seek(0, sf.SEEK_CUR, which='w')
 
 # ------------------------------------------------------------------------------
 # Other tests
@@ -284,6 +346,7 @@ def test_file_attributes_should_save_to_disk():
         f.title = 'testing'
     with open_filename(file_w, 'r', None) as f:
         assert f.title == 'testing'
+    os.remove(file_w)
 
 def test_non_file_attributes_should_not_save_to_disk():
     with open_filename(file_w, 'w', None) as f:
@@ -291,6 +354,7 @@ def test_non_file_attributes_should_not_save_to_disk():
     with open_filename(file_w, 'r', None) as f:
         with pytest.raises(AttributeError):
             f.foobar
+    os.remove(file_w)
 
 # ------------------------------------------------------------------------------
 # Legacy tests
@@ -308,30 +372,6 @@ class TestWaveFile(unittest.TestCase):
 
     def tearDown(self):
         os.remove(self.filename)
-
-
-class TestBasicAttributesOfWaveFile(TestWaveFile):
-
-    def test_rw_mode(self):
-        """Opening the file in rw mode should open in rw mode from end"""
-        with sf.SoundFile(self.filename, 'rw') as f:
-            self.assertEqual(f.mode, 'rw')
-            self.assertEqual(f.seek(0, sf.SEEK_CUR), len(f))
-
-
-class TestSeekWaveFile(TestWaveFile):
-    def test_seek_write(self):
-        """write-seeking should advance the write pointer"""
-        with sf.SoundFile(self.filename, 'rw') as f:
-            self.assertEqual(f.seek(100, which='w'), 100)
-
-    def test_flush(self):
-        """After flushing, data should be written to disk"""
-        with sf.SoundFile(self.filename, 'rw') as f:
-            size = os.path.getsize(self.filename)
-            f.write(np.zeros((10,2)))
-            f.flush()
-            self.assertEqual(os.path.getsize(self.filename), size+40)
 
 
 class TestSeekWaveFile(TestWaveFile):
@@ -363,31 +403,3 @@ class TestSeekWaveFile(TestWaveFile):
         with sf.SoundFile(self.filename) as f:
             data = f.read(100, always_2d=False)
             self.assertEqual(data.shape, (100,))
-
-class TestWriteWaveFile(TestWaveFile):
-    def test_write_float_precision(self):
-        """Written float data should be written at most 2**-15 off"""
-        with sf.SoundFile(self.filename, 'rw') as f:
-            data = np.ones((100,2))
-            f.write(data)
-            written_data = f[-100:]
-            self.assertTrue(np.allclose(data, written_data, atol=2**-15))
-
-    def test_write_int_precision(self):
-        """Written int data should be written"""
-        with sf.SoundFile(self.filename, 'rw') as f:
-            data = np.zeros((100,2)) + 2**15-1 # full scale int16
-            data = np.array(data, dtype='int16')
-            f.write(data)
-            f.seek(-100, sf.SEEK_CUR)
-            written_data = f.read(dtype='int16')
-            self.assertTrue(np.all(data == written_data))
-
-    def test_write_indexing(self):
-        """Writing using indexing should write but not advance write pointer"""
-        with sf.SoundFile(self.filename, 'rw') as f:
-            position = f.seek(0, sf.SEEK_CUR)
-            data = np.zeros((100,2))
-            f[:100] = data
-            self.assertEqual(position, f.seek(0, sf.SEEK_CUR))
-            self.assertTrue(np.all(data == f[:100]))
