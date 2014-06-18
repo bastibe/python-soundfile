@@ -13,50 +13,87 @@ def open_filename(filename, rw, _):
     if rw == 'r':
         return sf.SoundFile(filename)
     elif rw == 'w':
-        return sf.SoundFile(filename, mode='w', sample_rate=44100, channels=2)
+        return sf.SoundFile(filename, mode=rw, sample_rate=44100, channels=2)
+    elif rw == 'rw' and filename == file_r:
+        return sf.SoundFile(filename, mode=rw)
+    elif rw == 'rw' and filename == file_w:
+        return sf.SoundFile(filename, mode=rw, sample_rate=44100, channels=2)
 
 def open_filehandle(filename, rw, _):
     # TODO: does sf.SoundFile auto-close the handle???
     # request.addfinalizer(lambda: os.close(handle))
     if rw == 'r':
         handle = os.open(filename, os.O_RDONLY)
-        return sf.SoundFile(handle)
     elif rw == 'w':
         handle = os.open(filename, os.O_CREAT | os.O_WRONLY)
-        return sf.SoundFile(handle, mode='w', sample_rate=44100, channels=2, format='wav')
+    elif rw == 'rw' and filename == file_r:
+        handle = os.open(filename, os.O_RDWR)
+    elif rw =='rw' and filename == file_w:
+        handle = os.open(filename, os.O_CREAT | os.O_RDWR)
+    if filename == file_r:
+        return sf.SoundFile(handle, mode=rw)
+    elif filename == file_w:
+        return sf.SoundFile(handle, mode=rw, sample_rate=44100, channels=2, format='wav')
 
 def open_bytestream(filename, rw, request):
     if rw == 'r':
         bytesio = open(filename, 'rb')
-        file = sf.SoundFile(bytesio)
     elif rw == 'w':
         bytesio = open(filename, 'wb')
-        file = sf.SoundFile(bytesio, mode='w', sample_rate=44100, channels=2, format='wav')
+    elif rw == 'rw' and filename == file_r:
+        bytesio = open(filename, 'a+b')
+    elif rw == 'rw' and filename == file_w:
+        bytesio = open(filename, 'w+b')
+    if filename == file_r:
+        file = sf.SoundFile(bytesio, mode=rw)
+    elif filename == file_w:
+        file = sf.SoundFile(bytesio, mode=rw, sample_rate=44100, channels=2, format='wav')
     request.addfinalizer(bytesio.close)
     return file
 
-@pytest.fixture(params=[open_filename, open_filehandle, open_bytestream])
+@pytest.fixture(params=[('r', open_filename),
+                        ('r', open_filehandle),
+                        ('r', open_bytestream)])
 def wavefile_r(request):
-    file = request.param(file_r, 'r', request)
+    rw, open_func = request.param
+    file = open_func(file_r, rw, request)
     request.addfinalizer(file.close)
     return file
 
-@pytest.fixture(params=[open_filename, open_filehandle, open_bytestream])
+@pytest.fixture(params=[('w', open_filename),
+                        ('w', open_filehandle),
+                        ('w', open_bytestream)])
 def wavefile_w(request):
-    file = request.param(file_w, 'w', request)
+    rw, open_func = request.param
+    file = open_func(file_w, rw, request)
     request.addfinalizer(file.close)
     request.addfinalizer(lambda: os.remove(file_w))
     return file
 
+@pytest.fixture(params=[('rw', open_filename),
+                        ('rw', open_filehandle),
+                        # rw is not permissable with bytestreams
+                        ])
+def wavefile_rw(request):
+    rw, open_func = request.param
+    file = open_func(file_r, rw, request)
+    request.addfinalizer(file.close)
+    return file
+
+
 @pytest.fixture(params=[('r', open_filename),
                         ('w', open_filename),
+                        ('rw', open_filename),
                         ('r', open_filehandle),
                         ('w', open_filehandle),
+                        ('rw', open_filehandle),
                         ('r', open_bytestream),
-                        ('w', open_bytestream)])
+                        ('w', open_bytestream),
+                        # rw is not permissable with bytestreams
+                        ])
 def wavefile_all(request):
     rw, open_func = request.param
-    if rw == 'r':
+    if 'r' in rw:
         file = open_func(file_r, rw, request)
     elif rw == 'w':
         file = open_func(file_w, rw, request)
@@ -78,8 +115,14 @@ def test_mode_should_be_in_read_mode(wavefile_r):
 def test_mode_should_be_in_read_mode(wavefile_w):
     assert wavefile_w.mode == 'w'
 
-def test_mode_should_start_at_beginning(wavefile_all):
-    assert wavefile_all.seek(0, sf.SEEK_CUR) == 0
+def test_mode_read_should_start_at_beginning(wavefile_r):
+    assert wavefile_r.seek(0, sf.SEEK_CUR) == 0
+
+def test_mode_write_should_start_at_beginning(wavefile_w):
+    assert wavefile_w.seek(0, sf.SEEK_CUR) == 0
+
+def test_mode_rw_should_start_at_end(wavefile_rw):
+    assert wavefile_rw.seek(0, sf.SEEK_CUR) == 5
 
 def test_number_of_channels(wavefile_all):
     assert wavefile_all.channels == 2
