@@ -131,10 +131,12 @@ def test_file_content(wavefile_r):
 def test_mode_should_be_in_read_mode(wavefile_r):
     assert wavefile_r.mode == 'r'
 
-def test_mode_should_be_in_read_mode(wavefile_w):
+
+def test_mode_should_be_in_write_mode(wavefile_w):
     assert wavefile_w.mode == 'w'
 
-def test_mode_should_be_in_read_mode(wavefile_rw_existing):
+
+def test_mode_should_be_in_readwrite_mode(wavefile_rw_existing):
     assert wavefile_rw_existing.mode == 'rw'
 
 def test_mode_read_should_start_at_beginning(wavefile_r):
@@ -159,10 +161,12 @@ def test_format_metadata(wavefile_all):
     assert wavefile_all.format_info == 'WAV (Microsoft)'
     assert wavefile_all.subtype_info == 'Signed 16 bit PCM'
 
-def test_data_length(wavefile_r):
+
+def test_data_length_r(wavefile_r):
     assert len(wavefile_r) == len(data_r)
 
-def test_data_length(wavefile_w):
+
+def test_data_length_w(wavefile_w):
     assert len(wavefile_w) == 0
 
 def test_file_exists(wavefile_w):
@@ -185,7 +189,8 @@ def test_seek_to_end_should_advance_read_pointer_to_end(wavefile_r):
 def test_seek_read_pointer_should_advance_read_pointer(wavefile_r):
     assert wavefile_r.seek(2, which='r') == 2
 
-def test_seek_read_pointer_should_advance_read_pointer(wavefile_w):
+
+def test_seek_write_pointer_should_advance_write_pointer(wavefile_w):
     assert wavefile_w.seek(2, which='w') == 2
 
 # ------------------------------------------------------------------------------
