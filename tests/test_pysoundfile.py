@@ -7,6 +7,8 @@ data_r = np.ones((5, 2))*0.5
 file_r = 'tests/test_r.wav'
 data_r_mono = np.ones(5)*0.5
 file_r_mono = 'tests/test_r_mono.wav'
+data_r_raw = np.ones((5, 2))*0.5
+file_r_raw = 'tests/test_r.raw'
 file_w = 'tests/test_w.wav'
 
 
@@ -460,3 +462,25 @@ def test_read_mono_into_out_should_read_into_out(wavefile_r_mono):
     out_data = wavefile_r_mono.read(out=data)
     assert np.all(data == out_data)
     assert id(data) == id(out_data)
+
+
+# -----------------------------------------------------------------------------
+# RAW tests
+# -----------------------------------------------------------------------------
+
+
+def test_read_raw_files_should_read_data():
+    with sf.SoundFile(file_r_raw, sample_rate=44100,
+                      channels=2, subtype='PCM_16') as f:
+        assert np.all(f.read() == data_r_raw)
+
+
+def test_read_raw_files_with_too_few_arguments_should_fail():
+    with pytest.raises(ValueError): # missing everything
+        sf.SoundFile(file_r_raw)
+    with pytest.raises(ValueError): # missing subtype
+        sf.SoundFile(file_r_raw, sample_rate=44100, channels=2)
+    with pytest.raises(ValueError): # missing channels
+        sf.SoundFile(file_r_raw, sample_rate=44100, subtype='PCM_16')
+    with pytest.raises(ValueError): # missing sample_rate
+        sf.SoundFile(file_r_raw, channels=2, subtype='PCM_16')
