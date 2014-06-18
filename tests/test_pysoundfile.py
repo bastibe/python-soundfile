@@ -3,13 +3,21 @@ import numpy as np
 import os
 import pytest
 
-data_r = np.ones((5, 2))*0.5
+data_r = np.array([[1.0, -1.0],
+                   [0.8, -0.8],
+                   [0.6, -0.6],
+                   [0.4, -0.4],
+                   [0.2, -0.2]])
 file_r = 'tests/test_r.wav'
-data_r_mono = np.ones(5)*0.5
+data_r_mono = np.array([1.0, 0.8, 0.6, 0.4, 0.2])
 file_r_mono = 'tests/test_r_mono.wav'
-data_r_raw = np.ones((5, 2))*0.5
+data_r_raw = np.array(data_r, copy=True)
 file_r_raw = 'tests/test_r.raw'
 file_w = 'tests/test_w.wav'
+
+
+def allclose(x, y):
+    return np.allclose(x, y, atol=2**-15)
 
 
 def open_filename(filename, rw, _):
@@ -141,7 +149,7 @@ def wavefile_all(request):
 
 
 def test_file_content(wavefile_r):
-    assert np.all(data_r == wavefile_r[:])
+    assert allclose(data_r, wavefile_r[:])
 
 
 def test_mode_should_be_in_read_mode(wavefile_r):
@@ -234,7 +242,7 @@ def test_read_write_only(wavefile_w):
 
 def test_read_should_read_data_and_advance_read_pointer(wavefile_r):
     data = wavefile_r.read(2)
-    assert np.all(data == data_r[:2])
+    assert allclose(data, data_r[:2])
     assert wavefile_r.seek(0, sf.SEEK_CUR) == 2
 
 
@@ -255,7 +263,7 @@ def test_read_float32_should_read_float32_data(wavefile_r):
 
 
 def test_read_by_indexing_should_read_but_not_advance_read_pointer(wavefile_r):
-    assert np.all(wavefile_r[:2] == data_r[:2])
+    assert allclose(wavefile_r[:2], data_r[:2])
     assert wavefile_r.seek(0, sf.SEEK_CUR) == 0
 
 
@@ -265,18 +273,18 @@ def test_read_n_frames_should_return_n_frames(wavefile_r):
 
 def test_read_all_frames_should_read_all_remaining_frames(wavefile_r):
     wavefile_r.seek(-2, sf.SEEK_END)
-    assert np.all(wavefile_r.read() == data_r[-2:])
+    assert allclose(wavefile_r.read(), data_r[-2:])
 
 
 def test_read_over_end_should_return_only_remaining_frames(wavefile_r):
     wavefile_r.seek(-2, sf.SEEK_END)
-    assert np.all(wavefile_r.read(4) == data_r[-2:])
+    assert allclose(wavefile_r.read(4), data_r[-2:])
 
 
 def test_read_over_end_with_fill_should_reaturn_asked_frames(wavefile_r):
     wavefile_r.seek(-2, sf.SEEK_END)
     data = wavefile_r.read(4, fill_value=0)
-    assert np.all(data[:2] == data_r[-2:])
+    assert allclose(data[:2], data_r[-2:])
     assert np.all(data[2:] == 0)
     assert len(data) == 4
 
@@ -380,7 +388,7 @@ def test_rw_writing_float_should_be_written_approximately_correct(
     wavefile_rw_new.seek(0, which='w')
     wavefile_rw_new.write(data)
     written_data = wavefile_rw_new[-len(data):]
-    assert np.allclose(data, written_data, atol=2**-15)
+    assert allclose(data, written_data)
 
 
 def test_rw_writing_int_should_be_written_exactly_correct(wavefile_rw_new):
@@ -399,7 +407,7 @@ def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(
     position = wavefile_rw_new.seek(0, sf.SEEK_CUR, which='w')
     wavefile_rw_new[:len(data)] = data
     written_data = wavefile_rw_new[:len(data)]
-    assert np.allclose(data, written_data, atol=2**-15)
+    assert allclose(data, written_data)
     assert position == wavefile_rw_new.seek(0, sf.SEEK_CUR, which='w')
 
 
@@ -440,13 +448,13 @@ def test_non_file_attributes_should_not_save_to_disk():
 
 def test_read_mono_without_always2d_should_read_array(wavefile_r_mono):
     out_data = wavefile_r_mono.read(always_2d=False)
-    assert np.all(out_data == data_r_mono)
+    assert allclose(out_data, data_r_mono)
     assert out_data.ndim == 1
 
 
 def test_read_mono_should_read_matrix(wavefile_r_mono):
     out_data = wavefile_r_mono.read()
-    assert np.all(out_data == data_r_mono)
+    assert allclose(out_data, [[x] for x in data_r_mono])
     assert out_data.ndim == 2
 
 
@@ -472,15 +480,15 @@ def test_read_mono_into_out_should_read_into_out(wavefile_r_mono):
 def test_read_raw_files_should_read_data():
     with sf.SoundFile(file_r_raw, sample_rate=44100,
                       channels=2, subtype='PCM_16') as f:
-        assert np.all(f.read() == data_r_raw)
+        assert allclose(f.read(), data_r_raw)
 
 
 def test_read_raw_files_with_too_few_arguments_should_fail():
-    with pytest.raises(ValueError): # missing everything
+    with pytest.raises(ValueError):  # missing everything
         sf.SoundFile(file_r_raw)
-    with pytest.raises(ValueError): # missing subtype
+    with pytest.raises(ValueError):  # missing subtype
         sf.SoundFile(file_r_raw, sample_rate=44100, channels=2)
-    with pytest.raises(ValueError): # missing channels
+    with pytest.raises(ValueError):  # missing channels
         sf.SoundFile(file_r_raw, sample_rate=44100, subtype='PCM_16')
-    with pytest.raises(ValueError): # missing sample_rate
+    with pytest.raises(ValueError):  # missing sample_rate
         sf.SoundFile(file_r_raw, channels=2, subtype='PCM_16')
