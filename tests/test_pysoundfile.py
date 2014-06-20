@@ -484,11 +484,11 @@ def test_read_raw_files_should_read_data():
 
 
 def test_read_raw_files_with_too_few_arguments_should_fail():
-    with pytest.raises(ValueError):  # missing everything
+    with pytest.raises(TypeError):  # missing everything
         sf.SoundFile(file_r_raw)
-    with pytest.raises(ValueError):  # missing subtype
+    with pytest.raises(TypeError):  # missing subtype
         sf.SoundFile(file_r_raw, sample_rate=44100, channels=2)
-    with pytest.raises(ValueError):  # missing channels
+    with pytest.raises(TypeError):  # missing channels
         sf.SoundFile(file_r_raw, sample_rate=44100, subtype='PCM_16')
-    with pytest.raises(ValueError):  # missing sample_rate
+    with pytest.raises(TypeError):  # missing sample_rate
         sf.SoundFile(file_r_raw, channels=2, subtype='PCM_16')
