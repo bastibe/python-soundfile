@@ -333,13 +333,17 @@ class SoundFile(object):
             raise ValueError("Invalid mode: %s" % repr(mode))
 
         original_format = format
-        if format is None:
-            filename = getattr(file, 'name', file)
-            format = str(filename).rsplit('.', 1)[-1].upper()
-            if self.mode == 'w' and format not in _formats:
-                raise TypeError(
-                    "No format specified and unable to get format from "
-                    "file extension: %s" % repr(filename))
+        filename = getattr(file, 'name', file)
+        file_extension = str(filename).rsplit('.', 1)[-1].upper()
+        if format is None and ('w' in self.mode or
+                               file_extension == 'RAW'):
+            if file_extension not in _formats:
+                if self.mode == 'w':
+                    raise TypeError(
+                        "No format specified and unable to get format from "
+                        "file extension: %s" % repr(filename))
+            else:
+                format = file_extension
 
         self._info = _ffi.new("SF_INFO*")
         if self.mode == 'w' or str(format).upper() == 'RAW':
@@ -349,7 +353,16 @@ class SoundFile(object):
             if channels is None:
                 raise TypeError("channels must be specified")
             self._info.channels = channels
+            if str(format).upper() == 'RAW' and subtype is None:
+                raise TypeError("RAW files must specify a subtype")
             self._info.format = _format_int(format, subtype, endian)
+        elif self.mode == 'rw':
+            if sample_rate is not None:
+                self._info.samplerate = sample_rate
+            if channels is not None:
+                self._info.channels = channels
+            if format is not None:
+                self._info.format = _format_int(format, subtype, endian)
         else:
             if [sample_rate, channels, original_format, subtype, endian] != \
                     [None] * 5:
