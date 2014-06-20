@@ -348,13 +348,13 @@ class SoundFile(object):
         self._info = _ffi.new("SF_INFO*")
         if self.mode == 'w' or str(format).upper() == 'RAW':
             if sample_rate is None:
-                raise ValueError("sample_rate must be specified")
+                raise TypeError("sample_rate must be specified")
             self._info.samplerate = sample_rate
             if channels is None:
-                raise ValueError("channels must be specified")
+                raise TypeError("channels must be specified")
             self._info.channels = channels
             if str(format).upper() == 'RAW' and subtype is None:
-                raise ValueError("RAW files must specify a subtype")
+                raise TypeError("RAW files must specify a subtype")
             self._info.format = _format_int(format, subtype, endian)
         elif self.mode == 'rw':
             if sample_rate is not None:
