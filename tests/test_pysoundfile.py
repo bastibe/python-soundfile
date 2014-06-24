@@ -75,16 +75,14 @@ def file_stereo_w(request):
     return _file_new(request, os.O_CREAT | os.O_WRONLY, 'wb')
 
 
-# 'rw' is not permissible with file-like objects
-@pytest.fixture(params=['name', 'fd'])
+@pytest.fixture(params=['name', 'fd', 'obj'])
 def file_stereo_rw_existing(request):
-    return _file_copy(request, file_r, os.O_RDWR)
+    return _file_copy(request, file_r, os.O_RDWR, 'r+b')
 
 
-# 'rw' is not permissible with file-like objects
-@pytest.fixture(params=['name', 'fd'])
+@pytest.fixture(params=['name', 'fd', 'obj'])
 def file_stereo_rw_new(request):
-    return _file_new(request, os.O_CREAT | os.O_RDWR)
+    return _file_new(request, os.O_CREAT | os.O_RDWR, 'w+b')
 
 
 @pytest.yield_fixture
