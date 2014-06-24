@@ -22,6 +22,9 @@ def allclose(x, y):
     return np.allclose(x, y, atol=2**-15)
 
 
+open_variants = 'name', 'fd', 'obj'
+
+
 def _file_existing(request, filename, fdarg, objarg=None):
     if request.param == 'name':
         return filename
@@ -60,27 +63,27 @@ def _file_copy(request, filename, fdarg, objarg=None):
     return _file_existing(request, tempfilename, fdarg, objarg)
 
 
-@pytest.fixture(params=['name', 'fd', 'obj'])
+@pytest.fixture(params=open_variants)
 def file_stereo_r(request):
     return _file_existing(request, file_r, os.O_RDONLY, 'rb')
 
 
-@pytest.fixture(params=['name', 'fd', 'obj'])
+@pytest.fixture(params=open_variants)
 def file_mono_r(request):
     return _file_existing(request, file_r_mono, os.O_RDONLY, 'rb')
 
 
-@pytest.fixture(params=['name', 'fd', 'obj'])
+@pytest.fixture(params=open_variants)
 def file_stereo_w(request):
     return _file_new(request, os.O_CREAT | os.O_WRONLY, 'wb')
 
 
-@pytest.fixture(params=['name', 'fd', 'obj'])
+@pytest.fixture(params=open_variants)
 def file_stereo_rw_existing(request):
     return _file_copy(request, file_r, os.O_RDWR, 'r+b')
 
 
-@pytest.fixture(params=['name', 'fd', 'obj'])
+@pytest.fixture(params=open_variants)
 def file_stereo_rw_new(request):
     return _file_new(request, os.O_CREAT | os.O_RDWR, 'w+b')
 
