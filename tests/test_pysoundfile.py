@@ -38,8 +38,6 @@ def _file_existing(request, filename, fdarg, objarg=None):
         obj = open(filename, objarg)
         request.addfinalizer(obj.close)
         return obj
-    else:
-        assert False
 
 
 def _file_new(request, fdarg, objarg=None):
