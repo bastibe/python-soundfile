@@ -1,6 +1,7 @@
 import pysoundfile as sf
 import numpy as np
 import os
+import shutil
 import pytest
 
 data_r = np.array([[1.0, -1.0],
@@ -14,6 +15,7 @@ file_r_mono = 'tests/test_r_mono.wav'
 data_r_raw = np.array(data_r, copy=True)
 file_r_raw = 'tests/test_r.raw'
 file_w = 'tests/test_w.wav'
+tempfilename = "tests/delme.please"
 
 
 def allclose(x, y):
@@ -50,6 +52,16 @@ def _file_new(request, fdarg, objarg=None):
     return _file_existing(request, filename, fdarg, objarg)
 
 
+def _file_copy(request, filename, fdarg, objarg=None):
+    shutil.copy(filename, tempfilename)
+
+    def finalizer():
+        os.remove(tempfilename)
+
+    request.addfinalizer(finalizer)
+    return _file_existing(request, tempfilename, fdarg, objarg)
+
+
 @pytest.fixture(params=['name', 'fd', 'obj'])
 def file_stereo_r(request):
     return _file_existing(request, file_r, os.O_RDONLY, 'rb')
@@ -68,7 +80,7 @@ def file_stereo_w(request):
 # 'rw' is not permissible with file-like objects
 @pytest.fixture(params=['name', 'fd'])
 def file_stereo_rw_existing(request):
-    return _file_existing(request, file_r, os.O_RDWR)
+    return _file_copy(request, file_r, os.O_RDWR)
 
 
 # 'rw' is not permissible with file-like objects
