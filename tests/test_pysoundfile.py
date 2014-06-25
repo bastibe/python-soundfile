@@ -115,6 +115,62 @@ def sf_stereo_rw_new(file_stereo_rw_new):
 
 
 # -----------------------------------------------------------------------------
+# Test read() function
+# -----------------------------------------------------------------------------
+
+
+def test_if_read_returns_float64_data(file_stereo_r):
+    data, fs = sf.read(file_stereo_r)
+    assert fs == 44100
+    assert np.all(data == data_stereo)
+    assert data.dtype == np.float64
+
+
+def test_read_float32(file_stereo_r):
+    data, fs = sf.read(file_stereo_r, dtype='float32')
+    assert np.all(data == data_stereo)
+    assert data.dtype == np.float32
+
+
+def test_read_int16(file_mono_r):
+    data, fs = sf.read(file_mono_r, dtype='int16')
+    assert np.all(data == data_mono)
+    assert data.dtype == np.int16
+
+
+def test_read_int32(file_mono_r):
+    data, fs = sf.read(file_mono_r, dtype='int32')
+    assert np.all(data == data_mono * 2 ** 16)
+    assert data.dtype == np.int32
+
+
+def test_read_into_out(file_stereo_r):
+    out = np.empty((3, 2), dtype='float64')
+    data, fs = sf.read(file_stereo_r, out=out)
+    assert data is out
+    assert np.all(data == data_stereo[:3])
+
+
+def test_if_read_into_malformed_out_fails(file_stereo_r):
+    out = np.empty((2, 3), dtype='float64')
+    with pytest.raises(ValueError):
+        data, fs = sf.read(file_stereo_r, out=out)
+
+
+def test_if_read_into_out_with_too_many_dimensions_fails(file_stereo_r):
+    out = np.empty((3, 2, 1), dtype='float64')
+    with pytest.raises(ValueError):
+        data, fs = sf.read(file_stereo_r, out=out)
+
+
+def test_if_read_into_zero_len_out_works(file_stereo_r):
+    out = np.empty((0, 2), dtype='float64')
+    data, fs = sf.read(file_stereo_r, out=out)
+    assert data is out
+    assert len(out) == 0
+
+
+# -----------------------------------------------------------------------------
 # Test file metadata
 # -----------------------------------------------------------------------------
 
@@ -217,22 +273,6 @@ def test_read_should_read_data_and_advance_read_pointer(sf_stereo_r):
     assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 2
 
 
-def test_read_should_read_float64_data(sf_stereo_r):
-    assert sf_stereo_r[:].dtype == np.float64
-
-
-def test_read_int16_should_read_int16_data(sf_stereo_r):
-    assert sf_stereo_r.read(2, dtype='int16').dtype == np.int16
-
-
-def test_read_int32_should_read_int32_data(sf_stereo_r):
-    assert sf_stereo_r.read(2, dtype='int32').dtype == np.int32
-
-
-def test_read_float32_should_read_float32_data(sf_stereo_r):
-    assert sf_stereo_r.read(2, dtype='float32').dtype == np.float32
-
-
 def test_read_by_indexing_should_read_but_not_advance_read_pointer(
         sf_stereo_r):
     assert np.all(sf_stereo_r[:2] == data_stereo[:2])
@@ -259,32 +299,6 @@ def test_read_over_end_with_fill_should_reaturn_asked_frames(sf_stereo_r):
     assert np.all(data[:2] == data_stereo[-2:])
     assert np.all(data[2:] == 0)
     assert len(data) == 4
-
-
-def test_read_into_out_should_return_data_and_write_into_out(sf_stereo_r):
-    out = np.empty((2, sf_stereo_r.channels), dtype='float64')
-    data = sf_stereo_r.read(out=out)
-    assert np.all(data == out)
-
-
-def test_read_into_malformed_out_should_fail(sf_stereo_r):
-    out = np.empty((2, sf_stereo_r.channels + 1), dtype='float64')
-    with pytest.raises(ValueError):
-        sf_stereo_r.read(out=out)
-
-
-def test_read_into_out_with_too_many_dimensions_should_fail(sf_stereo_r):
-    out = np.empty((2, sf_stereo_r.channels, 1), dtype='float64')
-    with pytest.raises(ValueError):
-        sf_stereo_r.read(out=out)
-
-
-def test_read_into_zero_len_out_should_not_read_anything(sf_stereo_r):
-    out = np.empty((0, sf_stereo_r.channels), dtype='float64')
-    data = sf_stereo_r.read(out=out)
-    assert len(data) == 0
-    assert len(out) == 0
-    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 0
 
 
 def test_read_into_out_over_end_should_return_shorter_data_and_write_into_out(
