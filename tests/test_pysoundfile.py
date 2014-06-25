@@ -171,6 +171,19 @@ def test_if_read_into_zero_len_out_works(file_stereo_r):
 
 
 # -----------------------------------------------------------------------------
+# Test write() function
+# -----------------------------------------------------------------------------
+
+# The read() function is tested above, we assume here that it is working.
+
+def test_write_function(file_w):
+    sf.write(data_mono, file_w, 44100, format='WAV')
+    data, fs = sf.read(filename_new, dtype='int16')
+    assert fs == 44100
+    assert np.all(data == data_mono)
+
+
+# -----------------------------------------------------------------------------
 # Test file metadata
 # -----------------------------------------------------------------------------
 
