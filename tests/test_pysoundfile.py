@@ -224,18 +224,6 @@ def test_mode_should_be_in_readwrite_mode(sf_stereo_rw_existing):
     assert sf_stereo_rw_existing.mode == 'rw'
 
 
-def test_mode_read_should_start_at_beginning(sf_stereo_r):
-    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 0
-
-
-def test_mode_write_should_start_at_beginning(sf_stereo_w):
-    assert sf_stereo_w.seek(0, sf.SEEK_CUR) == 0
-
-
-def test_mode_rw_should_start_at_end(sf_stereo_rw_existing):
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR) == len(data_stereo)
-
-
 def test_number_of_channels(sf_stereo_r):
     assert sf_stereo_r.channels == 2
 
@@ -269,25 +257,36 @@ def test_file_exists(sf_stereo_w):
 # -----------------------------------------------------------------------------
 
 
-def test_seek_should_advance_read_pointer(sf_stereo_r):
+def test_seek_in_read_mode(sf_stereo_r):
+    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 0
     assert sf_stereo_r.seek(2) == 2
-
-
-def test_seek_multiple_times_should_advance_read_pointer(sf_stereo_r):
-    sf_stereo_r.seek(2)
-    assert sf_stereo_r.seek(2, whence=sf.SEEK_CUR) == 4
-
-
-def test_seek_to_end_should_advance_read_pointer_to_end(sf_stereo_r):
-    assert sf_stereo_r.seek(-2, whence=sf.SEEK_END) == len(data_stereo) - 2
-
-
-def test_seek_read_pointer_should_advance_read_pointer(sf_stereo_r):
+    assert sf_stereo_r.seek(2, sf.SEEK_CUR) == 4
+    assert sf_stereo_r.seek(-2, sf.SEEK_END) == len(data_stereo) - 2
     assert sf_stereo_r.seek(2, which='r') == 2
 
 
-def test_seek_write_pointer_should_advance_write_pointer(sf_stereo_w):
+def test_seek_in_write_mode(sf_stereo_w):
+    assert sf_stereo_w.seek(0, sf.SEEK_CUR) == 0
     assert sf_stereo_w.seek(2, which='w') == 2
+
+
+def test_initial_read_and_write_position(sf_stereo_rw_existing):
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == 0
+    # 'w' wins ...
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR) == len(data_stereo)
+    # ... and moves read position:
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == len(data_stereo)
+
+
+def test_if_seek_write_advances_read_position(sf_stereo_rw_existing):
+    assert sf_stereo_rw_existing.seek(2, which='w') == 2
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == 0
+
+
+def test_if_seek_read_advances_write_pointer(sf_stereo_rw_existing):
+    assert sf_stereo_rw_existing.seek(2, which='r') == 2
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
 
 
 # -----------------------------------------------------------------------------
@@ -385,21 +384,6 @@ def test_write_flush_should_write_to_disk(sf_stereo_w):
 # -----------------------------------------------------------------------------
 # Test read/write
 # -----------------------------------------------------------------------------
-
-
-def test_rw_initial_read_and_write_pointer(sf_stereo_rw_existing):
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == 0
-
-
-def test_rw_seek_write_should_advance_write_pointer(sf_stereo_rw_existing):
-    assert sf_stereo_rw_existing.seek(2, which='w') == 2
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == 0
-
-
-def test_rw_seek_read_should_advance_read_pointer(sf_stereo_rw_existing):
-    assert sf_stereo_rw_existing.seek(2, which='r') == 2
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
 
 
 def test_rw_read_written_float_data(sf_stereo_rw_new):
