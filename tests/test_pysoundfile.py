@@ -85,32 +85,32 @@ def file_stereo_rw_new(request):
 
 @pytest.yield_fixture
 def sf_stereo_r(file_stereo_r):
-    with sf.SoundFile(file_stereo_r) as f:
+    with sf.open(file_stereo_r) as f:
         yield f
 
 
 @pytest.yield_fixture
 def sf_mono_r(file_mono_r):
-    with sf.SoundFile(file_mono_r) as f:
+    with sf.open(file_mono_r) as f:
         yield f
 
 
 @pytest.yield_fixture
 def sf_stereo_w(file_stereo_w):
-    with sf.SoundFile(file_stereo_w, 'w', 44100, 2, format='WAV') as f:
+    with sf.open(file_stereo_w, 'w', 44100, 2, format='WAV') as f:
         yield f
 
 
 @pytest.yield_fixture
 def sf_stereo_rw_existing(file_stereo_rw_existing):
-    with sf.SoundFile(file_stereo_rw_existing, 'rw') as f:
+    with sf.open(file_stereo_rw_existing, 'rw') as f:
         yield f
 
 
 @pytest.yield_fixture
 def sf_stereo_rw_new(file_stereo_rw_new):
-    with sf.SoundFile(file_stereo_rw_new, 'rw', 44100, 2,
-                      format='WAV', subtype='FLOAT') as f:
+    with sf.open(file_stereo_rw_new, 'rw', 44100, 2,
+                 format='WAV', subtype='FLOAT') as f:
         yield f
 
 
@@ -386,30 +386,30 @@ def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(
 
 
 def test_context_manager_should_open_and_close_file():
-    with sf.SoundFile(filename_stereo) as f:
+    with sf.open(filename_stereo) as f:
         assert not f.closed
     assert f.closed
 
 
 def test_closing_should_close_file():
-    f = sf.SoundFile(filename_stereo)
+    f = sf.open(filename_stereo)
     assert not f.closed
     f.close()
     assert f.closed
 
 
 def test_file_attributes_should_save_to_disk():
-    with sf.SoundFile(filename_new, 'w', 44100, 2, format='WAV') as f:
+    with sf.open(filename_new, 'w', 44100, 2, format='WAV') as f:
         f.title = 'testing'
-    with sf.SoundFile(filename_new) as f:
+    with sf.open(filename_new) as f:
         assert f.title == 'testing'
     os.remove(filename_new)
 
 
 def test_non_file_attributes_should_not_save_to_disk():
-    with sf.SoundFile(filename_new, 'w', 44100, 2, format='WAV') as f:
+    with sf.open(filename_new, 'w', 44100, 2, format='WAV') as f:
         f.foobar = 'testing'
-    with sf.SoundFile(filename_new) as f:
+    with sf.open(filename_new) as f:
         with pytest.raises(AttributeError):
             f.foobar
     os.remove(filename_new)
@@ -447,17 +447,17 @@ def test_read_mono_into_out_should_read_into_out(sf_mono_r):
 
 
 def test_read_raw_files_should_read_data():
-    with sf.SoundFile(filename_raw, sample_rate=44100,
-                      channels=1, subtype='PCM_16') as f:
+    with sf.open(filename_raw, sample_rate=44100,
+                 channels=1, subtype='PCM_16') as f:
         assert np.all(f.read(dtype='int16') == data_mono.reshape(-1, 1))
 
 
 def test_read_raw_files_with_too_few_arguments_should_fail():
     with pytest.raises(TypeError):  # missing everything
-        sf.SoundFile(filename_raw)
+        sf.open(filename_raw)
     with pytest.raises(TypeError):  # missing subtype
-        sf.SoundFile(filename_raw, sample_rate=44100, channels=2)
+        sf.open(filename_raw, sample_rate=44100, channels=2)
     with pytest.raises(TypeError):  # missing channels
-        sf.SoundFile(filename_raw, sample_rate=44100, subtype='PCM_16')
+        sf.open(filename_raw, sample_rate=44100, subtype='PCM_16')
     with pytest.raises(TypeError):  # missing sample_rate
-        sf.SoundFile(filename_raw, channels=2, subtype='PCM_16')
+        sf.open(filename_raw, channels=2, subtype='PCM_16')
