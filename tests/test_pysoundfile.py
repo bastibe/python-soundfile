@@ -69,7 +69,7 @@ def file_mono_r(request):
 
 
 @pytest.fixture(params=open_variants)
-def file_stereo_w(request):
+def file_w(request):
     return _file_new(request, os.O_CREAT | os.O_WRONLY, 'wb')
 
 
@@ -79,7 +79,7 @@ def file_stereo_rw_existing(request):
 
 
 @pytest.fixture(params=open_variants)
-def file_stereo_rw_new(request):
+def file_rw_new(request):
     return _file_new(request, os.O_CREAT | os.O_RDWR, 'w+b')
 
 
@@ -96,8 +96,8 @@ def sf_mono_r(file_mono_r):
 
 
 @pytest.yield_fixture
-def sf_stereo_w(file_stereo_w):
-    with sf.open(file_stereo_w, 'w', 44100, 2, format='WAV') as f:
+def sf_stereo_w(file_w):
+    with sf.open(file_w, 'w', 44100, 2, format='WAV') as f:
         yield f
 
 
@@ -108,8 +108,8 @@ def sf_stereo_rw_existing(file_stereo_rw_existing):
 
 
 @pytest.yield_fixture
-def sf_stereo_rw_new(file_stereo_rw_new):
-    with sf.open(file_stereo_rw_new, 'rw', 44100, 2,
+def sf_stereo_rw_new(file_rw_new):
+    with sf.open(file_rw_new, 'rw', 44100, 2,
                  format='WAV', subtype='FLOAT') as f:
         yield f
 
