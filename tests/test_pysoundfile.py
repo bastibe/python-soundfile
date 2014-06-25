@@ -236,11 +236,17 @@ def test_seek_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.seek(2, sf.SEEK_CUR) == 4
     assert sf_stereo_r.seek(-2, sf.SEEK_END) == len(data_stereo) - 2
     assert sf_stereo_r.seek(2, which='r') == 2
+    assert sf_stereo_r.seek(666) == -1
+    assert sf_stereo_r.seek(-666) == -1
+    with pytest.raises(ValueError):
+        sf_stereo_r.seek(2, which='w')
 
 
 def test_seek_in_write_mode(sf_stereo_w):
     assert sf_stereo_w.seek(0, sf.SEEK_CUR) == 0
     assert sf_stereo_w.seek(2, which='w') == 2
+    with pytest.raises(ValueError):
+        sf_stereo_w.seek(2, which='r')
 
 
 def test_initial_read_and_write_position(sf_stereo_rw_existing):
@@ -337,13 +343,10 @@ def test_write_to_read_only_file_should_fail(sf_stereo_r):
         sf_stereo_r.write(data_stereo)
 
 
-def test_write_should_write_and_advance_write_pointer(sf_stereo_w):
-    position_w = sf_stereo_w.seek(0, sf.SEEK_CUR, which='w')
-    position_r = sf_stereo_w.seek(0, sf.SEEK_CUR, which='r')
+def test_if_write_advances_write_pointer(sf_stereo_w):
+    position = sf_stereo_w.seek(0, sf.SEEK_CUR)
     sf_stereo_w.write(data_stereo)
-    assert (sf_stereo_w.seek(0, sf.SEEK_CUR, which='w') ==
-            position_w+len(data_stereo))
-    assert sf_stereo_w.seek(0, sf.SEEK_CUR, which='r') == position_r
+    assert sf_stereo_w.seek(0, sf.SEEK_CUR) == position + len(data_stereo)
 
 
 def test_write_flush_should_write_to_disk(sf_stereo_w):

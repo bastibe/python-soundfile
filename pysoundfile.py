@@ -597,15 +597,16 @@ class SoundFile(object):
         use seek(0), to set it to right after the last frame,
         e.g. for appending new data, use seek(0, SEEK_END).
 
-        Returns the new absolute read position in frames or a negative
-        value on error.
+        Returns the new absolute read/write position in frames or a
+        negative value on error.
 
         """
         self._check_if_closed()
-        if which in ('r', 'w'):
-            whence |= _open_modes[which]
-        elif which is not None:
-            raise ValueError("Invalid which: %s" % repr(which))
+        if which is not None:
+            if which != 'rw' and which in self.mode:
+                whence |= _open_modes[which]
+            else:
+                raise ValueError("Invalid which: %s" % repr(which))
         return _snd.sf_seek(self._file, frames, whence)
 
     def _check_array(self, array):
