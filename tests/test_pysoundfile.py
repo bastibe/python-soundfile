@@ -212,44 +212,25 @@ def test_file_content(sf_stereo_r):
     assert np.all(data_stereo == sf_stereo_r[:])
 
 
-def test_mode_should_be_in_read_mode(sf_stereo_r):
+def test_file_attributes_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.mode == 'r'
-
-
-def test_mode_should_be_in_write_mode(sf_stereo_w):
-    assert sf_stereo_w.mode == 'w'
-
-
-def test_mode_should_be_in_readwrite_mode(sf_stereo_rw_existing):
-    assert sf_stereo_rw_existing.mode == 'rw'
-
-
-def test_number_of_channels(sf_stereo_r):
     assert sf_stereo_r.channels == 2
-
-
-def test_sample_rate(sf_stereo_r):
     assert sf_stereo_r.sample_rate == 44100
-
-
-def test_format_metadata(sf_stereo_r):
     assert sf_stereo_r.format == 'WAV'
     assert sf_stereo_r.subtype == 'FLOAT'
     assert sf_stereo_r.endian == 'FILE'
     assert sf_stereo_r.format_info == 'WAV (Microsoft)'
     assert sf_stereo_r.subtype_info == '32 bit float'
-
-
-def test_data_length_r(sf_stereo_r):
     assert len(sf_stereo_r) == len(data_stereo)
 
 
-def test_data_length_w(sf_stereo_w):
+def test_mode_should_be_in_write_mode(sf_stereo_w):
+    assert sf_stereo_w.mode == 'w'
     assert len(sf_stereo_w) == 0
 
 
-def test_file_exists(sf_stereo_w):
-    assert os.path.isfile(filename_new)
+def test_mode_should_be_in_readwrite_mode(sf_stereo_rw_existing):
+    assert sf_stereo_rw_existing.mode == 'rw'
 
 
 # -----------------------------------------------------------------------------
