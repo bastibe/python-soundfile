@@ -90,12 +90,6 @@ def sf_stereo_r(file_stereo_r):
 
 
 @pytest.yield_fixture
-def sf_mono_r(file_mono_r):
-    with sf.open(file_mono_r) as f:
-        yield f
-
-
-@pytest.yield_fixture
 def sf_stereo_w(file_w):
     with sf.open(file_w, 'w', 44100, 2, format='WAV') as f:
         yield f
@@ -168,6 +162,32 @@ def test_if_read_into_zero_len_out_works(file_stereo_r):
     data, fs = sf.read(file_stereo_r, out=out)
     assert data is out
     assert len(out) == 0
+
+
+def test_read_mono_without_always2d(file_mono_r):
+    data, fs = sf.read(file_mono_r, dtype='int16', always_2d=False)
+    assert data.ndim == 1
+    assert np.all(data == data_mono.squeeze())
+
+
+def test_if_read_mono_returns_2d_array(file_mono_r):
+    data, fs = sf.read(file_mono_r, dtype='int16')
+    assert data.ndim == 2
+    assert np.all(data == data_mono)
+
+
+def test_read_mono_into_1d_out(file_mono_r):
+    out = np.empty(len(data_mono), dtype='int16')
+    data, fs = sf.read(file_mono_r, out=out)
+    assert data is out
+    assert np.all(data == data_mono.squeeze())
+
+
+def test_read_mono_into_2d_out(file_mono_r):
+    out = np.empty((len(data_mono), 1), dtype='int16')
+    data, fs = sf.read(file_mono_r, out=out)
+    assert data is out
+    assert np.all(data == data_mono)
 
 
 # -----------------------------------------------------------------------------
@@ -440,32 +460,6 @@ def test_non_file_attributes_should_not_save_to_disk():
         with pytest.raises(AttributeError):
             f.foobar
     os.remove(filename_new)
-
-
-def test_read_mono_without_always2d(sf_mono_r):
-    out_data = sf_mono_r.read(dtype='int16', always_2d=False)
-    assert out_data.ndim == 1
-    assert np.all(out_data == data_mono.squeeze())
-
-
-def test_read_mono_should_return_2d_array(sf_mono_r):
-    out_data = sf_mono_r.read(dtype='int16')
-    assert out_data.ndim == 2
-    assert np.all(out_data == data_mono)
-
-
-def test_read_mono_into_mono_out_should_read_into_out(sf_mono_r):
-    data = np.empty(5, dtype='float64')
-    out_data = sf_mono_r.read(out=data)
-    assert np.all(data == out_data)
-    assert id(data) == id(out_data)
-
-
-def test_read_mono_into_out_should_read_into_out(sf_mono_r):
-    data = np.empty((5, 1), dtype='float64')
-    out_data = sf_mono_r.read(out=data)
-    assert np.all(data == out_data)
-    assert id(data) == id(out_data)
 
 
 # -----------------------------------------------------------------------------
