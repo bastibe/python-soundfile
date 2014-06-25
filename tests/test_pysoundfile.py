@@ -8,7 +8,7 @@ data_stereo = np.array([[1.0,  -1.0],
                         [0.75, -0.75],
                         [0.5,  -0.5],
                         [0.25, -0.25]])
-data_mono = np.array([0, 1, 2, -2, -1], dtype='int16')
+data_mono = np.array([[0], [1], [2], [-2], [-1]], dtype='int16')
 
 filename_stereo = 'tests/stereo.wav'
 filename_mono = 'tests/mono.wav'
@@ -418,13 +418,13 @@ def test_non_file_attributes_should_not_save_to_disk():
 def test_read_mono_without_always2d(sf_mono_r):
     out_data = sf_mono_r.read(dtype='int16', always_2d=False)
     assert out_data.ndim == 1
-    assert np.all(out_data == data_mono)
+    assert np.all(out_data == data_mono.squeeze())
 
 
 def test_read_mono_should_return_2d_array(sf_mono_r):
     out_data = sf_mono_r.read(dtype='int16')
     assert out_data.ndim == 2
-    assert np.all(out_data == data_mono.reshape(-1, 1))
+    assert np.all(out_data == data_mono)
 
 
 def test_read_mono_into_mono_out_should_read_into_out(sf_mono_r):
@@ -449,7 +449,7 @@ def test_read_mono_into_out_should_read_into_out(sf_mono_r):
 def test_read_raw_files_should_read_data():
     with sf.open(filename_raw, sample_rate=44100,
                  channels=1, subtype='PCM_16') as f:
-        assert np.all(f.read(dtype='int16') == data_mono.reshape(-1, 1))
+        assert np.all(f.read(dtype='int16') == data_mono)
 
 
 def test_read_raw_files_with_too_few_arguments_should_fail():
