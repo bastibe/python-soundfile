@@ -447,7 +447,11 @@ class SoundFile(object):
         def vio_write(ptr, count, user_data):
             buf = _ffi.buffer(ptr, count)
             data = buf[:]
-            return file.write(data)
+            written = file.write(data)
+            # write() returns None for file objects in Python <= 2.7:
+            if written is None:
+                written = count
+            return written
 
         @_ffi.callback("sf_vio_tell")
         def vio_tell(user_data):
