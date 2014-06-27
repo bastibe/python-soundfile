@@ -362,22 +362,14 @@ def test_write_flush_should_write_to_disk(sf_stereo_w):
     assert os.path.getsize(filename_new) == size + data_stereo.size * 2
 
 
-# -----------------------------------------------------------------------------
-# Test read/write
-# -----------------------------------------------------------------------------
-
-
-def test_rw_read_written_float_data(sf_stereo_rw_new):
+def test_rw_read_written_data(sf_stereo_rw_new):
     sf_stereo_rw_new.seek(0)
     sf_stereo_rw_new.write(data_stereo)
+    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
+    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'r') == 0
     assert np.all(sf_stereo_rw_new.read() == data_stereo)
-
-
-def test_rw_read_written_int_data(sf_stereo_rw_new):
-    data = np.zeros((5, 2), dtype='int16') + 2 ** 15 - 1  # full scale int16
-    sf_stereo_rw_new.seek(0)
-    sf_stereo_rw_new.write(data)
-    assert np.all(sf_stereo_rw_new.read(dtype='int16') == data)
+    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
+    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'r') == len(data_stereo)
 
 
 def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(
