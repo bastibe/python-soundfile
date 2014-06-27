@@ -40,21 +40,13 @@ def _file_existing(request, filename, fdarg, objarg=None):
 
 def _file_new(request, fdarg, objarg=None):
     filename = filename_new
-
-    def finalizer():
-        os.remove(filename)
-
-    request.addfinalizer(finalizer)
+    request.addfinalizer(lambda: os.remove(filename))
     return _file_existing(request, filename, fdarg, objarg)
 
 
 def _file_copy(request, filename, fdarg, objarg=None):
     shutil.copy(filename, tempfilename)
-
-    def finalizer():
-        os.remove(tempfilename)
-
-    request.addfinalizer(finalizer)
+    request.addfinalizer(lambda: os.remove(tempfilename))
     return _file_existing(request, tempfilename, fdarg, objarg)
 
 
