@@ -1,146 +1,198 @@
 import pysoundfile as sf
 import numpy as np
 import os
+import shutil
 import pytest
 
-data_r = np.array([[1.0, -1.0],
-                   [0.8, -0.8],
-                   [0.6, -0.6],
-                   [0.4, -0.4],
-                   [0.2, -0.2]])
-file_r = 'tests/test_r.wav'
-data_r_mono = np.array([1.0, 0.8, 0.6, 0.4, 0.2])
-file_r_mono = 'tests/test_r_mono.wav'
-data_r_raw = np.array(data_r, copy=True)
-file_r_raw = 'tests/test_r.raw'
-file_w = 'tests/test_w.wav'
+data_stereo = np.array([[1.0,  -1.0],
+                        [0.75, -0.75],
+                        [0.5,  -0.5],
+                        [0.25, -0.25]])
+data_mono = np.array([[0], [1], [2], [-2], [-1]], dtype='int16')
+
+filename_stereo = 'tests/stereo.wav'
+filename_mono = 'tests/mono.wav'
+filename_raw = 'tests/mono.raw'
+filename_new = 'tests/new.wav'
+tempfilename = 'tests/delme.please'
 
 
-def allclose(x, y):
-    return np.allclose(x, y, atol=2**-15)
+open_variants = 'name', 'fd', 'obj'
 
 
-def open_filename(filename, rw, _):
-    if rw == 'r':
-        return sf.SoundFile(filename)
-    elif rw == 'w':
-        return sf.SoundFile(filename, mode=rw, sample_rate=44100, channels=2)
-    elif rw == 'rw' and 'test_r' in filename:
-        return sf.SoundFile(filename, mode=rw)
-    elif rw == 'rw' and 'test_w' in filename:
-        return sf.SoundFile(filename, mode=rw, sample_rate=44100, channels=2)
+def _file_existing(request, filename, fdarg, objarg=None):
+    if request.param == 'name':
+        return filename
+    elif request.param == 'fd':
+        fd = os.open(filename, fdarg)
+
+        def finalizer():
+            with pytest.raises(OSError):
+                os.close(fd)
+
+        request.addfinalizer(finalizer)
+        return fd
+    elif request.param == 'obj':
+        obj = open(filename, objarg)
+        request.addfinalizer(obj.close)
+        return obj
 
 
-def open_filehandle(filename, rw, _):
-    # TODO: does sf.SoundFile auto-close the handle???
-    # request.addfinalizer(lambda: os.close(handle))
-    if rw == 'r':
-        handle = os.open(filename, os.O_RDONLY)
-    elif rw == 'w':
-        handle = os.open(filename, os.O_CREAT | os.O_WRONLY)
-    elif rw == 'rw' and filename == file_r:
-        handle = os.open(filename, os.O_RDWR)
-    elif rw == 'rw' and filename == file_w:
-        handle = os.open(filename, os.O_CREAT | os.O_RDWR)
-    if 'test_r' in filename:
-        return sf.SoundFile(handle, mode=rw)
-    elif 'test_w' in filename:
-        return sf.SoundFile(handle, mode=rw, sample_rate=44100,
-                            channels=2, format='wav')
+def _file_new(request, fdarg, objarg=None):
+    filename = filename_new
+    request.addfinalizer(lambda: os.remove(filename))
+    return _file_existing(request, filename, fdarg, objarg)
 
 
-def open_bytestream(filename, rw, request):
-    if rw == 'r':
-        bytesio = open(filename, 'rb')
-    elif rw == 'w':
-        bytesio = open(filename, 'wb')
-    elif rw == 'rw' and filename == file_r:
-        bytesio = open(filename, 'a+b')
-    elif rw == 'rw' and filename == file_w:
-        bytesio = open(filename, 'w+b')
-    if 'test_r' in filename:
-        file = sf.SoundFile(bytesio, mode=rw)
-    elif 'test_w' in filename:
-        file = sf.SoundFile(bytesio, mode=rw, sample_rate=44100,
-                            channels=2, format='wav')
-    request.addfinalizer(bytesio.close)
-    return file
+def _file_copy(request, filename, fdarg, objarg=None):
+    shutil.copy(filename, tempfilename)
+    request.addfinalizer(lambda: os.remove(tempfilename))
+    return _file_existing(request, tempfilename, fdarg, objarg)
 
 
-@pytest.fixture(params=[('r', open_filename),
-                        ('r', open_filehandle),
-                        ('r', open_bytestream)])
-def wavefile_r(request):
-    rw, open_func = request.param
-    file = open_func(file_r, rw, request)
-    request.addfinalizer(file.close)
-    return file
+@pytest.fixture(params=open_variants)
+def file_stereo_r(request):
+    return _file_existing(request, filename_stereo, os.O_RDONLY, 'rb')
 
 
-@pytest.fixture(params=[('r', open_filename),
-                        ('r', open_filehandle),
-                        ('r', open_bytestream)])
-def wavefile_r_mono(request):
-    rw, open_func = request.param
-    file = open_func(file_r_mono, rw, request)
-    request.addfinalizer(file.close)
-    return file
+@pytest.fixture(params=open_variants)
+def file_mono_r(request):
+    return _file_existing(request, filename_mono, os.O_RDONLY, 'rb')
 
 
-@pytest.fixture(params=[('w', open_filename),
-                        ('w', open_filehandle),
-                        ('w', open_bytestream)])
-def wavefile_w(request):
-    rw, open_func = request.param
-    file = open_func(file_w, rw, request)
-    request.addfinalizer(file.close)
-    request.addfinalizer(lambda: os.remove(file_w))
-    return file
+@pytest.fixture(params=open_variants)
+def file_w(request):
+    return _file_new(request, os.O_CREAT | os.O_WRONLY, 'wb')
 
 
-@pytest.fixture(params=[('rw', open_filename),
-                        ('rw', open_filehandle),
-                        # rw is not permissable with bytestreams
-                        ])
-def wavefile_rw_existing(request):
-    rw, open_func = request.param
-    file = open_func(file_r, rw, request)
-    request.addfinalizer(file.close)
-    return file
+@pytest.fixture(params=open_variants)
+def file_stereo_rw_existing(request):
+    return _file_copy(request, filename_stereo, os.O_RDWR, 'r+b')
 
 
-@pytest.fixture(params=[('rw', open_filename),
-                        ('rw', open_filehandle),
-                        # rw is not permissable with bytestreams
-                        ])
-def wavefile_rw_new(request):
-    rw, open_func = request.param
-    file = open_func(file_w, rw, request)
-    request.addfinalizer(file.close)
-    request.addfinalizer(lambda: os.remove(file_w))
-    return file
+@pytest.fixture(params=open_variants)
+def file_rw_new(request):
+    return _file_new(request, os.O_CREAT | os.O_RDWR, 'w+b')
 
 
-@pytest.fixture(params=[('r', open_filename),
-                        ('w', open_filename),
-                        ('rw', open_filename),
-                        ('r', open_filehandle),
-                        ('w', open_filehandle),
-                        ('rw', open_filehandle),
-                        ('r', open_bytestream),
-                        ('w', open_bytestream),
-                        # rw is not permissable with bytestreams
-                        ])
-def wavefile_all(request):
-    rw, open_func = request.param
-    if 'r' in rw:
-        file = open_func(file_r, rw, request)
-    elif rw == 'w':
-        file = open_func(file_w, rw, request)
-    request.addfinalizer(file.close)
-    if rw == 'w':
-        request.addfinalizer(lambda: os.remove(file_w))
-    return file
+@pytest.yield_fixture
+def sf_stereo_r(file_stereo_r):
+    with sf.open(file_stereo_r) as f:
+        yield f
+
+
+@pytest.yield_fixture
+def sf_stereo_w(file_w):
+    with sf.open(file_w, 'w', 44100, 2, format='WAV') as f:
+        yield f
+
+
+@pytest.yield_fixture
+def sf_stereo_rw_existing(file_stereo_rw_existing):
+    with sf.open(file_stereo_rw_existing, 'rw') as f:
+        yield f
+
+
+@pytest.yield_fixture
+def sf_stereo_rw_new(file_rw_new):
+    with sf.open(file_rw_new, 'rw', 44100, 2,
+                 format='WAV', subtype='FLOAT') as f:
+        yield f
+
+
+# -----------------------------------------------------------------------------
+# Test read() function
+# -----------------------------------------------------------------------------
+
+
+def test_if_read_returns_float64_data(file_stereo_r):
+    data, fs = sf.read(file_stereo_r)
+    assert fs == 44100
+    assert np.all(data == data_stereo)
+    assert data.dtype == np.float64
+
+
+def test_read_float32(file_stereo_r):
+    data, fs = sf.read(file_stereo_r, dtype='float32')
+    assert np.all(data == data_stereo)
+    assert data.dtype == np.float32
+
+
+def test_read_int16(file_mono_r):
+    data, fs = sf.read(file_mono_r, dtype='int16')
+    assert np.all(data == data_mono)
+    assert data.dtype == np.int16
+
+
+def test_read_int32(file_mono_r):
+    data, fs = sf.read(file_mono_r, dtype='int32')
+    assert np.all(data == data_mono * 2 ** 16)
+    assert data.dtype == np.int32
+
+
+def test_read_into_out(file_stereo_r):
+    out = np.empty((3, 2), dtype='float64')
+    data, fs = sf.read(file_stereo_r, out=out)
+    assert data is out
+    assert np.all(data == data_stereo[:3])
+
+
+def test_if_read_into_malformed_out_fails(file_stereo_r):
+    out = np.empty((2, 3), dtype='float64')
+    with pytest.raises(ValueError):
+        data, fs = sf.read(file_stereo_r, out=out)
+
+
+def test_if_read_into_out_with_too_many_dimensions_fails(file_stereo_r):
+    out = np.empty((3, 2, 1), dtype='float64')
+    with pytest.raises(ValueError):
+        data, fs = sf.read(file_stereo_r, out=out)
+
+
+def test_if_read_into_zero_len_out_works(file_stereo_r):
+    out = np.empty((0, 2), dtype='float64')
+    data, fs = sf.read(file_stereo_r, out=out)
+    assert data is out
+    assert len(out) == 0
+
+
+def test_read_mono_without_always2d(file_mono_r):
+    data, fs = sf.read(file_mono_r, dtype='int16', always_2d=False)
+    assert data.ndim == 1
+    assert np.all(data == data_mono.squeeze())
+
+
+def test_if_read_mono_returns_2d_array(file_mono_r):
+    data, fs = sf.read(file_mono_r, dtype='int16')
+    assert data.ndim == 2
+    assert np.all(data == data_mono)
+
+
+def test_read_mono_into_1d_out(file_mono_r):
+    out = np.empty(len(data_mono), dtype='int16')
+    data, fs = sf.read(file_mono_r, out=out)
+    assert data is out
+    assert np.all(data == data_mono.squeeze())
+
+
+def test_read_mono_into_2d_out(file_mono_r):
+    out = np.empty((len(data_mono), 1), dtype='int16')
+    data, fs = sf.read(file_mono_r, out=out)
+    assert data is out
+    assert np.all(data == data_mono)
+
+
+# -----------------------------------------------------------------------------
+# Test write() function
+# -----------------------------------------------------------------------------
+
+# The read() function is tested above, we assume here that it is working.
+
+def test_write_function(file_w):
+    sf.write(data_mono, file_w, 44100, format='WAV')
+    data, fs = sf.read(filename_new, dtype='int16')
+    assert fs == 44100
+    assert np.all(data == data_mono)
 
 
 # -----------------------------------------------------------------------------
@@ -148,60 +200,29 @@ def wavefile_all(request):
 # -----------------------------------------------------------------------------
 
 
-def test_file_content(wavefile_r):
-    assert allclose(data_r, wavefile_r[:])
+def test_file_content(sf_stereo_r):
+    assert np.all(data_stereo == sf_stereo_r[:])
 
 
-def test_mode_should_be_in_read_mode(wavefile_r):
-    assert wavefile_r.mode == 'r'
+def test_file_attributes_in_read_mode(sf_stereo_r):
+    assert sf_stereo_r.mode == 'r'
+    assert sf_stereo_r.channels == 2
+    assert sf_stereo_r.sample_rate == 44100
+    assert sf_stereo_r.format == 'WAV'
+    assert sf_stereo_r.subtype == 'FLOAT'
+    assert sf_stereo_r.endian == 'FILE'
+    assert sf_stereo_r.format_info == 'WAV (Microsoft)'
+    assert sf_stereo_r.subtype_info == '32 bit float'
+    assert len(sf_stereo_r) == len(data_stereo)
 
 
-def test_mode_should_be_in_write_mode(wavefile_w):
-    assert wavefile_w.mode == 'w'
+def test_mode_should_be_in_write_mode(sf_stereo_w):
+    assert sf_stereo_w.mode == 'w'
+    assert len(sf_stereo_w) == 0
 
 
-def test_mode_should_be_in_readwrite_mode(wavefile_rw_existing):
-    assert wavefile_rw_existing.mode == 'rw'
-
-
-def test_mode_read_should_start_at_beginning(wavefile_r):
-    assert wavefile_r.seek(0, sf.SEEK_CUR) == 0
-
-
-def test_mode_write_should_start_at_beginning(wavefile_w):
-    assert wavefile_w.seek(0, sf.SEEK_CUR) == 0
-
-
-def test_mode_rw_should_start_at_end(wavefile_rw_existing):
-    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR) == 5
-
-
-def test_number_of_channels(wavefile_all):
-    assert wavefile_all.channels == 2
-
-
-def test_sample_rate(wavefile_all):
-    assert wavefile_all.sample_rate == 44100
-
-
-def test_format_metadata(wavefile_all):
-    assert wavefile_all.format == 'WAV'
-    assert wavefile_all.subtype == 'PCM_16'
-    assert wavefile_all.endian == 'FILE'
-    assert wavefile_all.format_info == 'WAV (Microsoft)'
-    assert wavefile_all.subtype_info == 'Signed 16 bit PCM'
-
-
-def test_data_length_r(wavefile_r):
-    assert len(wavefile_r) == len(data_r)
-
-
-def test_data_length_w(wavefile_w):
-    assert len(wavefile_w) == 0
-
-
-def test_file_exists(wavefile_w):
-    assert os.path.isfile(file_w)
+def test_mode_should_be_in_readwrite_mode(sf_stereo_rw_existing):
+    assert sf_stereo_rw_existing.mode == 'rw'
 
 
 # -----------------------------------------------------------------------------
@@ -209,25 +230,36 @@ def test_file_exists(wavefile_w):
 # -----------------------------------------------------------------------------
 
 
-def test_seek_should_advance_read_pointer(wavefile_r):
-    assert wavefile_r.seek(2) == 2
+def test_seek_in_read_mode(sf_stereo_r):
+    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 0
+    assert sf_stereo_r.seek(2) == 2
+    assert sf_stereo_r.seek(2, sf.SEEK_CUR) == 4
+    assert sf_stereo_r.seek(-2, sf.SEEK_END) == len(data_stereo) - 2
+    assert sf_stereo_r.seek(2, which='r') == 2
 
 
-def test_seek_multiple_times_should_advance_read_pointer(wavefile_r):
-    wavefile_r.seek(2)
-    assert wavefile_r.seek(2, whence=sf.SEEK_CUR) == 4
+def test_seek_in_write_mode(sf_stereo_w):
+    assert sf_stereo_w.seek(0, sf.SEEK_CUR) == 0
+    assert sf_stereo_w.seek(2, which='w') == 2
 
 
-def test_seek_to_end_should_advance_read_pointer_to_end(wavefile_r):
-    assert wavefile_r.seek(-2, whence=sf.SEEK_END) == 3
+def test_initial_read_and_write_position(sf_stereo_rw_existing):
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == 0
+    # 'w' wins ...
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR) == len(data_stereo)
+    # ... and moves read position:
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == len(data_stereo)
 
 
-def test_seek_read_pointer_should_advance_read_pointer(wavefile_r):
-    assert wavefile_r.seek(2, which='r') == 2
+def test_if_seek_write_advances_read_position(sf_stereo_rw_existing):
+    assert sf_stereo_rw_existing.seek(2, which='w') == 2
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == 0
 
 
-def test_seek_write_pointer_should_advance_write_pointer(wavefile_w):
-    assert wavefile_w.seek(2, which='w') == 2
+def test_if_seek_read_advances_write_pointer(sf_stereo_rw_existing):
+    assert sf_stereo_rw_existing.seek(2, which='r') == 2
+    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
 
 
 # -----------------------------------------------------------------------------
@@ -235,105 +267,64 @@ def test_seek_write_pointer_should_advance_write_pointer(wavefile_w):
 # -----------------------------------------------------------------------------
 
 
-def test_read_write_only(wavefile_w):
+def test_read_write_only(sf_stereo_w):
     with pytest.raises(RuntimeError):
-        wavefile_w.read(2)
+        sf_stereo_w.read(2)
 
 
-def test_read_should_read_data_and_advance_read_pointer(wavefile_r):
-    data = wavefile_r.read(2)
-    assert allclose(data, data_r[:2])
-    assert wavefile_r.seek(0, sf.SEEK_CUR) == 2
+def test_read_should_read_data_and_advance_read_pointer(sf_stereo_r):
+    data = sf_stereo_r.read(2)
+    assert np.all(data == data_stereo[:2])
+    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 2
 
 
-def test_read_should_read_float64_data(wavefile_r):
-    assert wavefile_r[:].dtype == np.float64
+def test_read_by_indexing_should_read_but_not_advance_read_pointer(
+        sf_stereo_r):
+    assert np.all(sf_stereo_r[:2] == data_stereo[:2])
+    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 0
 
 
-def test_read_int16_should_read_int16_data(wavefile_r):
-    assert wavefile_r.read(2, dtype='int16').dtype == np.int16
+def test_read_n_frames_should_return_n_frames(sf_stereo_r):
+    assert len(sf_stereo_r.read(2)) == 2
 
 
-def test_read_int32_should_read_int32_data(wavefile_r):
-    assert wavefile_r.read(2, dtype='int32').dtype == np.int32
+def test_read_all_frames_should_read_all_remaining_frames(sf_stereo_r):
+    sf_stereo_r.seek(-2, sf.SEEK_END)
+    assert np.all(sf_stereo_r.read() == data_stereo[-2:])
 
 
-def test_read_float32_should_read_float32_data(wavefile_r):
-    assert wavefile_r.read(2, dtype='float32').dtype == np.float32
+def test_read_over_end_should_return_only_remaining_frames(sf_stereo_r):
+    sf_stereo_r.seek(-2, sf.SEEK_END)
+    assert np.all(sf_stereo_r.read(4) == data_stereo[-2:])
 
 
-def test_read_by_indexing_should_read_but_not_advance_read_pointer(wavefile_r):
-    assert allclose(wavefile_r[:2], data_r[:2])
-    assert wavefile_r.seek(0, sf.SEEK_CUR) == 0
-
-
-def test_read_n_frames_should_return_n_frames(wavefile_r):
-    assert len(wavefile_r.read(2)) == 2
-
-
-def test_read_all_frames_should_read_all_remaining_frames(wavefile_r):
-    wavefile_r.seek(-2, sf.SEEK_END)
-    assert allclose(wavefile_r.read(), data_r[-2:])
-
-
-def test_read_over_end_should_return_only_remaining_frames(wavefile_r):
-    wavefile_r.seek(-2, sf.SEEK_END)
-    assert allclose(wavefile_r.read(4), data_r[-2:])
-
-
-def test_read_over_end_with_fill_should_reaturn_asked_frames(wavefile_r):
-    wavefile_r.seek(-2, sf.SEEK_END)
-    data = wavefile_r.read(4, fill_value=0)
-    assert allclose(data[:2], data_r[-2:])
+def test_read_over_end_with_fill_should_reaturn_asked_frames(sf_stereo_r):
+    sf_stereo_r.seek(-2, sf.SEEK_END)
+    data = sf_stereo_r.read(4, fill_value=0)
+    assert np.all(data[:2] == data_stereo[-2:])
     assert np.all(data[2:] == 0)
     assert len(data) == 4
 
 
-def test_read_into_out_should_return_data_and_write_into_out(wavefile_r):
-    out = np.empty((2, wavefile_r.channels), dtype='float64')
-    data = wavefile_r.read(out=out)
-    assert np.all(data == out)
-
-
-def test_read_into_malformed_out_should_fail(wavefile_r):
-    out = np.empty((2, wavefile_r.channels+1), dtype='float64')
-    with pytest.raises(ValueError):
-        wavefile_r.read(out=out)
-
-
-def test_read_into_out_with_too_many_dimensions_should_fail(wavefile_r):
-    out = np.empty((2, wavefile_r.channels, 1), dtype='float64')
-    with pytest.raises(ValueError):
-        wavefile_r.read(out=out)
-
-
-def test_read_into_zero_len_out_should_not_read_anything(wavefile_r):
-    out = np.empty((0, wavefile_r.channels), dtype='float64')
-    data = wavefile_r.read(out=out)
-    assert len(data) == 0
-    assert len(out) == 0
-    assert wavefile_r.seek(0, sf.SEEK_CUR) == 0
-
-
 def test_read_into_out_over_end_should_return_shorter_data_and_write_into_out(
-        wavefile_r):
-    out = np.ones((4, wavefile_r.channels), dtype='float64')
-    wavefile_r.seek(-2, sf.SEEK_END)
-    data = wavefile_r.read(out=out)
+        sf_stereo_r):
+    out = np.ones((4, sf_stereo_r.channels), dtype='float64')
+    sf_stereo_r.seek(-2, sf.SEEK_END)
+    data = sf_stereo_r.read(out=out)
     assert np.all(data[:2] == out[:2])
     assert np.all(data[2:] == 1)
-    assert out.shape == (4, wavefile_r.channels)
-    assert data.shape == (2, wavefile_r.channels)
+    assert out.shape == (4, sf_stereo_r.channels)
+    assert data.shape == (2, sf_stereo_r.channels)
 
 
 def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into_out(
-        wavefile_r):
-    out = np.ones((4, wavefile_r.channels), dtype='float64')
-    wavefile_r.seek(-2, sf.SEEK_END)
-    data = wavefile_r.read(out=out, fill_value=0)
+        sf_stereo_r):
+    out = np.ones((4, sf_stereo_r.channels), dtype='float64')
+    sf_stereo_r.seek(-2, sf.SEEK_END)
+    data = sf_stereo_r.read(out=out, fill_value=0)
     assert np.all(data == out)
     assert np.all(data[2:] == 0)
-    assert out.shape == (4, wavefile_r.channels)
+    assert out.shape == (4, sf_stereo_r.channels)
 
 
 # -----------------------------------------------------------------------------
@@ -341,74 +332,48 @@ def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into
 # -----------------------------------------------------------------------------
 
 
-def test_write_to_read_only_file_should_fail(wavefile_r):
+def test_write_to_read_only_file_should_fail(sf_stereo_r):
     with pytest.raises(RuntimeError):
-        wavefile_r.write(data_r)
+        sf_stereo_r.write(data_stereo)
 
 
-def test_write_should_write_and_advance_write_pointer(wavefile_w):
-    position_w = wavefile_w.seek(0, sf.SEEK_CUR, which='w')
-    position_r = wavefile_w.seek(0, sf.SEEK_CUR, which='r')
-    wavefile_w.write(data_r)
-    assert wavefile_w.seek(0, sf.SEEK_CUR, which='w') == position_w+len(data_r)
-    assert wavefile_w.seek(0, sf.SEEK_CUR, which='r') == position_r
+def test_write_should_write_and_advance_write_pointer(sf_stereo_w):
+    position_w = sf_stereo_w.seek(0, sf.SEEK_CUR, which='w')
+    position_r = sf_stereo_w.seek(0, sf.SEEK_CUR, which='r')
+    sf_stereo_w.write(data_stereo)
+    assert (sf_stereo_w.seek(0, sf.SEEK_CUR, which='w') ==
+            position_w+len(data_stereo))
+    assert sf_stereo_w.seek(0, sf.SEEK_CUR, which='r') == position_r
 
 
-def test_write_flush_should_write_to_disk(wavefile_w):
-    wavefile_w.flush()
-    size = os.path.getsize(file_w)
-    wavefile_w.write(data_r)
-    wavefile_w.flush()
-    assert os.path.getsize(file_w) == size + data_r.size*2  # 16 bit integer
+def test_write_flush_should_write_to_disk(sf_stereo_w):
+    sf_stereo_w.flush()
+    size = os.path.getsize(filename_new)
+    sf_stereo_w.write(data_stereo)
+    sf_stereo_w.flush()
+    assert os.path.getsize(filename_new) == size + data_stereo.size * 2
 
 
-# -----------------------------------------------------------------------------
-# Test read/write
-# -----------------------------------------------------------------------------
-
-
-def test_rw_initial_read_and_write_pointer(wavefile_rw_existing):
-    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR, which='w') == 5
-    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR, which='r') == 0
-
-
-def test_rw_seek_write_should_advance_write_pointer(wavefile_rw_existing):
-    assert wavefile_rw_existing.seek(2, which='w') == 2
-    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR, which='r') == 0
-
-
-def test_rw_seek_read_should_advance_read_pointer(wavefile_rw_existing):
-    assert wavefile_rw_existing.seek(2, which='r') == 2
-    assert wavefile_rw_existing.seek(0, sf.SEEK_CUR, which='w') == 5
-
-
-def test_rw_writing_float_should_be_written_approximately_correct(
-        wavefile_rw_new):
-    data = np.ones((5, 2), dtype='float64')
-    wavefile_rw_new.seek(0, which='w')
-    wavefile_rw_new.write(data)
-    written_data = wavefile_rw_new[-len(data):]
-    assert allclose(data, written_data)
-
-
-def test_rw_writing_int_should_be_written_exactly_correct(wavefile_rw_new):
-    data = np.zeros((5, 2)) + 2**15 - 1  # full scale int16
-    wavefile_rw_new.seek(0, which='w')
-    wavefile_rw_new.write(np.array(data, dtype='int16'))
-    written_data = wavefile_rw_new.read(dtype='int16')
-    assert np.all(data == written_data)
+def test_rw_read_written_data(sf_stereo_rw_new):
+    sf_stereo_rw_new.seek(0)
+    sf_stereo_rw_new.write(data_stereo)
+    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
+    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'r') == 0
+    assert np.all(sf_stereo_rw_new.read() == data_stereo)
+    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
+    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'r') == len(data_stereo)
 
 
 def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(
-        wavefile_rw_new):
+        sf_stereo_rw_new):
     data = np.ones((5, 2))
     # grow file to make room for indexing
-    wavefile_rw_new.write(np.zeros((5, 2)))
-    position = wavefile_rw_new.seek(0, sf.SEEK_CUR, which='w')
-    wavefile_rw_new[:len(data)] = data
-    written_data = wavefile_rw_new[:len(data)]
-    assert allclose(data, written_data)
-    assert position == wavefile_rw_new.seek(0, sf.SEEK_CUR, which='w')
+    sf_stereo_rw_new.write(np.zeros((5, 2)))
+    position = sf_stereo_rw_new.seek(0, sf.SEEK_CUR, which='w')
+    sf_stereo_rw_new[:len(data)] = data
+    written_data = sf_stereo_rw_new[:len(data)]
+    assert np.all(data == written_data)
+    assert position == sf_stereo_rw_new.seek(0, sf.SEEK_CUR, which='w')
 
 
 # -----------------------------------------------------------------------------
@@ -417,59 +382,33 @@ def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(
 
 
 def test_context_manager_should_open_and_close_file():
-    with open_filename(file_r, 'r', None) as f:
+    with sf.open(filename_stereo) as f:
         assert not f.closed
     assert f.closed
 
 
 def test_closing_should_close_file():
-    f = open_filename(file_r, 'r', None)
+    f = sf.open(filename_stereo)
     assert not f.closed
     f.close()
     assert f.closed
 
 
 def test_file_attributes_should_save_to_disk():
-    with open_filename(file_w, 'w', None) as f:
+    with sf.open(filename_new, 'w', 44100, 2, format='WAV') as f:
         f.title = 'testing'
-    with open_filename(file_w, 'r', None) as f:
+    with sf.open(filename_new) as f:
         assert f.title == 'testing'
-    os.remove(file_w)
+    os.remove(filename_new)
 
 
 def test_non_file_attributes_should_not_save_to_disk():
-    with open_filename(file_w, 'w', None) as f:
+    with sf.open(filename_new, 'w', 44100, 2, format='WAV') as f:
         f.foobar = 'testing'
-    with open_filename(file_w, 'r', None) as f:
+    with sf.open(filename_new) as f:
         with pytest.raises(AttributeError):
             f.foobar
-    os.remove(file_w)
-
-
-def test_read_mono_without_always2d_should_read_array(wavefile_r_mono):
-    out_data = wavefile_r_mono.read(always_2d=False)
-    assert allclose(out_data, data_r_mono)
-    assert out_data.ndim == 1
-
-
-def test_read_mono_should_read_matrix(wavefile_r_mono):
-    out_data = wavefile_r_mono.read()
-    assert allclose(out_data, [[x] for x in data_r_mono])
-    assert out_data.ndim == 2
-
-
-def test_read_mono_into_mono_out_should_read_into_out(wavefile_r_mono):
-    data = np.empty(5, dtype='float64')
-    out_data = wavefile_r_mono.read(out=data)
-    assert np.all(data == out_data)
-    assert id(data) == id(out_data)
-
-
-def test_read_mono_into_out_should_read_into_out(wavefile_r_mono):
-    data = np.empty((5, 1), dtype='float64')
-    out_data = wavefile_r_mono.read(out=data)
-    assert np.all(data == out_data)
-    assert id(data) == id(out_data)
+    os.remove(filename_new)
 
 
 # -----------------------------------------------------------------------------
@@ -478,17 +417,17 @@ def test_read_mono_into_out_should_read_into_out(wavefile_r_mono):
 
 
 def test_read_raw_files_should_read_data():
-    with sf.SoundFile(file_r_raw, sample_rate=44100,
-                      channels=2, subtype='PCM_16') as f:
-        assert allclose(f.read(), data_r_raw)
+    with sf.open(filename_raw, sample_rate=44100,
+                 channels=1, subtype='PCM_16') as f:
+        assert np.all(f.read(dtype='int16') == data_mono)
 
 
 def test_read_raw_files_with_too_few_arguments_should_fail():
     with pytest.raises(TypeError):  # missing everything
-        sf.SoundFile(file_r_raw)
+        sf.open(filename_raw)
     with pytest.raises(TypeError):  # missing subtype
-        sf.SoundFile(file_r_raw, sample_rate=44100, channels=2)
+        sf.open(filename_raw, sample_rate=44100, channels=2)
     with pytest.raises(TypeError):  # missing channels
-        sf.SoundFile(file_r_raw, sample_rate=44100, subtype='PCM_16')
+        sf.open(filename_raw, sample_rate=44100, subtype='PCM_16')
     with pytest.raises(TypeError):  # missing sample_rate
-        sf.SoundFile(file_r_raw, channels=2, subtype='PCM_16')
+        sf.open(filename_raw, channels=2, subtype='PCM_16')
