@@ -31,6 +31,7 @@ enum
 
 enum
 {
+    SFC_GET_LOG_INFO                = 0x1001,
     SFC_GET_FORMAT_INFO             = 0x1028,
 
     SFC_GET_FORMAT_MAJOR_COUNT      = 0x1030,
@@ -690,6 +691,14 @@ class SoundFile(object):
     """Whether the sound file is closed or not."""
     _errorcode = property(lambda self: _snd.sf_error(self._file))
     """A pending sndfile error code."""
+
+    @property
+    def extra_info(self):
+        """Retrieve the log string generated when opening the file."""
+        info = _ffi.new("char[]", 2**14)
+        _snd.sf_command(self._file, _snd.SFC_GET_LOG_INFO,
+                        info, _ffi.sizeof(info))
+        return _ffi.string(info).decode()
 
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
