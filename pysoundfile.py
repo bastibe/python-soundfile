@@ -729,10 +729,9 @@ def open(file, mode='r', sample_rate=None, channels=None,
 open.__doc__ = SoundFile.__init__.__doc__
 
 
-def read(file, frames=-1, start=None, stop=None,
-         dtype='float64', always_2d=True, fill_value=None, out=None,
-         sample_rate=None, channels=None,
-         subtype=None, endian=None, format=None, closefd=True):
+def read(file, sample_rate=None, channels=None, subtype=None, endian=None,
+         format=None, closefd=True, start=None, stop=None, frames=-1,
+         dtype='float64', always_2d=True, fill_value=None, out=None):
     """Read a sound file and return its contents as NumPy array.
 
     The number of frames to read can be specified with frames, the
