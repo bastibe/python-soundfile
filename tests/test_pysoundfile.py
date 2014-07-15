@@ -382,6 +382,14 @@ def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(
     assert position == sf_stereo_rw_new.seek(0, sf.SEEK_CUR, which='w')
 
 
+def test_rw_append_data(sf_stereo_rw_existing):
+    sf_stereo_rw_existing.write(data_stereo / 2)
+    sf_stereo_rw_existing.close()
+    data, fs = sf.read(tempfilename)
+    assert np.all(data[:len(data_stereo)] == data_stereo)
+    assert np.all(data[len(data_stereo):] == data_stereo / 2)
+
+
 # -----------------------------------------------------------------------------
 # Other tests
 # -----------------------------------------------------------------------------
