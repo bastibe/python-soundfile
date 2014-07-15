@@ -365,6 +365,9 @@ def test_rw_read_written_data(sf_stereo_rw_new):
     assert np.all(sf_stereo_rw_new.read() == data_stereo)
     assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
     assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'r') == len(data_stereo)
+    sf_stereo_rw_new.close()
+    data, fs = sf.read(filename_new)
+    assert np.all(data == data_stereo)
 
 
 def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(
@@ -377,6 +380,14 @@ def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(
     written_data = sf_stereo_rw_new[:len(data)]
     assert np.all(data == written_data)
     assert position == sf_stereo_rw_new.seek(0, sf.SEEK_CUR, which='w')
+
+
+def test_rw_append_data(sf_stereo_rw_existing):
+    sf_stereo_rw_existing.write(data_stereo / 2)
+    sf_stereo_rw_existing.close()
+    data, fs = sf.read(tempfilename)
+    assert np.all(data[:len(data_stereo)] == data_stereo)
+    assert np.all(data[len(data_stereo):] == data_stereo / 2)
 
 
 # -----------------------------------------------------------------------------
