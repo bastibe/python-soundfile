@@ -70,8 +70,8 @@ def test_if_blocks_function_and_method_have_same_defaults():
 
     del func_defaults['start']
     del func_defaults['stop']
+    del open_defaults['mode']
 
-    # Same default values as open() and SoundFile.read():
     for spec in open_defaults, meth_defaults:
         func_defaults = remove_items(func_defaults, spec)
 
@@ -81,4 +81,6 @@ def test_if_blocks_function_and_method_have_same_defaults():
 def test_order_of_blocks_arguments():
     meth_args = blocks_method.args[1:]  # remove 'self'
     meth_args[2:2] = ['start', 'stop']
-    assert blocks_function.args == open.args + meth_args
+    open_args = open.args[:]
+    open_args.remove('mode')
+    assert blocks_function.args == open_args + meth_args
