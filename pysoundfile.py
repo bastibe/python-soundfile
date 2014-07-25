@@ -758,10 +758,9 @@ class SoundFile(object):
 
         while frames > 0:
             if frames < blocksize:
-                if fill_value is None:
-                    blocksize = frames
-                else:
-                    frames = blocksize
+                if fill_value is not None and out is None:
+                    out = self._create_empty_array(blocksize, always_2d, dtype)
+                blocksize = frames
             block = self.read(blocksize, dtype, always_2d, fill_value, out)
             frames -= blocksize
             if frames > 0:

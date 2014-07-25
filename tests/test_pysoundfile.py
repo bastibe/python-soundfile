@@ -265,6 +265,13 @@ def test_blocks_with_frames():
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:3]])
 
 
+def test_blocks_with_frames_and_fill_value():
+    blocks = list(
+        sf.blocks(filename_stereo, blocksize=2, frames=3, fill_value=0))
+    last_block = np.row_stack((data_stereo[2:3], np.zeros((1, 2))))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2], last_block])
+
+
 def test_blocks_with_out():
     out = np.empty((3, 2))
     blocks = list(sf.blocks(filename_stereo, out=out))
