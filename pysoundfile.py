@@ -746,7 +746,10 @@ class SoundFile(object):
         if self.mode == 'w':
             raise RuntimeError("blocks() is not allowed in write mode")
 
-        if out is not None:
+        if out is None:
+            if blocksize is None:
+                raise TypeError("One of {blocksize, out} must be specified")
+        else:
             if blocksize is not None:
                 raise TypeError(
                     "Only one of {blocksize, out} may be specified")
