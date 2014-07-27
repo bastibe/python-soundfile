@@ -206,6 +206,11 @@ def assert_equal_list_of_arrays(list1, list2):
         assert np.all(item1 == item2)
 
 
+def test_blocks_without_blocksize():
+    with pytest.raises(TypeError):
+        list(sf.blocks(filename_stereo))
+
+
 def test_blocks_full_last_block():
     blocks = list(sf.blocks(filename_stereo, blocksize=2))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])
@@ -241,7 +246,7 @@ def test_blocks_with_stop():
 
 
 def test_blocks_with_too_large_start():
-    blocks = list(sf.blocks(filename_stereo, start=666))
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=666))
     assert_equal_list_of_arrays(blocks, [[]])
 
 
