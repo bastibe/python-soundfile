@@ -324,7 +324,7 @@ def test_file_content(sf_stereo_r):
 def test_file_attributes_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.mode == 'r'
     assert sf_stereo_r.channels == 2
-    assert sf_stereo_r.sample_rate == 44100
+    assert sf_stereo_r.samplerate == 44100
     assert sf_stereo_r.format == 'WAV'
     assert sf_stereo_r.subtype == 'FLOAT'
     assert sf_stereo_r.endian == 'FILE'
@@ -548,7 +548,7 @@ def test_non_file_attributes_should_not_save_to_disk():
 
 
 def test_read_raw_files_should_read_data():
-    with sf.open(filename_raw, sample_rate=44100,
+    with sf.open(filename_raw, samplerate=44100,
                  channels=1, subtype='PCM_16') as f:
         assert np.all(f.read(dtype='int16') == data_mono)
 
@@ -557,8 +557,8 @@ def test_read_raw_files_with_too_few_arguments_should_fail():
     with pytest.raises(TypeError):  # missing everything
         sf.open(filename_raw)
     with pytest.raises(TypeError):  # missing subtype
-        sf.open(filename_raw, sample_rate=44100, channels=2)
+        sf.open(filename_raw, samplerate=44100, channels=2)
     with pytest.raises(TypeError):  # missing channels
-        sf.open(filename_raw, sample_rate=44100, subtype='PCM_16')
-    with pytest.raises(TypeError):  # missing sample_rate
+        sf.open(filename_raw, samplerate=44100, subtype='PCM_16')
+    with pytest.raises(TypeError):  # missing samplerate
         sf.open(filename_raw, channels=2, subtype='PCM_16')

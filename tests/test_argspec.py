@@ -59,7 +59,7 @@ def test_write_defaults():
 
     del open_defaults['mode']  # mode is always 'w'
     del open_defaults['channels']  # Inferred from data
-    del open_defaults['sample_rate']  # Obligatory in write()
+    del open_defaults['samplerate']  # Obligatory in write()
     assert not open_defaults  # No more arguments should be left
 
 
