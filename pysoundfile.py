@@ -1,6 +1,5 @@
 import numpy as _np
 from cffi import FFI as _FFI
-from contextlib import closing as _closing
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
 __version__ = "0.5.0"
