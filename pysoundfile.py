@@ -20,7 +20,7 @@ NumPy arrays.
 
 Every sound file is represented as a SoundFile object. SoundFiles can
 be created for reading, writing, or both. Each SoundFile has a
-sample_rate, a number of channels, and a file format. These can not be
+samplerate, a number of channels, and a file format. These can not be
 changed at runtime.
 
 A SoundFile has methods for reading and writing data to/from the file.
@@ -303,13 +303,13 @@ class SoundFile(object):
 
     """
 
-    def __init__(self, file, mode='r', sample_rate=None, channels=None,
+    def __init__(self, file, mode='r', samplerate=None, channels=None,
                  subtype=None, endian=None, format=None, closefd=True):
         """Open a sound file.
 
         If a file is opened with mode 'r' (the default) or 'rw',
-        no sample_rate, channels or file format need to be given. If a
-        file is opened with mode 'w', you must provide a sample_rate,
+        no samplerate, channels or file format need to be given. If a
+        file is opened with mode 'w', you must provide a samplerate,
         a number of channels, and a file format. An exception is the
         RAW data format, which requires these data points for reading
         as well.
@@ -349,9 +349,9 @@ class SoundFile(object):
 
         self._info = _ffi.new("SF_INFO*")
         if self.mode == 'w' or str(format).upper() == 'RAW':
-            if sample_rate is None:
-                raise TypeError("sample_rate must be specified")
-            self._info.samplerate = sample_rate
+            if samplerate is None:
+                raise TypeError("samplerate must be specified")
+            self._info.samplerate = samplerate
             if channels is None:
                 raise TypeError("channels must be specified")
             self._info.channels = channels
@@ -359,17 +359,17 @@ class SoundFile(object):
                 raise TypeError("RAW files must specify a subtype")
             self._info.format = _format_int(format, subtype, endian)
         elif self.mode == 'rw':
-            if sample_rate is not None:
-                self._info.samplerate = sample_rate
+            if samplerate is not None:
+                self._info.samplerate = samplerate
             if channels is not None:
                 self._info.channels = channels
             if format is not None:
                 self._info.format = _format_int(format, subtype, endian)
         else:
-            if [sample_rate, channels, original_format, subtype, endian] != \
+            if [samplerate, channels, original_format, subtype, endian] != \
                     [None] * 5:
                 raise TypeError("Only allowed if mode='w' or format='RAW': "
-                                "sample_rate, channels, "
+                                "samplerate, channels, "
                                 "format, subtype, endian")
 
         self._name = file
@@ -391,7 +391,7 @@ class SoundFile(object):
     name = property(lambda self: self._name)
     mode = property(lambda self: self._mode)
     frames = property(lambda self: self._info.frames)
-    sample_rate = property(lambda self: self._info.samplerate)
+    samplerate = property(lambda self: self._info.samplerate)
     channels = property(lambda self: self._info.channels)
     format = property(
         lambda self: _format_str(self._info.format & _snd.SF_FORMAT_TYPEMASK))
@@ -771,15 +771,15 @@ class SoundFile(object):
             yield block
 
 
-def open(file, mode='r', sample_rate=None, channels=None,
+def open(file, mode='r', samplerate=None, channels=None,
          subtype=None, endian=None, format=None, closefd=True):
-    return SoundFile(file, mode, sample_rate, channels,
+    return SoundFile(file, mode, samplerate, channels,
                      subtype, endian, format, closefd)
 
 open.__doc__ = SoundFile.__init__.__doc__
 
 
-def read(file, sample_rate=None, channels=None, subtype=None, endian=None,
+def read(file, samplerate=None, channels=None, subtype=None, endian=None,
          format=None, closefd=True, start=0, stop=None, frames=-1,
          dtype='float64', always_2d=True, fill_value=None, out=None):
     """Read a sound file and return its contents as NumPy array.
@@ -807,22 +807,22 @@ def read(file, sample_rate=None, channels=None, subtype=None, endian=None,
     If out is given, only a part of it is overwritten and a view
     containing all valid frames is returned.
 
-    The keyword arguments sample_rate, channels, format, subtype and
+    The keyword arguments samplerate, channels, format, subtype and
     endian are only needed for 'RAW' files. See open() for details.
 
     """
     if frames >= 0 and stop is not None:
         raise TypeError("Only one of {frames, stop} may be used")
 
-    with SoundFile(file, 'r', sample_rate, channels,
+    with SoundFile(file, 'r', samplerate, channels,
                    subtype, endian, format, closefd) as f:
         start, frames = _get_read_range(start, stop, frames, f.frames)
         f.seek(start, SEEK_SET)
         data = f.read(frames, dtype, always_2d, fill_value, out)
-    return data, f.sample_rate
+    return data, f.samplerate
 
 
-def write(data, file, sample_rate,
+def write(data, file, samplerate,
           subtype=None, endian=None, format=None, closefd=True):
     """Write data from a NumPy array into a sound file.
 
@@ -844,12 +844,12 @@ def write(data, file, sample_rate,
         channels = 1
     else:
         channels = data.shape[1]
-    with open(file, 'w', sample_rate, channels,
+    with open(file, 'w', samplerate, channels,
               subtype, endian, format, closefd) as f:
         f.write(data)
 
 
-def blocks(file, sample_rate=None, channels=None,
+def blocks(file, samplerate=None, channels=None,
            subtype=None, endian=None, format=None, closefd=True,
            blocksize=None, overlap=0, start=0, stop=None, frames=-1,
            dtype='float64', always_2d=True, fill_value=None, out=None):
@@ -877,7 +877,7 @@ def blocks(file, sample_rate=None, channels=None,
     if frames >= 0 and stop is not None:
         raise TypeError("Only one of {frames, stop} may be used")
 
-    with open(file, 'r', sample_rate, channels,
+    with open(file, 'r', samplerate, channels,
               subtype, endian, format, closefd) as f:
         start, frames = _get_read_range(start, stop, frames, f.frames)
         f.seek(start, SEEK_SET)
