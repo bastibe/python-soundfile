@@ -196,6 +196,123 @@ def test_write_function(file_w):
 
 
 # -----------------------------------------------------------------------------
+# Test blocks() function
+# -----------------------------------------------------------------------------
+
+
+def assert_equal_list_of_arrays(list1, list2):
+    """Helper function to assert equality of all list items."""
+    for item1, item2 in zip(list1, list2):
+        assert np.all(item1 == item2)
+
+
+def test_blocks_without_blocksize():
+    with pytest.raises(TypeError):
+        list(sf.blocks(filename_stereo))
+
+
+def test_blocks_full_last_block():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])
+
+
+def test_blocks_partial_last_block():
+    blocks = list(sf.blocks(filename_stereo, blocksize=3))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], data_stereo[3:4]])
+
+
+def test_blocks_fill_last_block():
+    blocks = list(sf.blocks(filename_stereo, blocksize=3, fill_value=0))
+    last_block = np.row_stack((data_stereo[3:4], np.zeros((2, 2))))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], last_block])
+
+
+def test_blocks_with_overlap():
+    blocks = list(sf.blocks(filename_stereo, blocksize=3, overlap=2))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], data_stereo[1:4]])
+
+
+def test_blocks_with_start():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=2))
+    assert_equal_list_of_arrays(blocks, [data_stereo[2:4]])
+
+
+def test_blocks_with_stop():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, stop=2))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2]])
+
+    with pytest.raises(TypeError):
+        list(sf.blocks(filename_stereo, blocksize=2, frames=2, stop=2))
+
+
+def test_blocks_with_too_large_start():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=666))
+    assert_equal_list_of_arrays(blocks, [[]])
+
+
+def test_blocks_with_too_large_stop():
+    blocks = list(sf.blocks(filename_stereo, blocksize=3, stop=666))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], data_stereo[3:4]])
+
+
+def test_blocks_with_negative_start_and_stop():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=-2, stop=-1))
+    assert_equal_list_of_arrays(blocks, [data_stereo[-2:-1]])
+
+
+def test_blocks_with_stop_smaller_than_start():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=2, stop=1))
+    assert blocks == []
+
+
+def test_blocks_with_frames():
+    blocks = list(sf.blocks(filename_stereo, blocksize=2, frames=3))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:3]])
+
+
+def test_blocks_with_frames_and_fill_value():
+    blocks = list(
+        sf.blocks(filename_stereo, blocksize=2, frames=3, fill_value=0))
+    last_block = np.row_stack((data_stereo[2:3], np.zeros((1, 2))))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2], last_block])
+
+
+def test_blocks_with_out():
+    out = np.empty((3, 2))
+    blocks = list(sf.blocks(filename_stereo, out=out))
+    assert blocks[0] is out
+    # First frame was overwritten by second block:
+    assert np.all(blocks[0] == [[0.25, -0.25], [0.75, -0.75], [0.5, -0.5]])
+    assert blocks[1].base is out
+    assert np.all(blocks[1] == [[0.25, -0.25]])
+
+    with pytest.raises(TypeError):
+        list(sf.blocks(filename_stereo, blocksize=3, out=out))
+
+
+def test_blocks_mono():
+    blocks = list(sf.blocks(filename_mono, blocksize=3, dtype='int16',
+                            always_2d=False, fill_value=0))
+    assert_equal_list_of_arrays(blocks, [[0, 1, 2], [-2, -1, 0]])
+
+
+def test_blocks_rw_existing(sf_stereo_rw_existing):
+    blocks = list(sf_stereo_rw_existing.blocks(blocksize=2))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])
+
+
+def test_blocks_rw_new(sf_stereo_rw_new):
+    """There is nothing to yield in a new 'rw' file."""
+    blocks = list(sf_stereo_rw_new.blocks(blocksize=2, frames=666))
+    assert blocks == []
+
+
+def test_blocks_write(sf_stereo_w):
+    with pytest.raises(RuntimeError):
+        list(sf_stereo_w.blocks(blocksize=2))
+
+
+# -----------------------------------------------------------------------------
 # Test file metadata
 # -----------------------------------------------------------------------------
 

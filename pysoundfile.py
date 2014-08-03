@@ -1,5 +1,6 @@
 import numpy as _np
 from cffi import FFI as _FFI
+from contextlib import closing as _closing
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
 __version__ = "0.5.0"
@@ -624,6 +625,14 @@ class SoundFile(object):
             raise ValueError("dtype must be one of %s" %
                              repr([dt.name for dt in _ffi_types]))
 
+    def _create_empty_array(self, frames, always_2d, dtype):
+        # Create an empty array with appropriate shape
+        if always_2d or self.channels > 1:
+            shape = frames, self.channels
+        else:
+            shape = frames,
+        return _np.empty(shape, dtype, order='C')
+
     def _read_or_write(self, funcname, array, frames):
         # Call into libsndfile
         ffi_type = _ffi_types[array.dtype]
@@ -672,11 +681,7 @@ class SoundFile(object):
             if frames < 0 or (frames > remaining_frames and
                               fill_value is None):
                 frames = remaining_frames
-            if always_2d or self.channels > 1:
-                shape = frames, self.channels
-            else:
-                shape = frames,
-            out = _np.empty(shape, dtype, order='C')
+            out = self._create_empty_array(frames, always_2d, dtype)
         else:
             if frames < 0 or frames > len(out):
                 frames = len(out)
@@ -720,6 +725,52 @@ class SoundFile(object):
         self._info.frames = self.seek(0, SEEK_END, 'w')
         self.seek(curr, SEEK_SET, 'w')
 
+    def blocks(self, blocksize=None, overlap=0, frames=-1, dtype='float64',
+               always_2d=True, fill_value=None, out=None):
+        """Return a generator for block-wise processing.
+
+        By default, the generator returns blocks of the given blocksize
+        until the end of the file is reached, frames can be used to
+        stop earlier.
+
+        overlap can be used to rewind a certain number of frames between
+        blocks.
+
+        For the arguments dtype, always_2d, fill_value and out see
+        SoundFile.read().
+
+        If fill_value is not specified, the last block may be smaller
+        than blocksize.
+
+        """
+        if self.mode == 'w':
+            raise RuntimeError("blocks() is not allowed in write mode")
+
+        if out is None:
+            if blocksize is None:
+                raise TypeError("One of {blocksize, out} must be specified")
+        else:
+            if blocksize is not None:
+                raise TypeError(
+                    "Only one of {blocksize, out} may be specified")
+            blocksize = len(out)
+
+        remaining_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+        if frames < 0 or (fill_value is None and frames > remaining_frames):
+            frames = remaining_frames
+
+        while frames > 0:
+            if frames < blocksize:
+                if fill_value is not None and out is None:
+                    out = self._create_empty_array(blocksize, always_2d, dtype)
+                blocksize = frames
+            block = self.read(blocksize, dtype, always_2d, fill_value, out)
+            frames -= blocksize
+            if frames > 0:
+                self.seek(-overlap, SEEK_CUR, 'r')
+                frames += overlap
+            yield block
+
 
 def open(file, mode='r', sample_rate=None, channels=None,
          subtype=None, endian=None, format=None, closefd=True):
@@ -730,7 +781,7 @@ open.__doc__ = SoundFile.__init__.__doc__
 
 
 def read(file, sample_rate=None, channels=None, subtype=None, endian=None,
-         format=None, closefd=True, start=None, stop=None, frames=-1,
+         format=None, closefd=True, start=0, stop=None, frames=-1,
          dtype='float64', always_2d=True, fill_value=None, out=None):
     """Read a sound file and return its contents as NumPy array.
 
@@ -762,15 +813,11 @@ def read(file, sample_rate=None, channels=None, subtype=None, endian=None,
 
     """
     if frames >= 0 and stop is not None:
-        raise RuntimeError("Only one of {frames, stop} may be used")
+        raise TypeError("Only one of {frames, stop} may be used")
 
     with SoundFile(file, 'r', sample_rate, channels,
                    subtype, endian, format, closefd) as f:
-        start, stop, _ = slice(start, stop).indices(f.frames)
-        if stop < start:
-            stop = start
-        if frames < 0:
-            frames = stop - start
+        start, frames = _get_read_range(start, stop, frames, f.frames)
         f.seek(start, SEEK_SET)
         data = f.read(frames, dtype, always_2d, fill_value, out)
     return data, f.sample_rate
@@ -801,6 +848,53 @@ def write(data, file, sample_rate,
     with open(file, 'w', sample_rate, channels,
               subtype, endian, format, closefd) as f:
         f.write(data)
+
+
+def blocks(file, sample_rate=None, channels=None,
+           subtype=None, endian=None, format=None, closefd=True,
+           blocksize=None, overlap=0, start=0, stop=None, frames=-1,
+           dtype='float64', always_2d=True, fill_value=None, out=None):
+    """Return a generator for block-wise processing.
+
+    Example usage:
+
+        import pysoundfile as sf
+        for block in sf.blocks('myfile.wav', blocksize=128):
+            print(block.max())
+            # ... or do something more useful with 'block'
+
+    All keyword arguments of SoundFile.blocks() are allowed.
+    All further arguments are forwarded to open().
+
+    By default, iteration stops at the end of the file.  Use frames or
+    stop to stop earlier.
+
+    If you stop iterating over the generator before it's exhausted, the
+    sound file is not closed.  This is normally not a problem because
+    the file is opened in read-only mode.  To close the file properly,
+    the generator's close() method can be called.
+
+    """
+    if frames >= 0 and stop is not None:
+        raise TypeError("Only one of {frames, stop} may be used")
+
+    with open(file, 'r', sample_rate, channels,
+              subtype, endian, format, closefd) as f:
+        start, frames = _get_read_range(start, stop, frames, f.frames)
+        f.seek(start, SEEK_SET)
+        for block in f.blocks(blocksize, overlap, frames,
+                              dtype, always_2d, fill_value, out):
+            yield block
+
+
+def _get_read_range(start, stop, frames, total_frames):
+    # Calculate start frame and length
+    start, stop, _ = slice(start, stop).indices(total_frames)
+    if stop < start:
+        stop = start
+    if frames < 0:
+        frames = stop - start
+    return start, frames
 
 
 def default_subtype(format):
