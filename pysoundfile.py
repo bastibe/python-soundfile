@@ -1,6 +1,5 @@
 import numpy as _np
 from cffi import FFI as _FFI
-from contextlib import closing as _closing
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
 __version__ = "0.5.0"
@@ -21,7 +20,7 @@ NumPy arrays.
 
 Every sound file is represented as a SoundFile object. SoundFiles can
 be created for reading, writing, or both. Each SoundFile has a
-sample_rate, a number of channels, and a file format. These can not be
+samplerate, a number of channels, and a file format. These can not be
 changed at runtime.
 
 A SoundFile has methods for reading and writing data to/from the file.
@@ -170,64 +169,64 @@ _str_types = {
 }
 
 _formats = {
-    'WAV':   0x010000, # Microsoft WAV format (little endian default).
-    'AIFF':  0x020000, # Apple/SGI AIFF format (big endian).
-    'AU':    0x030000, # Sun/NeXT AU format (big endian).
-    'RAW':   0x040000, # RAW PCM data.
-    'PAF':   0x050000, # Ensoniq PARIS file format.
-    'SVX':   0x060000, # Amiga IFF / SVX8 / SV16 format.
-    'NIST':  0x070000, # Sphere NIST format.
-    'VOC':   0x080000, # VOC files.
-    'IRCAM': 0x0A0000, # Berkeley/IRCAM/CARL
-    'W64':   0x0B0000, # Sonic Foundry's 64 bit RIFF/WAV
-    'MAT4':  0x0C0000, # Matlab (tm) V4.2 / GNU Octave 2.0
-    'MAT5':  0x0D0000, # Matlab (tm) V5.0 / GNU Octave 2.1
-    'PVF':   0x0E0000, # Portable Voice Format
-    'XI':    0x0F0000, # Fasttracker 2 Extended Instrument
-    'HTK':   0x100000, # HMM Tool Kit format
-    'SDS':   0x110000, # Midi Sample Dump Standard
-    'AVR':   0x120000, # Audio Visual Research
-    'WAVEX': 0x130000, # MS WAVE with WAVEFORMATEX
-    'SD2':   0x160000, # Sound Designer 2
-    'FLAC':  0x170000, # FLAC lossless file format
-    'CAF':   0x180000, # Core Audio File format
-    'WVE':   0x190000, # Psion WVE format
-    'OGG':   0x200000, # Xiph OGG container
-    'MPC2K': 0x210000, # Akai MPC 2000 sampler
-    'RF64':  0x220000, # RF64 WAV file
+    'WAV':   0x010000,  # Microsoft WAV format (little endian default).
+    'AIFF':  0x020000,  # Apple/SGI AIFF format (big endian).
+    'AU':    0x030000,  # Sun/NeXT AU format (big endian).
+    'RAW':   0x040000,  # RAW PCM data.
+    'PAF':   0x050000,  # Ensoniq PARIS file format.
+    'SVX':   0x060000,  # Amiga IFF / SVX8 / SV16 format.
+    'NIST':  0x070000,  # Sphere NIST format.
+    'VOC':   0x080000,  # VOC files.
+    'IRCAM': 0x0A0000,  # Berkeley/IRCAM/CARL
+    'W64':   0x0B0000,  # Sonic Foundry's 64 bit RIFF/WAV
+    'MAT4':  0x0C0000,  # Matlab (tm) V4.2 / GNU Octave 2.0
+    'MAT5':  0x0D0000,  # Matlab (tm) V5.0 / GNU Octave 2.1
+    'PVF':   0x0E0000,  # Portable Voice Format
+    'XI':    0x0F0000,  # Fasttracker 2 Extended Instrument
+    'HTK':   0x100000,  # HMM Tool Kit format
+    'SDS':   0x110000,  # Midi Sample Dump Standard
+    'AVR':   0x120000,  # Audio Visual Research
+    'WAVEX': 0x130000,  # MS WAVE with WAVEFORMATEX
+    'SD2':   0x160000,  # Sound Designer 2
+    'FLAC':  0x170000,  # FLAC lossless file format
+    'CAF':   0x180000,  # Core Audio File format
+    'WVE':   0x190000,  # Psion WVE format
+    'OGG':   0x200000,  # Xiph OGG container
+    'MPC2K': 0x210000,  # Akai MPC 2000 sampler
+    'RF64':  0x220000,  # RF64 WAV file
 }
 
 _subtypes = {
-    'PCM_S8':    0x0001, # Signed 8 bit data
-    'PCM_16':    0x0002, # Signed 16 bit data
-    'PCM_24':    0x0003, # Signed 24 bit data
-    'PCM_32':    0x0004, # Signed 32 bit data
-    'PCM_U8':    0x0005, # Unsigned 8 bit data (WAV and RAW only)
-    'FLOAT':     0x0006, # 32 bit float data
-    'DOUBLE':    0x0007, # 64 bit float data
-    'ULAW':      0x0010, # U-Law encoded.
-    'ALAW':      0x0011, # A-Law encoded.
-    'IMA_ADPCM': 0x0012, # IMA ADPCM.
-    'MS_ADPCM':  0x0013, # Microsoft ADPCM.
-    'GSM610':    0x0020, # GSM 6.10 encoding.
-    'VOX_ADPCM': 0x0021, # OKI / Dialogix ADPCM
-    'G721_32':   0x0030, # 32kbs G721 ADPCM encoding.
-    'G723_24':   0x0031, # 24kbs G723 ADPCM encoding.
-    'G723_40':   0x0032, # 40kbs G723 ADPCM encoding.
-    'DWVW_12':   0x0040, # 12 bit Delta Width Variable Word encoding.
-    'DWVW_16':   0x0041, # 16 bit Delta Width Variable Word encoding.
-    'DWVW_24':   0x0042, # 24 bit Delta Width Variable Word encoding.
-    'DWVW_N':    0x0043, # N bit Delta Width Variable Word encoding.
-    'DPCM_8':    0x0050, # 8 bit differential PCM (XI only)
-    'DPCM_16':   0x0051, # 16 bit differential PCM (XI only)
-    'VORBIS':    0x0060, # Xiph Vorbis encoding.
+    'PCM_S8':    0x0001,  # Signed 8 bit data
+    'PCM_16':    0x0002,  # Signed 16 bit data
+    'PCM_24':    0x0003,  # Signed 24 bit data
+    'PCM_32':    0x0004,  # Signed 32 bit data
+    'PCM_U8':    0x0005,  # Unsigned 8 bit data (WAV and RAW only)
+    'FLOAT':     0x0006,  # 32 bit float data
+    'DOUBLE':    0x0007,  # 64 bit float data
+    'ULAW':      0x0010,  # U-Law encoded.
+    'ALAW':      0x0011,  # A-Law encoded.
+    'IMA_ADPCM': 0x0012,  # IMA ADPCM.
+    'MS_ADPCM':  0x0013,  # Microsoft ADPCM.
+    'GSM610':    0x0020,  # GSM 6.10 encoding.
+    'VOX_ADPCM': 0x0021,  # OKI / Dialogix ADPCM
+    'G721_32':   0x0030,  # 32kbs G721 ADPCM encoding.
+    'G723_24':   0x0031,  # 24kbs G723 ADPCM encoding.
+    'G723_40':   0x0032,  # 40kbs G723 ADPCM encoding.
+    'DWVW_12':   0x0040,  # 12 bit Delta Width Variable Word encoding.
+    'DWVW_16':   0x0041,  # 16 bit Delta Width Variable Word encoding.
+    'DWVW_24':   0x0042,  # 24 bit Delta Width Variable Word encoding.
+    'DWVW_N':    0x0043,  # N bit Delta Width Variable Word encoding.
+    'DPCM_8':    0x0050,  # 8 bit differential PCM (XI only)
+    'DPCM_16':   0x0051,  # 16 bit differential PCM (XI only)
+    'VORBIS':    0x0060,  # Xiph Vorbis encoding.
 }
 
 _endians = {
-    'FILE':   0x00000000, # Default file endian-ness.
-    'LITTLE': 0x10000000, # Force little endian-ness.
-    'BIG':    0x20000000, # Force big endian-ness.
-    'CPU':    0x30000000, # Force CPU endian-ness.
+    'FILE':   0x00000000,  # Default file endian-ness.
+    'LITTLE': 0x10000000,  # Force little endian-ness.
+    'BIG':    0x20000000,  # Force big endian-ness.
+    'CPU':    0x30000000,  # Force CPU endian-ness.
 }
 
 # libsndfile doesn't specify default subtypes, these are somehow arbitrary:
@@ -235,7 +234,7 @@ _default_subtypes = {
     'WAV':   'PCM_16',
     'AIFF':  'PCM_16',
     'AU':    'PCM_16',
-    #'RAW':  # subtype must be explicit!
+    # 'RAW':  # subtype must be explicit!
     'PAF':   'PCM_16',
     'SVX':   'PCM_16',
     'NIST':  'PCM_16',
@@ -304,13 +303,13 @@ class SoundFile(object):
 
     """
 
-    def __init__(self, file, mode='r', sample_rate=None, channels=None,
+    def __init__(self, file, mode='r', samplerate=None, channels=None,
                  subtype=None, endian=None, format=None, closefd=True):
         """Open a sound file.
 
         If a file is opened with mode 'r' (the default) or 'rw',
-        no sample_rate, channels or file format need to be given. If a
-        file is opened with mode 'w', you must provide a sample_rate,
+        no samplerate, channels or file format need to be given. If a
+        file is opened with mode 'w', you must provide a samplerate,
         a number of channels, and a file format. An exception is the
         RAW data format, which requires these data points for reading
         as well.
@@ -350,9 +349,9 @@ class SoundFile(object):
 
         self._info = _ffi.new("SF_INFO*")
         if self.mode == 'w' or str(format).upper() == 'RAW':
-            if sample_rate is None:
-                raise TypeError("sample_rate must be specified")
-            self._info.samplerate = sample_rate
+            if samplerate is None:
+                raise TypeError("samplerate must be specified")
+            self._info.samplerate = samplerate
             if channels is None:
                 raise TypeError("channels must be specified")
             self._info.channels = channels
@@ -360,17 +359,17 @@ class SoundFile(object):
                 raise TypeError("RAW files must specify a subtype")
             self._info.format = _format_int(format, subtype, endian)
         elif self.mode == 'rw':
-            if sample_rate is not None:
-                self._info.samplerate = sample_rate
+            if samplerate is not None:
+                self._info.samplerate = samplerate
             if channels is not None:
                 self._info.channels = channels
             if format is not None:
                 self._info.format = _format_int(format, subtype, endian)
         else:
-            if [sample_rate, channels, original_format, subtype, endian] != \
+            if [samplerate, channels, original_format, subtype, endian] != \
                     [None] * 5:
                 raise TypeError("Only allowed if mode='w' or format='RAW': "
-                                "sample_rate, channels, "
+                                "samplerate, channels, "
                                 "format, subtype, endian")
 
         self._name = file
@@ -392,7 +391,7 @@ class SoundFile(object):
     name = property(lambda self: self._name)
     mode = property(lambda self: self._mode)
     frames = property(lambda self: self._info.frames)
-    sample_rate = property(lambda self: self._info.samplerate)
+    samplerate = property(lambda self: self._info.samplerate)
     channels = property(lambda self: self._info.channels)
     format = property(
         lambda self: _format_str(self._info.format & _snd.SF_FORMAT_TYPEMASK))
@@ -772,15 +771,15 @@ class SoundFile(object):
             yield block
 
 
-def open(file, mode='r', sample_rate=None, channels=None,
+def open(file, mode='r', samplerate=None, channels=None,
          subtype=None, endian=None, format=None, closefd=True):
-    return SoundFile(file, mode, sample_rate, channels,
+    return SoundFile(file, mode, samplerate, channels,
                      subtype, endian, format, closefd)
 
 open.__doc__ = SoundFile.__init__.__doc__
 
 
-def read(file, sample_rate=None, channels=None, subtype=None, endian=None,
+def read(file, samplerate=None, channels=None, subtype=None, endian=None,
          format=None, closefd=True, start=0, stop=None, frames=-1,
          dtype='float64', always_2d=True, fill_value=None, out=None):
     """Read a sound file and return its contents as NumPy array.
@@ -808,22 +807,22 @@ def read(file, sample_rate=None, channels=None, subtype=None, endian=None,
     If out is given, only a part of it is overwritten and a view
     containing all valid frames is returned.
 
-    The keyword arguments sample_rate, channels, format, subtype and
+    The keyword arguments samplerate, channels, format, subtype and
     endian are only needed for 'RAW' files. See open() for details.
 
     """
     if frames >= 0 and stop is not None:
         raise TypeError("Only one of {frames, stop} may be used")
 
-    with SoundFile(file, 'r', sample_rate, channels,
+    with SoundFile(file, 'r', samplerate, channels,
                    subtype, endian, format, closefd) as f:
         start, frames = _get_read_range(start, stop, frames, f.frames)
         f.seek(start, SEEK_SET)
         data = f.read(frames, dtype, always_2d, fill_value, out)
-    return data, f.sample_rate
+    return data, f.samplerate
 
 
-def write(data, file, sample_rate,
+def write(data, file, samplerate,
           subtype=None, endian=None, format=None, closefd=True):
     """Write data from a NumPy array into a sound file.
 
@@ -845,12 +844,12 @@ def write(data, file, sample_rate,
         channels = 1
     else:
         channels = data.shape[1]
-    with open(file, 'w', sample_rate, channels,
+    with open(file, 'w', samplerate, channels,
               subtype, endian, format, closefd) as f:
         f.write(data)
 
 
-def blocks(file, sample_rate=None, channels=None,
+def blocks(file, samplerate=None, channels=None,
            subtype=None, endian=None, format=None, closefd=True,
            blocksize=None, overlap=0, start=0, stop=None, frames=-1,
            dtype='float64', always_2d=True, fill_value=None, out=None):
@@ -878,7 +877,7 @@ def blocks(file, sample_rate=None, channels=None,
     if frames >= 0 and stop is not None:
         raise TypeError("Only one of {frames, stop} may be used")
 
-    with open(file, 'r', sample_rate, channels,
+    with open(file, 'r', samplerate, channels,
               subtype, endian, format, closefd) as f:
         start, frames = _get_read_range(start, stop, frames, f.frames)
         f.seek(start, SEEK_SET)
