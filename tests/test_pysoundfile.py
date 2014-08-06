@@ -3,6 +3,9 @@ import numpy as np
 import os
 import shutil
 import pytest
+import sys
+
+PY2 = sys.version_info[0] == 2
 
 data_stereo = np.array([[1.0,  -1.0],
                         [0.75, -0.75],
@@ -66,12 +69,12 @@ def file_w(request):
 
 
 @pytest.fixture(params=open_variants)
-def file_stereo_rw_existing(request):
+def file_stereo_rplus(request):
     return _file_copy(request, filename_stereo, os.O_RDWR, 'r+b')
 
 
 @pytest.fixture(params=open_variants)
-def file_rw_new(request):
+def file_wplus(request):
     return _file_new(request, os.O_CREAT | os.O_RDWR, 'w+b')
 
 
@@ -88,14 +91,14 @@ def sf_stereo_w(file_w):
 
 
 @pytest.yield_fixture
-def sf_stereo_rw_existing(file_stereo_rw_existing):
-    with sf.open(file_stereo_rw_existing, 'rw') as f:
+def sf_stereo_rplus(file_stereo_rplus):
+    with sf.open(file_stereo_rplus, 'r+') as f:
         yield f
 
 
 @pytest.yield_fixture
-def sf_stereo_rw_new(file_rw_new):
-    with sf.open(file_rw_new, 'rw', 44100, 2,
+def sf_stereo_wplus(file_wplus):
+    with sf.open(file_wplus, 'w+', 44100, 2,
                  format='WAV', subtype='FLOAT') as f:
         yield f
 
@@ -296,20 +299,114 @@ def test_blocks_mono():
     assert_equal_list_of_arrays(blocks, [[0, 1, 2], [-2, -1, 0]])
 
 
-def test_blocks_rw_existing(sf_stereo_rw_existing):
-    blocks = list(sf_stereo_rw_existing.blocks(blocksize=2))
+def test_blocks_rplus(sf_stereo_rplus):
+    blocks = list(sf_stereo_rplus.blocks(blocksize=2))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])
 
 
-def test_blocks_rw_new(sf_stereo_rw_new):
-    """There is nothing to yield in a new 'rw' file."""
-    blocks = list(sf_stereo_rw_new.blocks(blocksize=2, frames=666))
+def test_blocks_wplus(sf_stereo_wplus):
+    """There is nothing to yield in a 'w+' file."""
+    blocks = list(sf_stereo_wplus.blocks(blocksize=2, frames=666))
     assert blocks == []
 
 
 def test_blocks_write(sf_stereo_w):
     with pytest.raises(RuntimeError):
         list(sf_stereo_w.blocks(blocksize=2))
+
+
+# -----------------------------------------------------------------------------
+# Test open()
+# -----------------------------------------------------------------------------
+
+
+def test_open_with_invalid_file():
+    with pytest.raises(TypeError) as excinfo:
+        sf.open(3.1415)
+    assert "filename" in str(excinfo.value)
+
+
+def test_open_with_invalid_mode():
+    with pytest.raises(TypeError) as excinfo:
+        sf.open(filename_stereo, 42)
+    assert "Invalid mode: 42" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_stereo, 'rr')
+    assert "Invalid mode: 'rr'" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_stereo, 'rw')
+    assert "exactly one of 'xrw'" in str(excinfo.value)
+
+
+def test_open_with_more_invalid_arguments():
+    with pytest.raises(TypeError) as excinfo:
+        sf.open(filename_new, 'w', samplerate=3.1415, channels=2)
+    assert "integer" in str(excinfo.value)
+    with pytest.raises(TypeError) as excinfo:
+        sf.open(filename_new, 'w', samplerate=44100, channels=3.1415)
+    assert "integer" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_new, 'w', 44100, 2, format='WAF')
+    assert "Invalid format string" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_new, 'w', 44100, 2, subtype='PCM16')
+    assert "Invalid subtype string" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_new, 'w', 44100, 2, endian='BOTH')
+    assert "Invalid endian-ness" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_stereo, closefd=False)
+    assert "closefd=False" in str(excinfo.value)
+
+
+def test_open_r_and_rplus_with_too_many_arguments():
+    for mode in 'r', 'r+':
+        with pytest.raises(TypeError) as excinfo:
+            sf.open(filename_stereo, mode, samplerate=44100)
+        assert "Not allowed" in str(excinfo.value)
+        with pytest.raises(TypeError) as excinfo:
+            sf.open(filename_stereo, mode, channels=2)
+        assert "Not allowed" in str(excinfo.value)
+        with pytest.raises(TypeError) as excinfo:
+            sf.open(filename_stereo, mode, format='WAV')
+        assert "Not allowed" in str(excinfo.value)
+        with pytest.raises(TypeError) as excinfo:
+            sf.open(filename_stereo, mode, subtype='FLOAT')
+        assert "Not allowed" in str(excinfo.value)
+        with pytest.raises(TypeError) as excinfo:
+            sf.open(filename_stereo, mode, endian='FILE')
+        assert "Not allowed" in str(excinfo.value)
+
+
+def test_open_w_and_wplus_with_too_few_arguments():
+    filename = 'not_existing.xyz'
+    for mode in 'w', 'w+':
+        with pytest.raises(TypeError) as excinfo:
+            sf.open(filename, mode, samplerate=44100, channels=2)
+        assert "No format specified" in str(excinfo.value)
+        with pytest.raises(TypeError) as excinfo:
+            sf.open(filename, mode, samplerate=44100, format='WAV')
+        assert "channels" in str(excinfo.value)
+        with pytest.raises(TypeError) as excinfo:
+            sf.open(filename, mode, channels=2, format='WAV')
+        assert "samplerate" in str(excinfo.value)
+
+
+def test_open_with_mode_is_none():
+    with pytest.raises(TypeError) as excinfo:
+        sf.open(filename_stereo, mode=None)
+    assert "Invalid mode: None" in str(excinfo.value)
+    with open(filename_stereo, 'rb') as fobj:
+        with sf.open(fobj, mode=None) as f:
+            assert f.mode == 'rb'
+
+
+@pytest.mark.skipif(PY2, reason="mode='x' not supported in Python 2")
+def test_open_with_mode_is_x():
+    with pytest.raises(FileExistsError):
+        sf.open(filename_stereo, 'x', 44100, 2)
+    with pytest.raises(FileExistsError):
+        sf.open(filename_stereo, 'x+', 44100, 2)
 
 
 # -----------------------------------------------------------------------------
@@ -338,8 +435,8 @@ def test_mode_should_be_in_write_mode(sf_stereo_w):
     assert len(sf_stereo_w) == 0
 
 
-def test_mode_should_be_in_readwrite_mode(sf_stereo_rw_existing):
-    assert sf_stereo_rw_existing.mode == 'rw'
+def test_mode_should_be_in_readwrite_mode(sf_stereo_rplus):
+    assert sf_stereo_rplus.mode == 'r+'
 
 
 # -----------------------------------------------------------------------------
@@ -352,37 +449,19 @@ def test_seek_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.seek(2) == 2
     assert sf_stereo_r.seek(2, sf.SEEK_CUR) == 4
     assert sf_stereo_r.seek(-2, sf.SEEK_END) == len(data_stereo) - 2
-    assert sf_stereo_r.seek(2, which='r') == 2
     assert sf_stereo_r.seek(666) == -1
     assert sf_stereo_r.seek(-666) == -1
-    with pytest.raises(ValueError):
-        sf_stereo_r.seek(2, which='w')
 
 
 def test_seek_in_write_mode(sf_stereo_w):
     assert sf_stereo_w.seek(0, sf.SEEK_CUR) == 0
-    assert sf_stereo_w.seek(2, which='w') == 2
-    with pytest.raises(ValueError):
-        sf_stereo_w.seek(2, which='r')
+    assert sf_stereo_w.seek(2) == 2
 
 
-def test_initial_read_and_write_position(sf_stereo_rw_existing):
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == 0
-    # 'w' wins ...
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR) == len(data_stereo)
-    # ... and moves read position:
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == len(data_stereo)
-
-
-def test_if_seek_write_advances_read_position(sf_stereo_rw_existing):
-    assert sf_stereo_rw_existing.seek(2, which='w') == 2
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'r') == 0
-
-
-def test_if_seek_read_advances_write_pointer(sf_stereo_rw_existing):
-    assert sf_stereo_rw_existing.seek(2, which='r') == 2
-    assert sf_stereo_rw_existing.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
+def test_seek_in_rplus_mode(sf_stereo_rplus):
+    assert sf_stereo_rplus.seek(0, sf.SEEK_CUR) == 0
+    assert sf_stereo_rplus.seek(2) == 2
+    assert sf_stereo_rplus.seek(0, sf.SEEK_CUR) == 2
 
 
 # -----------------------------------------------------------------------------
@@ -474,34 +553,33 @@ def test_write_flush_should_write_to_disk(sf_stereo_w):
     assert os.path.getsize(filename_new) == size + data_stereo.size * 2
 
 
-def test_rw_read_written_data(sf_stereo_rw_new):
-    sf_stereo_rw_new.seek(0)
-    sf_stereo_rw_new.write(data_stereo)
-    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
-    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'r') == 0
-    assert np.all(sf_stereo_rw_new.read() == data_stereo)
-    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'w') == len(data_stereo)
-    assert sf_stereo_rw_new.seek(0, sf.SEEK_CUR, 'r') == len(data_stereo)
-    sf_stereo_rw_new.close()
+def test_wplus_read_written_data(sf_stereo_wplus):
+    sf_stereo_wplus.write(data_stereo)
+    assert sf_stereo_wplus.seek(0, sf.SEEK_CUR) == len(data_stereo)
+    sf_stereo_wplus.seek(0)
+    assert np.all(sf_stereo_wplus.read() == data_stereo)
+    assert sf_stereo_wplus.seek(0, sf.SEEK_CUR) == len(data_stereo)
+    sf_stereo_wplus.close()
     data, fs = sf.read(filename_new)
     assert np.all(data == data_stereo)
 
 
-def test_rw_writing_using_indexing_should_write_but_not_advance_write_pointer(
-        sf_stereo_rw_new):
+def test_wplus_writing_using_indexing_should_write_but_not_advance_write_pointer(
+        sf_stereo_wplus):
     data = np.ones((5, 2))
     # grow file to make room for indexing
-    sf_stereo_rw_new.write(np.zeros((5, 2)))
-    position = sf_stereo_rw_new.seek(0, sf.SEEK_CUR, which='w')
-    sf_stereo_rw_new[:len(data)] = data
-    written_data = sf_stereo_rw_new[:len(data)]
+    sf_stereo_wplus.write(np.zeros((5, 2)))
+    position = sf_stereo_wplus.seek(0, sf.SEEK_CUR)
+    sf_stereo_wplus[:len(data)] = data
+    written_data = sf_stereo_wplus[:len(data)]
     assert np.all(data == written_data)
-    assert position == sf_stereo_rw_new.seek(0, sf.SEEK_CUR, which='w')
+    assert position == sf_stereo_wplus.seek(0, sf.SEEK_CUR)
 
 
-def test_rw_append_data(sf_stereo_rw_existing):
-    sf_stereo_rw_existing.write(data_stereo / 2)
-    sf_stereo_rw_existing.close()
+def test_rplus_append_data(sf_stereo_rplus):
+    sf_stereo_rplus.seek(0, sf.SEEK_END)
+    sf_stereo_rplus.write(data_stereo / 2)
+    sf_stereo_rplus.close()
     data, fs = sf.read(tempfilename)
     assert np.all(data[:len(data_stereo)] == data_stereo)
     assert np.all(data[len(data_stereo):] == data_stereo / 2)
@@ -548,8 +626,7 @@ def test_non_file_attributes_should_not_save_to_disk():
 
 
 def test_read_raw_files_should_read_data():
-    with sf.open(filename_raw, samplerate=44100,
-                 channels=1, subtype='PCM_16') as f:
+    with sf.open(filename_raw, 'r', 44100, 1, 'PCM_16') as f:
         assert np.all(f.read(dtype='int16') == data_mono)
 
 
