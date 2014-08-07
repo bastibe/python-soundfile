@@ -386,6 +386,7 @@ class SoundFile(object):
             self._filestream = _builtins.open(file, mode, buffering=0)
             # Note: self._filestream must be kept alive to avoid closing by GC
             file = self._filestream.fileno()
+            closefd = False
 
         if isinstance(file, int):
             self._file = _snd.sf_open_fd(file, mode_int, self._info, closefd)
@@ -426,6 +427,7 @@ class SoundFile(object):
 
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
+    _filestream = None
 
     def _init_virtual_io(self, file):
         @_ffi.callback("sf_vio_get_filelen")
@@ -592,10 +594,8 @@ class SoundFile(object):
             self.flush()
             err = _snd.sf_close(self._file)
             self._file = None
-            try:
+            if self._filestream:
                 self._filestream.close()
-            except Exception:
-                pass
             self._handle_error_number(err)
 
     def seek(self, frames, whence=SEEK_SET):
