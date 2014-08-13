@@ -383,10 +383,7 @@ class SoundFile(object):
         if isinstance(file, str):
             if 'b' not in mode:
                 mode += 'b'
-            self._filestream = _builtins.open(file, mode, buffering=0)
-            # Note: self._filestream must be kept alive to avoid closing by GC
-            file = self._filestream.fileno()
-            closefd = False
+            file = self._filestream = _builtins.open(file, mode, buffering=0)
 
         if isinstance(file, int):
             self._file = _snd.sf_open_fd(file, mode_int, self._info, closefd)
