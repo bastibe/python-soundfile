@@ -392,9 +392,7 @@ class SoundFile(object):
                 self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
             self._name = str(file)
         else:
-            raise TypeError("file must be a filename, a file descriptor or "
-                            "a file-like object with the methods "
-                            "'seek()', 'read()', 'write()' and 'tell()'")
+            raise TypeError("Invalid file: %s" % repr(file))
         self._handle_error()
 
         if modes.issuperset('r+'):
