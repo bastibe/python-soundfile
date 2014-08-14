@@ -323,7 +323,7 @@ def test_blocks_write(sf_stereo_w):
 def test_open_with_invalid_file():
     with pytest.raises(TypeError) as excinfo:
         sf.open(3.1415)
-    assert "filename" in str(excinfo.value)
+    assert "Invalid file" in str(excinfo.value)
 
 
 def test_open_with_invalid_mode():
