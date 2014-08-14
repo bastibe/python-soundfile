@@ -313,6 +313,59 @@ def test_blocks_write(sf_stereo_w):
 
 
 # -----------------------------------------------------------------------------
+# Test open()
+# -----------------------------------------------------------------------------
+
+
+def test_open_with_invalid_file():
+    with pytest.raises(TypeError) as excinfo:
+        sf.open(3.1415)
+    assert "Invalid file" in str(excinfo.value)
+
+
+def test_open_with_invalid_mode():
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_stereo, 42)
+    assert "Invalid mode" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_stereo, 'wr')
+    assert "Invalid mode" in str(excinfo.value)
+
+
+def test_open_with_more_invalid_arguments():
+    with pytest.raises(TypeError) as excinfo:
+        sf.open(filename_new, 'w', samplerate=3.1415, channels=2)
+    assert "integer" in str(excinfo.value)
+    with pytest.raises(TypeError) as excinfo:
+        sf.open(filename_new, 'w', samplerate=44100, channels=3.1415)
+    assert "integer" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_new, 'w', 44100, 2, format='WAF')
+    assert "Invalid format string" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_new, 'w', 44100, 2, subtype='PCM16')
+    assert "Invalid subtype string" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf.open(filename_new, 'w', 44100, 2, endian='BOTH')
+    assert "Invalid endian-ness" in str(excinfo.value)
+
+
+def test_open_w_and_rw_new_with_too_few_arguments(tmpdir):
+    with tmpdir.as_cwd():
+        filename = 'not_existing.xyz'
+        for mode in 'w', 'rw':
+            with pytest.raises(RuntimeError) as excinfo:
+                sf.open(filename, mode, samplerate=44100, channels=2)
+            assert "Missing format" in str(excinfo.value)
+            with pytest.raises(RuntimeError) as excinfo:
+                sf.open(filename, mode, samplerate=44100, format='WAV')
+            assert "channels" in str(excinfo.value)
+            with pytest.raises(RuntimeError) as excinfo:
+                sf.open(filename, mode, channels=2, format='WAV')
+            assert "samplerate" in str(excinfo.value)
+
+
+# -----------------------------------------------------------------------------
 # Test file metadata
 # -----------------------------------------------------------------------------
 
@@ -548,17 +601,20 @@ def test_non_file_attributes_should_not_save_to_disk():
 
 
 def test_read_raw_files_should_read_data():
-    with sf.open(filename_raw, samplerate=44100,
-                 channels=1, subtype='PCM_16') as f:
+    with sf.open(filename_raw, 'r', 44100, 1, 'PCM_16') as f:
         assert np.all(f.read(dtype='int16') == data_mono)
 
 
 def test_read_raw_files_with_too_few_arguments_should_fail():
-    with pytest.raises(TypeError):  # missing everything
+    with pytest.raises(TypeError) as excinfo:  # missing everything
         sf.open(filename_raw)
-    with pytest.raises(TypeError):  # missing subtype
+    assert "No default subtype" in str(excinfo.value)
+    with pytest.raises(TypeError) as excinfo:  # missing subtype
         sf.open(filename_raw, samplerate=44100, channels=2)
-    with pytest.raises(TypeError):  # missing channels
+    assert "No default subtype" in str(excinfo.value)
+    with pytest.raises(RuntimeError) as excinfo:  # missing channels
         sf.open(filename_raw, samplerate=44100, subtype='PCM_16')
-    with pytest.raises(TypeError):  # missing samplerate
+    assert "channels" in str(excinfo.value)
+    with pytest.raises(RuntimeError) as excinfo:  # missing samplerate
         sf.open(filename_raw, channels=2, subtype='PCM_16')
+    assert "samplerate" in str(excinfo.value)
