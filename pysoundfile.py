@@ -351,13 +351,13 @@ class SoundFile(object):
             mode_int = _snd.SFM_WRITE
 
         old_fmt = format
+        self._name = getattr(file, 'name', file)
         if format is None:
-            filename = getattr(file, 'name', file)
-            format = str(filename).rsplit('.', 1)[-1].upper()
+            format = str(self.name).rsplit('.', 1)[-1].upper()
             if format not in _formats and 'r' not in mode:
                 raise TypeError(
                     "No format specified and unable to get format from "
-                    "file extension: %s" % repr(filename))
+                    "file extension: %s" % repr(self.name))
 
         self._info = _ffi.new("SF_INFO*")
         if 'r' not in mode or str(format).upper() == 'RAW':
@@ -378,8 +378,6 @@ class SoundFile(object):
         if not closefd and not isinstance(file, int):
             raise ValueError("closefd=False only allowed for file descriptors")
 
-        self._name = file
-
         if isinstance(file, str):
             if 'b' not in mode:
                 mode += 'b'
@@ -390,7 +388,6 @@ class SoundFile(object):
         elif all(hasattr(file, a) for a in ('seek', 'read', 'write', 'tell')):
             self._file = _snd.sf_open_virtual(
                 self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
-            self._name = str(file)
         else:
             raise TypeError("Invalid file: %s" % repr(file))
         self._handle_error()

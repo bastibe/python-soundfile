@@ -419,14 +419,20 @@ def test_file_content(sf_stereo_r):
 
 
 def test_file_attributes_in_read_mode(sf_stereo_r):
+    if not isinstance(sf_stereo_r.name, int):
+        assert sf_stereo_r.name == filename_stereo
     assert sf_stereo_r.mode == 'r'
-    assert sf_stereo_r.channels == 2
+    assert sf_stereo_r.frames == len(data_stereo)
     assert sf_stereo_r.samplerate == 44100
+    assert sf_stereo_r.channels == 2
     assert sf_stereo_r.format == 'WAV'
     assert sf_stereo_r.subtype == 'FLOAT'
     assert sf_stereo_r.endian == 'FILE'
     assert sf_stereo_r.format_info == 'WAV (Microsoft)'
     assert sf_stereo_r.subtype_info == '32 bit float'
+    assert sf_stereo_r.sections == 1
+    assert sf_stereo_r.seekable is True
+    assert sf_stereo_r.closed is False
     assert len(sf_stereo_r) == len(data_stereo)
 
 
