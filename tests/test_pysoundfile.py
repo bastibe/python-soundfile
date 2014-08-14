@@ -431,8 +431,8 @@ def test_file_attributes_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.format_info == 'WAV (Microsoft)'
     assert sf_stereo_r.subtype_info == '32 bit float'
     assert sf_stereo_r.sections == 1
-    assert sf_stereo_r.seekable is True
     assert sf_stereo_r.closed is False
+    assert sf_stereo_r.seekable() is True
     assert len(sf_stereo_r) == len(data_stereo)
 
 

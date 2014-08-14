@@ -414,12 +414,15 @@ class SoundFile(object):
         lambda self: _format_info(self._info.format &
                                   _snd.SF_FORMAT_SUBMASK)[1])
     sections = property(lambda self: self._info.sections)
-    seekable = property(lambda self: self._info.seekable == _snd.SF_TRUE)
     closed = property(lambda self: self._file is None)
 
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
     _filestream = None
+
+    def seekable(self):
+        """Return True if the file supports seeking."""
+        return self._info.seekable == _snd.SF_TRUE
 
     def _init_virtual_io(self, file):
         @_ffi.callback("sf_vio_get_filelen")
