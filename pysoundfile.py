@@ -392,7 +392,7 @@ class SoundFile(object):
             raise TypeError("Invalid file: %s" % repr(file))
         self._handle_error()
 
-        if modes.issuperset('r+'):
+        if modes.issuperset('r+') and self.seekable():
             # Move write pointer to 0 (like in Python file objects)
             self.seek(0)
 
@@ -645,12 +645,14 @@ class SoundFile(object):
         assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
         assert array.size >= frames * self.channels
 
-        curr = self.seek(0, SEEK_CUR)
+        if self.seekable():
+            curr = self.seek(0, SEEK_CUR)
         func = getattr(_snd, funcname + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', array.ctypes.data)
         frames = func(self._file, ptr, frames)
         self._handle_error()
-        self.seek(curr + frames, SEEK_SET)  # Update read and write position
+        if self.seekable():
+            self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
 
     def read(self, frames=-1, dtype='float64', always_2d=True,
