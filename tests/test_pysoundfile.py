@@ -645,3 +645,48 @@ def test_read_raw_files_with_too_few_arguments_should_fail():
         sf.open(filename_raw, samplerate=44100, subtype='PCM_16')
     with pytest.raises(TypeError):  # missing samplerate
         sf.open(filename_raw, channels=2, subtype='PCM_16')
+
+
+# -----------------------------------------------------------------------------
+# Test non-seekable files
+# -----------------------------------------------------------------------------
+
+
+def test_write_non_seekable_file():
+    with sf.open(filename_new, 'w', 44100, 1, format='XI') as f:
+        assert not f.seekable()
+        assert f.frames == 0
+        f.write(data_mono)
+        assert f.frames == len(data_mono)
+
+        with pytest.raises(RuntimeError) as excinfo:
+            f.seek(2)
+        assert "unseekable" in str(excinfo.value)
+
+    with sf.open(filename_new) as f:
+        assert not f.seekable()
+        assert f.frames == len(data_mono)
+        data = f.read(3, dtype='int16')
+        assert np.all(data == data_mono[:3])
+        data = f.read(666, dtype='int16')
+        assert np.all(data == data_mono[3:])
+
+        with pytest.raises(RuntimeError) as excinfo:
+            f.seek(2)
+        assert "unseekable" in str(excinfo.value)
+
+        with pytest.raises(ValueError) as excinfo:
+            f.read()
+        assert "frames" in str(excinfo.value)
+
+        with pytest.raises(ValueError) as excinfo:
+            list(f.blocks(blocksize=3, overlap=1))
+        assert "overlap" in str(excinfo.value)
+
+    data, fs = sf.read(filename_new, dtype='int16')
+    assert np.all(data == data_mono)
+    assert fs == 44100
+
+    with pytest.raises(ValueError) as excinfo:
+        sf.read(filename_new, start=3)
+    assert "start is only allowed for seekable files" in str(excinfo.value)
