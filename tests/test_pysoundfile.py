@@ -453,8 +453,10 @@ def test_seek_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.seek(2) == 2
     assert sf_stereo_r.seek(2, sf.SEEK_CUR) == 4
     assert sf_stereo_r.seek(-2, sf.SEEK_END) == len(data_stereo) - 2
-    assert sf_stereo_r.seek(666) == -1
-    assert sf_stereo_r.seek(-666) == -1
+    with pytest.raises(RuntimeError):
+        sf_stereo_r.seek(666)
+    with pytest.raises(RuntimeError):
+        sf_stereo_r.seek(-666)
 
 
 def test_seek_in_write_mode(sf_stereo_w):
