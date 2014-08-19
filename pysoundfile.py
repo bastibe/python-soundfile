@@ -615,7 +615,9 @@ class SoundFile(object):
 
         """
         self._check_if_closed()
-        return _snd.sf_seek(self._file, frames, whence)
+        position = _snd.sf_seek(self._file, frames, whence)
+        self._handle_error()
+        return position
 
     def _check_array(self, array):
         # Do some error checking
