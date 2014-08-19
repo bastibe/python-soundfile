@@ -2,6 +2,11 @@ import numpy as _np
 from cffi import FFI as _FFI
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
+try:
+    import builtins as _builtins
+except ImportError:
+    import __builtin__ as _builtins  # for Python < 3.0
+
 __version__ = "0.5.0"
 
 """PySoundFile is an audio library based on libsndfile, CFFI and Numpy
@@ -65,6 +70,11 @@ enum
 {
     SF_FALSE    = 0,
     SF_TRUE     = 1,
+
+    /* Modes for opening files. */
+    SFM_READ    = 0x10,
+    SFM_WRITE   = 0x20,
+    SFM_RDWR    = 0x30,
 } ;
 
 typedef int64_t sf_count_t ;
@@ -148,12 +158,6 @@ typedef struct SF_FORMAT_INFO
     const char* extension ;
 } SF_FORMAT_INFO ;
 """)
-
-_open_modes = {
-    'r':  0x10,
-    'w':  0x20,
-    'rw': 0x30,
-}
 
 _str_types = {
     'title':       0x01,
@@ -274,8 +278,8 @@ class SoundFile(object):
 
     Each SoundFile opens one sound file on the disk. This sound file
     has a specific samplerate, data format and a set number of
-    channels. Each sound file can be opened with one of the modes
-    'r'/'w'/'rw'. Note that 'rw' is unsupported for some formats.
+    channels. Each sound file can be opened for reading, for writing or
+    both.  Note that the latter is unsupported for some formats.
 
     Data can be written to the file using write(), or read from the
     file using read(). Every read and write operation starts at a
@@ -307,9 +311,9 @@ class SoundFile(object):
                  subtype=None, endian=None, format=None, closefd=True):
         """Open a sound file.
 
-        If a file is opened with mode 'r' (the default) or 'rw',
+        If a file is opened with mode 'r' (the default) or 'r+',
         no samplerate, channels or file format need to be given. If a
-        file is opened with mode 'w', you must provide a samplerate,
+        file is opened with another mode, you must provide a samplerate,
         a number of channels, and a file format. An exception is the
         RAW data format, which requires these data points for reading
         as well.
@@ -328,65 +332,69 @@ class SoundFile(object):
         subtypes, respectively.
 
         """
-        try:
-            self._mode = mode
-            mode_int = _open_modes[self._mode]
-        except KeyError:
+        if mode is None:
+            mode = getattr(file, 'mode', None)
+        if not isinstance(mode, str):
+            raise TypeError("Invalid mode: %s" % repr(mode))
+        modes = set(mode)
+        if modes.difference('xrwb+') or len(mode) > len(modes):
             raise ValueError("Invalid mode: %s" % repr(mode))
+        if len(modes.intersection('xrw')) != 1:
+            raise ValueError("mode must contain exactly one of 'xrw'")
+        self._mode = mode
 
-        original_format = format
-        filename = getattr(file, 'name', file)
-        file_extension = str(filename).rsplit('.', 1)[-1].upper()
-        if format is None and ('w' in self.mode or
-                               file_extension == 'RAW'):
-            if file_extension not in _formats:
-                if self.mode == 'w':
-                    raise TypeError(
-                        "No format specified and unable to get format from "
-                        "file extension: %s" % repr(filename))
-            else:
-                format = file_extension
+        if '+' in mode:
+            mode_int = _snd.SFM_RDWR
+        elif 'r' in mode:
+            mode_int = _snd.SFM_READ
+        else:
+            mode_int = _snd.SFM_WRITE
+
+        old_fmt = format
+        self._name = getattr(file, 'name', file)
+        if format is None:
+            format = str(self.name).rsplit('.', 1)[-1].upper()
+            if format not in _formats and 'r' not in mode:
+                raise TypeError(
+                    "No format specified and unable to get format from "
+                    "file extension: %s" % repr(self.name))
 
         self._info = _ffi.new("SF_INFO*")
-        if self.mode == 'w' or str(format).upper() == 'RAW':
+        if 'r' not in mode or str(format).upper() == 'RAW':
             if samplerate is None:
                 raise TypeError("samplerate must be specified")
             self._info.samplerate = samplerate
             if channels is None:
                 raise TypeError("channels must be specified")
             self._info.channels = channels
-            if str(format).upper() == 'RAW' and subtype is None:
-                raise TypeError("RAW files must specify a subtype")
             self._info.format = _format_int(format, subtype, endian)
-        elif self.mode == 'rw':
-            if samplerate is not None:
-                self._info.samplerate = samplerate
-            if channels is not None:
-                self._info.channels = channels
-            if format is not None:
-                self._info.format = _format_int(format, subtype, endian)
         else:
-            if [samplerate, channels, original_format, subtype, endian] != \
-                    [None] * 5:
-                raise TypeError("Only allowed if mode='w' or format='RAW': "
-                                "samplerate, channels, "
-                                "format, subtype, endian")
+            if any(arg is not None for arg in (samplerate, channels, old_fmt,
+                                               subtype, endian)):
+                raise TypeError(
+                    "Not allowed for existing files (except 'RAW'): "
+                    "samplerate, channels, format, subtype, endian")
 
-        self._name = file
+        if not closefd and not isinstance(file, int):
+            raise ValueError("closefd=False only allowed for file descriptors")
+
         if isinstance(file, str):
-            file = _ffi.new('char[]', file.encode())
-            self._file = _snd.sf_open(file, mode_int, self._info)
-        elif isinstance(file, int):
+            if 'b' not in mode:
+                mode += 'b'
+            file = self._filestream = _builtins.open(file, mode, buffering=0)
+
+        if isinstance(file, int):
             self._file = _snd.sf_open_fd(file, mode_int, self._info, closefd)
         elif all(hasattr(file, a) for a in ('seek', 'read', 'write', 'tell')):
             self._file = _snd.sf_open_virtual(
                 self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
-            self._name = str(file)
         else:
-            raise RuntimeError("file must be a filename, a file descriptor or "
-                               "a file-like object with the methods "
-                               "'seek()', 'read()', 'write()' and 'tell()'")
+            raise TypeError("Invalid file: %s" % repr(file))
         self._handle_error()
+
+        if modes.issuperset('r+') and self.seekable():
+            # Move write pointer to 0 (like in Python file objects)
+            self.seek(0)
 
     name = property(lambda self: self._name)
     mode = property(lambda self: self._mode)
@@ -406,11 +414,15 @@ class SoundFile(object):
         lambda self: _format_info(self._info.format &
                                   _snd.SF_FORMAT_SUBMASK)[1])
     sections = property(lambda self: self._info.sections)
-    seekable = property(lambda self: self._info.seekable == _snd.SF_TRUE)
     closed = property(lambda self: self._file is None)
 
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
+    _filestream = None
+
+    def seekable(self):
+        """Return True if the file supports seeking."""
+        return self._info.seekable == _snd.SF_TRUE
 
     def _init_virtual_io(self, file):
         @_ffi.callback("sf_vio_get_filelen")
@@ -502,9 +514,6 @@ class SoundFile(object):
         # access text data in the sound file through properties
         if name in _str_types:
             self._check_if_closed()
-            if self.mode == 'r':
-                raise RuntimeError("Can not change %s of file in read mode" %
-                                   repr(name))
             data = _ffi.new('char[]', value.encode())
             err = _snd.sf_set_string(self._file, _str_types[name], data)
             self._handle_error_number(err)
@@ -544,10 +553,10 @@ class SoundFile(object):
                     "SoundFile can only be accessed in one or two dimensions")
             frame, second_frame = frame
         start, stop = self._get_slice_bounds(frame)
-        curr = self.seek(0, SEEK_CUR, 'r')
-        self.seek(start, SEEK_SET, 'r')
+        curr = self.seek(0, SEEK_CUR)
+        self.seek(start, SEEK_SET)
         data = self.read(stop - start)
-        self.seek(curr, SEEK_SET, 'r')
+        self.seek(curr, SEEK_SET)
         if second_frame:
             return data[(slice(None), second_frame)]
         else:
@@ -557,17 +566,15 @@ class SoundFile(object):
         # access the file as if it where a one-dimensional Numpy
         # array. Data must be in the form (frames x channels).
         # Both open slice bounds and negative values are allowed.
-        if self.mode == 'r':
-            raise RuntimeError("Cannot write to file opened in read mode")
         start, stop = self._get_slice_bounds(frame)
         if stop - start != len(data):
             raise IndexError(
                 "Could not fit data of length %i into slice of length %i" %
                 (len(data), stop - start))
-        curr = self.seek(0, SEEK_CUR, 'w')
-        self.seek(start, SEEK_SET, 'w')
+        curr = self.seek(0, SEEK_CUR)
+        self.seek(start, SEEK_SET)
         self.write(data)
-        self.seek(curr, SEEK_SET, 'w')
+        self.seek(curr, SEEK_SET)
         return data
 
     def flush(self):
@@ -582,9 +589,11 @@ class SoundFile(object):
             self.flush()
             err = _snd.sf_close(self._file)
             self._file = None
+            if self._filestream:
+                self._filestream.close()
             self._handle_error_number(err)
 
-    def seek(self, frames, whence=SEEK_SET, which=None):
+    def seek(self, frames, whence=SEEK_SET):
         """Set the read and/or write position.
 
         By default (whence=SEEK_SET), frames are counted from the
@@ -606,11 +615,6 @@ class SoundFile(object):
 
         """
         self._check_if_closed()
-        if which is not None:
-            if which != 'rw' and which in self.mode:
-                whence |= _open_modes[which]
-            else:
-                raise ValueError("Invalid which: %s" % repr(which))
         return _snd.sf_seek(self._file, frames, whence)
 
     def _check_array(self, array):
@@ -634,15 +638,21 @@ class SoundFile(object):
 
     def _read_or_write(self, funcname, array, frames):
         # Call into libsndfile
+        self._check_if_closed()
+
         ffi_type = _ffi_types[array.dtype]
         assert array.flags.c_contiguous
         assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
         assert array.size >= frames * self.channels
 
+        if self.seekable():
+            curr = self.seek(0, SEEK_CUR)
         func = getattr(_snd, funcname + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', array.ctypes.data)
         frames = func(self._file, ptr, frames)
         self._handle_error()
+        if self.seekable():
+            self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
 
     def read(self, frames=-1, dtype='float64', always_2d=True,
@@ -671,12 +681,8 @@ class SoundFile(object):
         containing all valid frames is returned.
 
         """
-        self._check_if_closed()
-        if self.mode == 'w':
-            raise RuntimeError("Cannot read from file opened in write mode")
-
         if out is None:
-            remaining_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+            remaining_frames = self.frames - self.seek(0, SEEK_CUR)
             if frames < 0 or (frames > remaining_frames and
                               fill_value is None):
                 frames = remaining_frames
@@ -709,10 +715,6 @@ class SoundFile(object):
         array or as one-dimensional array for mono signals.
 
         """
-        self._check_if_closed()
-        if self.mode == 'r':
-            raise RuntimeError("Cannot write to file opened in read mode")
-
         # no copy is made if data has already the correct memory layout:
         data = _np.ascontiguousarray(data)
 
@@ -720,9 +722,9 @@ class SoundFile(object):
         written = self._read_or_write('sf_writef_', data, len(data))
         assert written == len(data)
 
-        curr = self.seek(0, SEEK_CUR, 'w')
-        self._info.frames = self.seek(0, SEEK_END, 'w')
-        self.seek(curr, SEEK_SET, 'w')
+        curr = self.seek(0, SEEK_CUR)
+        self._info.frames = self.seek(0, SEEK_END)
+        self.seek(curr, SEEK_SET)
 
     def blocks(self, blocksize=None, overlap=0, frames=-1, dtype='float64',
                always_2d=True, fill_value=None, out=None):
@@ -742,8 +744,8 @@ class SoundFile(object):
         than blocksize.
 
         """
-        if self.mode == 'w':
-            raise RuntimeError("blocks() is not allowed in write mode")
+        if 'r' not in self.mode and '+' not in self.mode:
+            raise RuntimeError("blocks() is not allowed in write-only mode")
 
         if out is None:
             if blocksize is None:
@@ -754,7 +756,7 @@ class SoundFile(object):
                     "Only one of {blocksize, out} may be specified")
             blocksize = len(out)
 
-        remaining_frames = self.frames - self.seek(0, SEEK_CUR, 'r')
+        remaining_frames = self.frames - self.seek(0, SEEK_CUR)
         if frames < 0 or (fill_value is None and frames > remaining_frames):
             frames = remaining_frames
 
@@ -766,7 +768,7 @@ class SoundFile(object):
             block = self.read(blocksize, dtype, always_2d, fill_value, out)
             frames -= blocksize
             if frames > 0:
-                self.seek(-overlap, SEEK_CUR, 'r')
+                self.seek(-overlap, SEEK_CUR)
                 frames += overlap
             yield block
 
