@@ -87,7 +87,7 @@ into an ogg-vorbis file:
 from pysoundfile import SoundFile
 
 wave = SoundFile('existing_file.wav')
-ogg  = SoundFile('new_file.ogg', samplerate=wave.samplerate,
+ogg  = SoundFile('new_file.ogg', sample_rate=wave.sample_rate,
                  channels=wave.channels, format=ogg_file,
                  mode=write_mode)
 
