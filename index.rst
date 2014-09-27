@@ -15,7 +15,6 @@ API Documentation
 
 .. autoclass:: pysoundfile.SoundFile
    :members:
-   :undoc-members:
    :special-members: __init__
 
 Indices and tables
