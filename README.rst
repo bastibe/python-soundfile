@@ -43,17 +43,11 @@ Each SoundFile can either open a sound file on the disk, or a file-like
 object (using ``libsndfile``'s `virtual file
 interface <http://www.mega-nerd.com/libsndfile/api.html#open_virtual>`__).
 Every sound file has a specific samplerate, data format and a set number
-of channels. Each sound file can be opened in ``read_mode``,
-``write_mode``, or ``read_write_mode``. Note that ``read_write_mode`` is
-unsupported for some formats.
+of channels.
 
 You can read and write any file that
 `libsndfile <http://www.mega-nerd.com/libsndfile/#Features>`__ can
 open. This includes Microsoft WAV, OGG, FLAC and Matlab MAT files.
-Different variants of these can be built by ORing ``snd_types``,
-``snd_subtypes`` and ``snd_endians`` or using the predefined formats
-``wave_file``, ``flac_file``, ``matlab_file`` and ``ogg_file``. Note
-that specifying the format is only necessary when writing.
 
 If a file on disk is opened, it is kept open for as long as the
 SoundFile object exists and closes automatically when it goes out of
@@ -67,45 +61,18 @@ channels in the file.
 Read/Write Functions
 ~~~~~~~~~~~~~~~~~~~~
 
-Data can be written to the file using ``write()``, or read from the file
-using ``read()``. Every read and write operation starts at a certain
-position in the file. Reading N frames will change this position by N
-frames as well. Alternatively, ``seek()``, and ``seek_absolute()``, can
-be used to set the current position to a frame index offset from the
-current position, the start of the file, or the end of the file,
-respectively.
+Data can be written to the file using ``write()``, or read from the
+file using ``read()``.
 
 Here is an example for a program that reads a wave file and copies it
 into an ogg-vorbis file:
 
 .. code:: python
 
-    from pysoundfile import SoundFile
+    import pysoundfile as sf
 
-    wave = SoundFile('existing_file.wav')
-    ogg  = SoundFile('new_file.ogg', sample_rate=wave.sample_rate,
-                     channels=wave.channels, format=ogg_file,
-                     mode=write_mode)
-
-    data = wave.read(1024)
-    while len(data) > 0:
-        ogg.write(data)
-        data = wave.read(1024)
-
-Sequence Interface
-~~~~~~~~~~~~~~~~~~
-
-Alternatively, slices can be used to access data at arbitrary positions
-in the file. If you index in two dimensions, you can select single
-channels of a multi-channel file.
-
-Here is an example of reading in a whole wave file into a NumPy array:
-
-.. code:: python
-
-    from pysoundfile import SoundFile
-
-    wave = SoundFile('existing_file.wav')[:]
+    data, samplerate = sf.read('existing_file.wav')
+    sf.write(data, 'new_file.ogg', 'w', samplerate, data.shape[1])
 
 Virtual IO
 ~~~~~~~~~~
@@ -118,7 +85,7 @@ this to decode it:
     from io import BytesIO
     from pysoundfile import SoundFile
     fObj = BytesIO(open('filename.flac', 'rb').read())
-    flac = SoundFile(fObj, virtual_io=True)
+    data, samplerate = read(fObj)
 
 Here is an example using an HTTP request:
 
@@ -134,7 +101,7 @@ Here is an example using an HTTP request:
         if data:
             fObj.write(data)
     fObj.seek(0)
-    flac = SoundFile(fObj, virtual_io=True)
+    data, samplerate = read(fObj)
 
 Accessing Text Data
 ~~~~~~~~~~~~~~~~~~~
