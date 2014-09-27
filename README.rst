@@ -48,7 +48,7 @@ of channels. Each sound file can be opened in ``read_mode``,
 unsupported for some formats.
 
 You can read and write any file that
-```libsndfile`` <http://www.mega-nerd.com/libsndfile/#Features>`__ can
+`libsndfile <http://www.mega-nerd.com/libsndfile/#Features>`__ can
 open. This includes Microsoft WAV, OGG, FLAC and Matlab MAT files.
 Different variants of these can be built by ORing ``snd_types``,
 ``snd_subtypes`` and ``snd_endians`` or using the predefined formats
