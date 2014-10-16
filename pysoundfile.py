@@ -615,7 +615,9 @@ class SoundFile(object):
 
         """
         self._check_if_closed()
-        return _snd.sf_seek(self._file, frames, whence)
+        position = _snd.sf_seek(self._file, frames, whence)
+        self._handle_error()
+        return position
 
     def _check_array(self, array):
         # Do some error checking
@@ -655,6 +657,17 @@ class SoundFile(object):
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
 
+    def _check_frames(self, frames, fill_value):
+        # Check if frames is larger than the remaining frames in the file
+        if self.seekable():
+            remaining_frames = self.frames - self.seek(0, SEEK_CUR)
+            if frames < 0 or (frames > remaining_frames
+                              and fill_value is None):
+                frames = remaining_frames
+        elif frames < 0:
+            raise ValueError("frames must be specified for non-seekable files")
+        return frames
+
     def read(self, frames=-1, dtype='float64', always_2d=True,
              fill_value=None, out=None):
         """Read a number of frames from the file.
@@ -682,10 +695,7 @@ class SoundFile(object):
 
         """
         if out is None:
-            remaining_frames = self.frames - self.seek(0, SEEK_CUR)
-            if frames < 0 or (frames > remaining_frames and
-                              fill_value is None):
-                frames = remaining_frames
+            frames = self._check_frames(frames, fill_value)
             out = self._create_empty_array(frames, always_2d, dtype)
         else:
             if frames < 0 or frames > len(out):
@@ -722,9 +732,12 @@ class SoundFile(object):
         written = self._read_or_write('sf_writef_', data, len(data))
         assert written == len(data)
 
-        curr = self.seek(0, SEEK_CUR)
-        self._info.frames = self.seek(0, SEEK_END)
-        self.seek(curr, SEEK_SET)
+        if self.seekable():
+            curr = self.seek(0, SEEK_CUR)
+            self._info.frames = self.seek(0, SEEK_END)
+            self.seek(curr, SEEK_SET)
+        else:
+            self._info.frames += written
 
     def blocks(self, blocksize=None, overlap=0, frames=-1, dtype='float64',
                always_2d=True, fill_value=None, out=None):
@@ -747,6 +760,9 @@ class SoundFile(object):
         if 'r' not in self.mode and '+' not in self.mode:
             raise RuntimeError("blocks() is not allowed in write-only mode")
 
+        if overlap != 0 and not self.seekable():
+            raise ValueError("overlap is only allowed for seekable files")
+
         if out is None:
             if blocksize is None:
                 raise TypeError("One of {blocksize, out} must be specified")
@@ -756,10 +772,7 @@ class SoundFile(object):
                     "Only one of {blocksize, out} may be specified")
             blocksize = len(out)
 
-        remaining_frames = self.frames - self.seek(0, SEEK_CUR)
-        if frames < 0 or (fill_value is None and frames > remaining_frames):
-            frames = remaining_frames
-
+        frames = self._check_frames(frames, fill_value)
         while frames > 0:
             if frames < blocksize:
                 if fill_value is not None and out is None:
@@ -767,10 +780,26 @@ class SoundFile(object):
                 blocksize = frames
             block = self.read(blocksize, dtype, always_2d, fill_value, out)
             frames -= blocksize
-            if frames > 0:
+            if frames > 0 and self.seekable():
                 self.seek(-overlap, SEEK_CUR)
                 frames += overlap
             yield block
+
+    def _prepare_read(self, start, stop, frames):
+        # Seek to start frame and calculate length
+        if start != 0 and not self.seekable():
+            raise ValueError("start is only allowed for seekable files")
+        if frames >= 0 and stop is not None:
+            raise TypeError("Only one of {frames, stop} may be used")
+
+        start, stop, _ = slice(start, stop).indices(self.frames)
+        if stop < start:
+            stop = start
+        if frames < 0:
+            frames = stop - start
+        if self.seekable():
+            self.seek(start, SEEK_SET)
+        return frames
 
 
 def open(file, mode='r', samplerate=None, channels=None,
@@ -813,13 +842,9 @@ def read(file, samplerate=None, channels=None, subtype=None, endian=None,
     endian are only needed for 'RAW' files. See open() for details.
 
     """
-    if frames >= 0 and stop is not None:
-        raise TypeError("Only one of {frames, stop} may be used")
-
     with SoundFile(file, 'r', samplerate, channels,
                    subtype, endian, format, closefd) as f:
-        start, frames = _get_read_range(start, stop, frames, f.frames)
-        f.seek(start, SEEK_SET)
+        frames = f._prepare_read(start, stop, frames)
         data = f.read(frames, dtype, always_2d, fill_value, out)
     return data, f.samplerate
 
@@ -876,26 +901,12 @@ def blocks(file, samplerate=None, channels=None,
     the generator's close() method can be called.
 
     """
-    if frames >= 0 and stop is not None:
-        raise TypeError("Only one of {frames, stop} may be used")
-
     with open(file, 'r', samplerate, channels,
               subtype, endian, format, closefd) as f:
-        start, frames = _get_read_range(start, stop, frames, f.frames)
-        f.seek(start, SEEK_SET)
+        frames = f._prepare_read(start, stop, frames)
         for block in f.blocks(blocksize, overlap, frames,
                               dtype, always_2d, fill_value, out):
             yield block
-
-
-def _get_read_range(start, stop, frames, total_frames):
-    # Calculate start frame and length
-    start, stop, _ = slice(start, stop).indices(total_frames)
-    if stop < start:
-        stop = start
-    if frames < 0:
-        frames = stop - start
-    return start, frames
 
 
 def default_subtype(format):

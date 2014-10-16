@@ -16,8 +16,7 @@ data_mono = np.array([[0], [1], [2], [-2], [-1]], dtype='int16')
 filename_stereo = 'tests/stereo.wav'
 filename_mono = 'tests/mono.wav'
 filename_raw = 'tests/mono.raw'
-filename_new = 'tests/new.wav'
-tempfilename = 'tests/delme.please'
+filename_new = 'tests/delme.please'
 
 
 open_variants = 'name', 'fd', 'obj'
@@ -48,9 +47,9 @@ def _file_new(request, fdarg, objarg=None):
 
 
 def _file_copy(request, filename, fdarg, objarg=None):
-    shutil.copy(filename, tempfilename)
-    request.addfinalizer(lambda: os.remove(tempfilename))
-    return _file_existing(request, tempfilename, fdarg, objarg)
+    shutil.copy(filename, filename_new)
+    request.addfinalizer(lambda: os.remove(filename_new))
+    return _file_existing(request, filename_new, fdarg, objarg)
 
 
 @pytest.fixture(params=open_variants)
@@ -340,19 +339,19 @@ def test_open_with_invalid_mode():
 
 def test_open_with_more_invalid_arguments():
     with pytest.raises(TypeError) as excinfo:
-        sf.open(filename_new, 'w', samplerate=3.1415, channels=2)
+        sf.open(filename_new, 'w', 3.1415, 2, format='WAV')
     assert "integer" in str(excinfo.value)
     with pytest.raises(TypeError) as excinfo:
-        sf.open(filename_new, 'w', samplerate=44100, channels=3.1415)
+        sf.open(filename_new, 'w', 44100, 3.1415, format='WAV')
     assert "integer" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
         sf.open(filename_new, 'w', 44100, 2, format='WAF')
     assert "Invalid format string" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
-        sf.open(filename_new, 'w', 44100, 2, subtype='PCM16')
+        sf.open(filename_new, 'w', 44100, 2, 'PCM16', format='WAV')
     assert "Invalid subtype string" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
-        sf.open(filename_new, 'w', 44100, 2, endian='BOTH')
+        sf.open(filename_new, 'w', 44100, 2, endian='BOTH', format='WAV')
     assert "Invalid endian-ness" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
         sf.open(filename_stereo, closefd=False)
@@ -379,16 +378,15 @@ def test_open_r_and_rplus_with_too_many_arguments():
 
 
 def test_open_w_and_wplus_with_too_few_arguments():
-    filename = 'not_existing.xyz'
     for mode in 'w', 'w+':
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename, mode, samplerate=44100, channels=2)
+            sf.open(filename_new, mode, samplerate=44100, channels=2)
         assert "No format specified" in str(excinfo.value)
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename, mode, samplerate=44100, format='WAV')
+            sf.open(filename_new, mode, samplerate=44100, format='WAV')
         assert "channels" in str(excinfo.value)
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename, mode, channels=2, format='WAV')
+            sf.open(filename_new, mode, channels=2, format='WAV')
         assert "samplerate" in str(excinfo.value)
 
 
@@ -455,8 +453,10 @@ def test_seek_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.seek(2) == 2
     assert sf_stereo_r.seek(2, sf.SEEK_CUR) == 4
     assert sf_stereo_r.seek(-2, sf.SEEK_END) == len(data_stereo) - 2
-    assert sf_stereo_r.seek(666) == -1
-    assert sf_stereo_r.seek(-666) == -1
+    with pytest.raises(RuntimeError):
+        sf_stereo_r.seek(666)
+    with pytest.raises(RuntimeError):
+        sf_stereo_r.seek(-666)
 
 
 def test_seek_in_write_mode(sf_stereo_w):
@@ -586,7 +586,7 @@ def test_rplus_append_data(sf_stereo_rplus):
     sf_stereo_rplus.seek(0, sf.SEEK_END)
     sf_stereo_rplus.write(data_stereo / 2)
     sf_stereo_rplus.close()
-    data, fs = sf.read(tempfilename)
+    data, fs = sf.read(filename_new)
     assert np.all(data[:len(data_stereo)] == data_stereo)
     assert np.all(data[len(data_stereo):] == data_stereo / 2)
 
@@ -645,3 +645,48 @@ def test_read_raw_files_with_too_few_arguments_should_fail():
         sf.open(filename_raw, samplerate=44100, subtype='PCM_16')
     with pytest.raises(TypeError):  # missing samplerate
         sf.open(filename_raw, channels=2, subtype='PCM_16')
+
+
+# -----------------------------------------------------------------------------
+# Test non-seekable files
+# -----------------------------------------------------------------------------
+
+
+def test_write_non_seekable_file():
+    with sf.open(filename_new, 'w', 44100, 1, format='XI') as f:
+        assert not f.seekable()
+        assert f.frames == 0
+        f.write(data_mono)
+        assert f.frames == len(data_mono)
+
+        with pytest.raises(RuntimeError) as excinfo:
+            f.seek(2)
+        assert "unseekable" in str(excinfo.value)
+
+    with sf.open(filename_new) as f:
+        assert not f.seekable()
+        assert f.frames == len(data_mono)
+        data = f.read(3, dtype='int16')
+        assert np.all(data == data_mono[:3])
+        data = f.read(666, dtype='int16')
+        assert np.all(data == data_mono[3:])
+
+        with pytest.raises(RuntimeError) as excinfo:
+            f.seek(2)
+        assert "unseekable" in str(excinfo.value)
+
+        with pytest.raises(ValueError) as excinfo:
+            f.read()
+        assert "frames" in str(excinfo.value)
+
+        with pytest.raises(ValueError) as excinfo:
+            list(f.blocks(blocksize=3, overlap=1))
+        assert "overlap" in str(excinfo.value)
+
+    data, fs = sf.read(filename_new, dtype='int16')
+    assert np.all(data == data_mono)
+    assert fs == 44100
+
+    with pytest.raises(ValueError) as excinfo:
+        sf.read(filename_new, start=3)
+    assert "start is only allowed for seekable files" in str(excinfo.value)
