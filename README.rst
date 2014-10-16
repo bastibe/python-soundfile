@@ -72,7 +72,7 @@ into an ogg-vorbis file:
     import pysoundfile as sf
 
     data, samplerate = sf.read('existing_file.wav')
-    sf.write(data, 'new_file.ogg', 'w', samplerate, data.shape[1])
+    sf.write(data, 'new_file.ogg', samplerate=samplerate)
 
 Virtual IO
 ~~~~~~~~~~
@@ -82,17 +82,16 @@ this to decode it:
 
 .. code:: python
 
-    from io import BytesIO
-    from pysoundfile import SoundFile
-    fObj = BytesIO(open('filename.flac', 'rb').read())
-    data, samplerate = read(fObj)
+    import pysoundfile as sf
+    with open('filename.flac', 'rb') as fObj:
+        data, samplerate = sf.read(fObj)
 
 Here is an example using an HTTP request:
 
 .. code:: python
 
     from io import BytesIO
-    from pysoundfile import SoundFile
+    import pysoundfile as sf
     import requests
 
     fObj = BytesIO()
@@ -101,7 +100,7 @@ Here is an example using an HTTP request:
         if data:
             fObj.write(data)
     fObj.seek(0)
-    data, samplerate = read(fObj)
+    data, samplerate = sf.read(fObj)
 
 Accessing Text Data
 ~~~~~~~~~~~~~~~~~~~

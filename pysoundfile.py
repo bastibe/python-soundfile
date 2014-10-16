@@ -408,7 +408,6 @@ class SoundFile(object):
         >>> soundFile = sf.SoundFile('existing_file.wav')
 
         """
-
         if mode is None:
             mode = getattr(file, 'mode', None)
         if not isinstance(mode, str):
@@ -680,7 +679,7 @@ class SoundFile(object):
         Create a new file:
 
         >>> soundFile = sf.open('new_file.wav', 'w', 44100, 2)
-        >>> soundFile.write(np.random.randn(10,2))
+        >>> soundFile.write(np.random.randn(10, 2))
         >>> soundFile.flush()
 
         It is now guaranteed safe to read the new file from another
@@ -699,7 +698,7 @@ class SoundFile(object):
         --------
         >>> soundFile = sf.open('stereo_file.wav')
         >>> soundFile.close()
-        >>> soundFile.read() # this will fail!
+        >>> soundFile.read()  # this will fail!
 
         """
         if not self.closed:
@@ -745,7 +744,7 @@ class SoundFile(object):
         Seek to the end of the file:
 
         >>> soundFile.seek(0, sf.SEEK_END)
-        44100 # this is the file length
+        44100  # this is the file length
 
         """
         self._check_if_closed()
@@ -851,7 +850,7 @@ class SoundFile(object):
         >>> soundFile.read(3)
         array([[ 0.71329652,  1.06294799],
                [-1.26450912, -0.38874483],
-               [ 0.67398441, -1.11516333]]) # random
+               [ 0.67398441, -1.11516333]])  # random
 
         """
         if out is None:
@@ -967,7 +966,7 @@ class SoundFile(object):
         Read the whole file block by block of 1024 frames each:
 
         >>> for block in soundFile.blocks(1024):
-        >>>     pass # do something with `block`
+        >>>     pass  # do something with `block`
 
         """
         if 'r' not in self.mode and '+' not in self.mode:
@@ -1083,10 +1082,10 @@ def read(file, samplerate=None, channels=None, subtype=None, endian=None,
         file is read. Only two of ``start``, ``stop``, and ``frames``
         can be given.
     dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-        The data type to read. Floating point data is always in
+        The data type to read. Floating point data is typically in
         the range -1..1, and integer data is always in the range
-        ``INT16_MIN``..``INT16_MAX`` or
-        ``INT32_MIN``..``INT32_MAX``.
+        ``-2**15``..``2**15-1`` for ``int16`` or
+        ``-2**31``..``2**31-1`` for ``int32``.
     always_2d : bool, optional
         Whether to always return a 2D array. If ``False``, single
         channel reads will return 1D arrays.
@@ -1112,7 +1111,7 @@ def read(file, samplerate=None, channels=None, subtype=None, endian=None,
     >>> sf.read('stereo_file.wav', 3)
     array([[ 0.71329652,  1.06294799],
            [-1.26450912, -0.38874483],
-           [ 0.67398441, -1.11516333]]) # random
+           [ 0.67398441, -1.11516333]])  # random
 
     """
     if frames >= 0 and stop is not None:
@@ -1177,7 +1176,7 @@ def write(data, file, samplerate,
 
     Write 10 frames of random data to a file:
 
-    >>> sf.write(np.random.randn(10,2), 'stereo_file.wav', 44100, 'PCM_24')
+    >>> sf.write(np.random.randn(10, 2), 'stereo_file.wav', 44100, 'PCM_24')
 
     """
     data = _np.asarray(data)
@@ -1286,9 +1285,7 @@ def blocks(file, samplerate=None, channels=None,
     Read the whole file block by block of 1024 frames each:
 
     >>> for block in sf.blocks('stereo_file.wav', blocksize=1024):
-    >>>     pass # do something with `block`
-
-
+    >>>     pass  # do something with `block`
     """
     if frames >= 0 and stop is not None:
         raise TypeError("Only one of {frames, stop} may be used")
