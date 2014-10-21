@@ -1,14 +1,3 @@
-import numpy as _np
-from cffi import FFI as _FFI
-from os import SEEK_SET, SEEK_CUR, SEEK_END
-
-try:
-    import builtins as _builtins
-except ImportError:
-    import __builtin__ as _builtins  # for Python < 3.0
-
-__version__ = "0.5.0"
-
 """PySoundFile is an audio library based on libsndfile, CFFI and Numpy
 
 PySoundFile can read and write sound files. File reading/writing is
@@ -51,6 +40,17 @@ PySoundFile. The Windows installers come with libsndfile already.
 PySoundFile is BSD licensed. (c) 2013, Bastian Bechtold
 
 """
+
+__version__ = "0.5.0"
+
+import numpy as _np
+from cffi import FFI as _FFI
+from os import SEEK_SET, SEEK_CUR, SEEK_END
+
+try:
+    import builtins as _builtins
+except ImportError:
+    import __builtin__ as _builtins  # for Python < 3.0
 
 _ffi = _FFI()
 _ffi.cdef("""
