@@ -311,19 +311,6 @@ class SoundFile(object):
     date, the album name, a license, a tracknumber and a genre. Not
     all of these fields are supported for every file format, though.
 
-    :ivar str name: The file name of the sound file.
-    :ivar str mode: The open mode the sound file was opened with.
-    :ivar int frames: The number of frames in the sound file.
-    :ivar int samplerate: The sample rate of the sound file.
-    :ivar int channels: The number of channels in the sound file.
-    :ivar str format: The format of the sound file.
-    :ivar str subtype: The subtype of data in the the sound file.
-    :ivar str endian: The endian-ness of the data in the sound file.
-    :ivar str format_info: A description of the format of the sound file.
-    :ivar str subtype_info: A description of the subtype of the sound file.
-    :ivar int sections: The number of sections of the sound file.
-    :ivar bool closed: Whether the sound file is closed or not.
-
     """
 
     def __init__(self, file, mode='r', samplerate=None, channels=None,
@@ -473,25 +460,36 @@ class SoundFile(object):
             self.seek(0)
 
     name = property(lambda self: self._name)
+    """The file name of the sound file."""
     mode = property(lambda self: self._mode)
+    """The open mode the sound file was opened with."""
     frames = property(lambda self: self._info.frames)
     """The number of frames in the sound file."""
     samplerate = property(lambda self: self._info.samplerate)
+    """The sample rate of the sound file."""
     channels = property(lambda self: self._info.channels)
+    """The number of channels in the sound file."""
     format = property(
         lambda self: _format_str(self._info.format & _snd.SF_FORMAT_TYPEMASK))
+    """The major format of the sound file."""
     subtype = property(
         lambda self: _format_str(self._info.format & _snd.SF_FORMAT_SUBMASK))
+    """The subtype of data in the the sound file."""
     endian = property(
         lambda self: _format_str(self._info.format & _snd.SF_FORMAT_ENDMASK))
+    """The endian-ness of the data in the sound file."""
     format_info = property(
         lambda self: _format_info(self._info.format &
                                   _snd.SF_FORMAT_TYPEMASK)[1])
+    """A description of the major format of the sound file."""
     subtype_info = property(
         lambda self: _format_info(self._info.format &
                                   _snd.SF_FORMAT_SUBMASK)[1])
+    """A description of the subtype of the sound file."""
     sections = property(lambda self: self._info.sections)
+    """The number of sections of the sound file."""
     closed = property(lambda self: self._file is None)
+    """Whether the sound file is closed or not."""
 
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
