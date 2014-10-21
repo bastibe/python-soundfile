@@ -3,16 +3,9 @@
 API Documentation
 =================
 
-.. autofunction:: pysoundfile.read
-.. autofunction:: pysoundfile.write
-.. autofunction:: pysoundfile.open
-.. autofunction:: pysoundfile.blocks
-.. autofunction:: pysoundfile.available_formats
-.. autofunction:: pysoundfile.available_subtypes
-
-.. autoclass:: pysoundfile.SoundFile
+.. automodule:: pysoundfile
    :members:
-   :special-members: __init__
+   :undoc-members:
 
 Indices and tables
 ==================
