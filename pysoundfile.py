@@ -331,9 +331,8 @@ class SoundFile(object):
           forced with the format argument (e.g. ``format='WAVEX'``).
         * a *subtype*, e.g. ``'PCM_24'``. Most major formats have a
           default subtype which is used if no subtype is specified.
-        * an *endian-ness*: ``'FILE'`` (default), ``'LITTLE'``,
-          ``'BIG'`` or ``'CPU'``. In most cases this doesn't have to
-          be specified.
+        * an *endian-ness*, which doesn't have to be specified at all in
+          most cases.
 
         The functions :func:`pysoundfile.available_formats` and
         :func:`pysoundfile.available_subtypes()` can be used to obtain
