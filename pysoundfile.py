@@ -378,11 +378,6 @@ class SoundFile(object):
            Whether to close the file descriptor on destruction. Only
            applicable to file descriptors.
 
-        Returns
-        -------
-        out : SoundFile
-            Opened SoundFile of the given type and shape.
-
         Examples
         --------
         Create a new sound file for reading and writing:
@@ -496,11 +491,6 @@ class SoundFile(object):
 
     def seekable(self):
         """Return True if the file supports seeking.
-
-        Returns
-        -------
-        is_seekable : bool
-            Whether or not the file is seekable.
 
         Examples
         --------
@@ -725,7 +715,7 @@ class SoundFile(object):
 
         Returns
         -------
-        pos : int
+        int
             The new absolute read/write position in frames, or a
             negative value on error.
 
@@ -833,8 +823,8 @@ class SoundFile(object):
 
         Returns
         -------
-        out : ndarray
-            The read data; either a new ndarray or ``out``. If more
+        numpy.ndarray
+            The read data; either a new array or ``out``. If more
             frames were requested than available in the file and
             ``out`` was given, this will be a view into ``out``.
 
@@ -950,7 +940,7 @@ class SoundFile(object):
 
         Returns
         -------
-        out : generator
+        generator
             A generator that returns blocks of data; each block is
             either a new ndarray or ``out``. If ``out`` was given, and
             the remaining frames are not cleanly divisible by
@@ -1096,7 +1086,7 @@ def read(file, samplerate=None, channels=None, subtype=None, endian=None,
 
     Returns
     -------
-    out : ndarray
+    ndarray
         The read data; either a new ndarray or ``out``. If more
         frames were requested than available in the file and
         ``out`` was given, this will be a view into ``out``.
@@ -1270,7 +1260,7 @@ def blocks(file, samplerate=None, channels=None,
 
     Returns
     -------
-    out : generator
+    generator
         A generator that returns blocks of data; each block is
         either a new ndarray or ``out``. If ``out`` was given, and
         the remaining frames are not cleanly divisible by
@@ -1316,7 +1306,7 @@ def default_subtype(format):
 
     Returns
     -------
-    subtype : str
+    str
         The name of a subtype appropriate for ``format``.
 
     Examples
@@ -1387,7 +1377,7 @@ def format_check(format, subtype=None, endian=None):
 
     Returns
     -------
-    is_valid : bool
+    bool
         Whether this combination is valid or not.
 
     Examples
@@ -1438,7 +1428,7 @@ def available_formats():
 
     Returns
     -------
-    formats : dict
+    dict
         A dictionary of all available major formats, with the internal
         short name as keys, and a longer description as values.
 
@@ -1465,8 +1455,7 @@ def available_subtypes(format=None):
 
     Returns
     -------
-    subtypes : dict
-
+    dict
         A dictionary of all available or compatible subtypes, with the
         internal short names as keys, and a longer description as
         values.
