@@ -1,6 +1,3 @@
-.. toctree::
-   :maxdepth: 2
-
 .. include:: ../README.rst
 
 API Documentation
