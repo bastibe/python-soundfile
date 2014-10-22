@@ -264,4 +264,5 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 autodoc_member_order = 'bysource'
+autoclass_content = "init"
 napoleon_use_rtype = False

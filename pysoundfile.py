@@ -692,37 +692,10 @@ def default_subtype(format):
 
 class SoundFile(object):
 
-    """SoundFile handles reading and writing to sound files.
+    """A sound file.
 
-    Each SoundFile opens one sound file on the disk. This sound file
-    has a specific samplerate, data format and a number of channels.
-    Each sound file can be opened for reading, for writing or both.
-    Note that the latter is unsupported by libsndfile for some
-    formats.
-
-    Data can be written to the file using
-    :func:`pysoundfile.SoundFile.write`, or read from the file using
-    :func:`pysoundfile.SoundFile.read`. Every read or write operation
-    starts at a certain position in the file called the read/write
-    pointer. Reading or writing a number of frames will advance the
-    read/write pointer by the same number of frames. Alternatively,
-    :func:`pysoundfile.SoundFile.seek` can be used to set the
-    read/write pointer.
-
-    All data access uses frames as index. A frame is one discrete
-    time-step in the sound file. Every frame contains as many samples
-    as there are channels in the file.
-
-    SoundFile also supports indexing to access data at arbitrary
-    positions in the file. Note that indexing always reads all
-    channels of a given frame range, even if only single channels are
-    accessed.
-
-    In addition to audio data, there are a number of text fields in
-    every sound file. In particular, you can set a title, a copyright
-    notice, a software description, the artist name, a comment, a
-    date, the album name, a license, a tracknumber and a genre. Not
-    all of these fields are supported for every file format, though.
+    For more documentation see the __init__() docstring (which is also
+    used in the online documentation (http://pysoundfile.rtfd.org/).
 
     """
 
