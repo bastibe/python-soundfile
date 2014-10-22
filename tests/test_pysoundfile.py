@@ -80,26 +80,26 @@ def file_wplus(request):
 
 @pytest.yield_fixture
 def sf_stereo_r(file_stereo_r):
-    with sf.open(file_stereo_r) as f:
+    with sf.SoundFile(file_stereo_r) as f:
         yield f
 
 
 @pytest.yield_fixture
 def sf_stereo_w(file_w):
-    with sf.open(file_w, 'w', 44100, 2, format='WAV') as f:
+    with sf.SoundFile(file_w, 'w', 44100, 2, format='WAV') as f:
         yield f
 
 
 @pytest.yield_fixture
 def sf_stereo_rplus(file_stereo_rplus):
-    with sf.open(file_stereo_rplus, 'r+') as f:
+    with sf.SoundFile(file_stereo_rplus, 'r+') as f:
         yield f
 
 
 @pytest.yield_fixture
 def sf_stereo_wplus(file_wplus):
-    with sf.open(file_wplus, 'w+', 44100, 2,
-                 format='WAV', subtype='FLOAT') as f:
+    with sf.SoundFile(file_wplus, 'w+', 44100, 2,
+                      format='WAV', subtype='FLOAT') as f:
         yield f
 
 
@@ -316,65 +316,65 @@ def test_blocks_write(sf_stereo_w):
 
 
 # -----------------------------------------------------------------------------
-# Test open()
+# Test SoundFile.__init__()
 # -----------------------------------------------------------------------------
 
 
 def test_open_with_invalid_file():
     with pytest.raises(TypeError) as excinfo:
-        sf.open(3.1415)
+        sf.SoundFile(3.1415)
     assert "Invalid file" in str(excinfo.value)
 
 
 def test_open_with_invalid_mode():
     with pytest.raises(TypeError) as excinfo:
-        sf.open(filename_stereo, 42)
+        sf.SoundFile(filename_stereo, 42)
     assert "Invalid mode: 42" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
-        sf.open(filename_stereo, 'rr')
+        sf.SoundFile(filename_stereo, 'rr')
     assert "Invalid mode: 'rr'" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
-        sf.open(filename_stereo, 'rw')
+        sf.SoundFile(filename_stereo, 'rw')
     assert "exactly one of 'xrw'" in str(excinfo.value)
 
 
 def test_open_with_more_invalid_arguments():
     with pytest.raises(TypeError) as excinfo:
-        sf.open(filename_new, 'w', samplerate=3.1415, channels=2)
+        sf.SoundFile(filename_new, 'w', samplerate=3.1415, channels=2)
     assert "integer" in str(excinfo.value)
     with pytest.raises(TypeError) as excinfo:
-        sf.open(filename_new, 'w', samplerate=44100, channels=3.1415)
+        sf.SoundFile(filename_new, 'w', samplerate=44100, channels=3.1415)
     assert "integer" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
-        sf.open(filename_new, 'w', 44100, 2, format='WAF')
+        sf.SoundFile(filename_new, 'w', 44100, 2, format='WAF')
     assert "Invalid format string" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
-        sf.open(filename_new, 'w', 44100, 2, subtype='PCM16')
+        sf.SoundFile(filename_new, 'w', 44100, 2, subtype='PCM16')
     assert "Invalid subtype string" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
-        sf.open(filename_new, 'w', 44100, 2, endian='BOTH')
+        sf.SoundFile(filename_new, 'w', 44100, 2, endian='BOTH')
     assert "Invalid endian-ness" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
-        sf.open(filename_stereo, closefd=False)
+        sf.SoundFile(filename_stereo, closefd=False)
     assert "closefd=False" in str(excinfo.value)
 
 
 def test_open_r_and_rplus_with_too_many_arguments():
     for mode in 'r', 'r+':
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename_stereo, mode, samplerate=44100)
+            sf.SoundFile(filename_stereo, mode, samplerate=44100)
         assert "Not allowed" in str(excinfo.value)
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename_stereo, mode, channels=2)
+            sf.SoundFile(filename_stereo, mode, channels=2)
         assert "Not allowed" in str(excinfo.value)
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename_stereo, mode, format='WAV')
+            sf.SoundFile(filename_stereo, mode, format='WAV')
         assert "Not allowed" in str(excinfo.value)
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename_stereo, mode, subtype='FLOAT')
+            sf.SoundFile(filename_stereo, mode, subtype='FLOAT')
         assert "Not allowed" in str(excinfo.value)
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename_stereo, mode, endian='FILE')
+            sf.SoundFile(filename_stereo, mode, endian='FILE')
         assert "Not allowed" in str(excinfo.value)
 
 
@@ -382,31 +382,31 @@ def test_open_w_and_wplus_with_too_few_arguments():
     filename = 'not_existing.xyz'
     for mode in 'w', 'w+':
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename, mode, samplerate=44100, channels=2)
+            sf.SoundFile(filename, mode, samplerate=44100, channels=2)
         assert "No format specified" in str(excinfo.value)
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename, mode, samplerate=44100, format='WAV')
+            sf.SoundFile(filename, mode, samplerate=44100, format='WAV')
         assert "channels" in str(excinfo.value)
         with pytest.raises(TypeError) as excinfo:
-            sf.open(filename, mode, channels=2, format='WAV')
+            sf.SoundFile(filename, mode, channels=2, format='WAV')
         assert "samplerate" in str(excinfo.value)
 
 
 def test_open_with_mode_is_none():
     with pytest.raises(TypeError) as excinfo:
-        sf.open(filename_stereo, mode=None)
+        sf.SoundFile(filename_stereo, mode=None)
     assert "Invalid mode: None" in str(excinfo.value)
     with open(filename_stereo, 'rb') as fobj:
-        with sf.open(fobj, mode=None) as f:
+        with sf.SoundFile(fobj, mode=None) as f:
             assert f.mode == 'rb'
 
 
 @pytest.mark.skipif(PY2, reason="mode='x' not supported in Python 2")
 def test_open_with_mode_is_x():
     with pytest.raises(FileExistsError):
-        sf.open(filename_stereo, 'x', 44100, 2)
+        sf.SoundFile(filename_stereo, 'x', 44100, 2)
     with pytest.raises(FileExistsError):
-        sf.open(filename_stereo, 'x+', 44100, 2)
+        sf.SoundFile(filename_stereo, 'x+', 44100, 2)
 
 
 # -----------------------------------------------------------------------------
@@ -597,30 +597,30 @@ def test_rplus_append_data(sf_stereo_rplus):
 
 
 def test_context_manager_should_open_and_close_file():
-    with sf.open(filename_stereo) as f:
+    with sf.SoundFile(filename_stereo) as f:
         assert not f.closed
     assert f.closed
 
 
 def test_closing_should_close_file():
-    f = sf.open(filename_stereo)
+    f = sf.SoundFile(filename_stereo)
     assert not f.closed
     f.close()
     assert f.closed
 
 
 def test_file_attributes_should_save_to_disk():
-    with sf.open(filename_new, 'w', 44100, 2, format='WAV') as f:
+    with sf.SoundFile(filename_new, 'w', 44100, 2, format='WAV') as f:
         f.title = 'testing'
-    with sf.open(filename_new) as f:
+    with sf.SoundFile(filename_new) as f:
         assert f.title == 'testing'
     os.remove(filename_new)
 
 
 def test_non_file_attributes_should_not_save_to_disk():
-    with sf.open(filename_new, 'w', 44100, 2, format='WAV') as f:
+    with sf.SoundFile(filename_new, 'w', 44100, 2, format='WAV') as f:
         f.foobar = 'testing'
-    with sf.open(filename_new) as f:
+    with sf.SoundFile(filename_new) as f:
         with pytest.raises(AttributeError):
             f.foobar
     os.remove(filename_new)
@@ -632,16 +632,16 @@ def test_non_file_attributes_should_not_save_to_disk():
 
 
 def test_read_raw_files_should_read_data():
-    with sf.open(filename_raw, 'r', 44100, 1, 'PCM_16') as f:
+    with sf.SoundFile(filename_raw, 'r', 44100, 1, 'PCM_16') as f:
         assert np.all(f.read(dtype='int16') == data_mono)
 
 
 def test_read_raw_files_with_too_few_arguments_should_fail():
     with pytest.raises(TypeError):  # missing everything
-        sf.open(filename_raw)
+        sf.SoundFile(filename_raw)
     with pytest.raises(TypeError):  # missing subtype
-        sf.open(filename_raw, samplerate=44100, channels=2)
+        sf.SoundFile(filename_raw, samplerate=44100, channels=2)
     with pytest.raises(TypeError):  # missing channels
-        sf.open(filename_raw, samplerate=44100, subtype='PCM_16')
+        sf.SoundFile(filename_raw, samplerate=44100, subtype='PCM_16')
     with pytest.raises(TypeError):  # missing samplerate
-        sf.open(filename_raw, channels=2, subtype='PCM_16')
+        sf.SoundFile(filename_raw, channels=2, subtype='PCM_16')

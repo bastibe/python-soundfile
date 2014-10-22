@@ -82,8 +82,8 @@ this to decode it:
 
 .. code:: python
 
-    import pysoundfile as sf
-    with open('filename.flac', 'rb') as fObj:
+    from pysoundfile import SoundFile
+    with SoundFile('filename.flac', 'rb') as fObj:
         data, samplerate = sf.read(fObj)
 
 Here is an example using an HTTP request:
