@@ -17,8 +17,8 @@ Sound files can be read or written directly using the functions
 :func:`pysoundfile.blocks`.
 
 Alternatively, every sound file can be opened as a SoundFile object
-using either the :func:`pysoundfile.SoundFile` constructor, or the
-:func:`pysoundfile.open` function. SoundFile objects can be created
+using the :func:`pysoundfile.SoundFile` constructor.
+SoundFile objects can be created
 for reading, writing, or both. Each SoundFile object has a samplerate,
 a number of channels, and a file format. These can not be changed at
 runtime.
@@ -494,11 +494,11 @@ class SoundFile(object):
 
         Examples
         --------
-        >>> soundFile = sf.open('stereo_file.wav')
+        >>> soundFile = sf.SoundFile('stereo_file.wav')
         >>> soundFile.seekable()
         True
 
-        >>> soundFile = sf.open('new_file.flac', 'w', 44100, 1)
+        >>> soundFile = sf.SoundFile('new_file.flac', 'w', 44100, 1)
         >>> soundFile.seekable()
         False
 
@@ -665,7 +665,7 @@ class SoundFile(object):
         --------
         Create a new file:
 
-        >>> soundFile = sf.open('new_file.wav', 'w', 44100, 2)
+        >>> soundFile = sf.SoundFile('new_file.wav', 'w', 44100, 2)
         >>> soundFile.write(np.random.randn(10, 2))
         >>> soundFile.flush()
 
@@ -683,7 +683,7 @@ class SoundFile(object):
 
         Examples
         --------
-        >>> soundFile = sf.open('stereo_file.wav')
+        >>> soundFile = sf.SoundFile('stereo_file.wav')
         >>> soundFile.close()
         >>> soundFile.read()  # this will fail!
 
@@ -721,7 +721,7 @@ class SoundFile(object):
 
         Examples
         --------
-        >>> soundFile = sf.open('stereo_file.wav')
+        >>> soundFile = sf.SoundFile('stereo_file.wav')
 
         Seek to the beginning of the file:
 
@@ -843,7 +843,7 @@ class SoundFile(object):
 
         Examples
         --------
-        >>> soundFile = sf.open('stereo_file.wav')
+        >>> soundFile = sf.SoundFile('stereo_file.wav')
 
         Reading 3 frames from a stereo file:
 
@@ -890,7 +890,7 @@ class SoundFile(object):
 
         Examples
         --------
-        >>> soundFile = sf.open('stereo_file.wav')
+        >>> soundFile = sf.SoundFile('stereo_file.wav')
 
         Write 10 frames of random data to the file:
 
@@ -961,7 +961,7 @@ class SoundFile(object):
 
         Examples
         --------
-        >>> soundFile = sf.open('stereo_file.wav')
+        >>> soundFile = sf.SoundFile('stereo_file.wav')
 
         Read the whole file block by block of 1024 frames each:
 
@@ -1014,14 +1014,6 @@ class SoundFile(object):
         return frames
 
 
-def open(file, mode='r', samplerate=None, channels=None,
-         subtype=None, endian=None, format=None, closefd=True):
-    return SoundFile(file, mode, samplerate, channels,
-                     subtype, endian, format, closefd)
-
-open.__doc__ = SoundFile.__init__.__doc__.replace('sf.SoundFile(', 'sf.open(')
-
-
 def read(file, samplerate=None, channels=None, subtype=None, endian=None,
          format=None, closefd=True, start=0, stop=None, frames=-1,
          dtype='float64', always_2d=True, fill_value=None, out=None):
@@ -1052,7 +1044,7 @@ def read(file, samplerate=None, channels=None, subtype=None, endian=None,
 
     The keyword arguments ``samplerate``, ``channels``, ``format``,
     ``subtype`` and endian are only needed for ``'RAW'`` files. See
-    :func:`pysoundfile.open` for details.
+    :class:`pysoundfile.SoundFile` for details.
 
     Parameters
     ----------
@@ -1146,7 +1138,7 @@ def write(data, file, samplerate,
     If ``data`` is one-dimensional, a mono file is written. For
     two-dimensional ``data``, the columns are interpreted as channels.
 
-    All further arguments are forwarded to :func:`pysoundfile.open`.
+    All further arguments are forwarded to :class:`pysoundfile.SoundFile`.
 
     Parameters
     ----------
@@ -1196,8 +1188,8 @@ def write(data, file, samplerate,
         channels = 1
     else:
         channels = data.shape[1]
-    with open(file, 'w', samplerate, channels,
-              subtype, endian, format, closefd) as f:
+    with SoundFile(file, 'w', samplerate, channels,
+                   subtype, endian, format, closefd) as f:
         f.write(data)
 
 
@@ -1209,7 +1201,7 @@ def blocks(file, samplerate=None, channels=None,
 
     All keyword arguments of :func:`pysoundfile.SoundFile.blocks` are
     allowed. All further arguments are forwarded to
-    :func:`pysoundfile.open`.
+    :class:`pysoundfile.SoundFile`.
 
     By default, iteration stops at the end of the file. Use ``frames``
     or ``stop`` to stop earlier.
@@ -1299,9 +1291,13 @@ def blocks(file, samplerate=None, channels=None,
     >>> for block in sf.blocks('stereo_file.wav', blocksize=1024):
     >>>     pass  # do something with `block`
     """
-    with open(file, 'r', samplerate, channels,
-              subtype, endian, format, closefd) as f:
-        frames = f._prepare_read(start, stop, frames)
+    if frames >= 0 and stop is not None:
+        raise TypeError("Only one of {frames, stop} may be used")
+
+    with SoundFile(file, 'r', samplerate, channels,
+                   subtype, endian, format, closefd) as f:
+        start, frames = _get_read_range(start, stop, frames, f.frames)
+        f.seek(start, SEEK_SET)
         for block in f.blocks(blocksize, overlap, frames,
                               dtype, always_2d, fill_value, out):
             yield block

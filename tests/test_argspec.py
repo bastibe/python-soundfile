@@ -4,7 +4,6 @@ import pysoundfile as sf
 from inspect import getargspec
 
 
-open = getargspec(sf.open)
 init = getargspec(sf.SoundFile.__init__)
 read_function = getargspec(sf.read)
 read_method = getargspec(sf.SoundFile.read)
@@ -26,25 +25,18 @@ def remove_items(collection, subset):
     return the_rest
 
 
-def test_if_open_is_identical_to_init():
-    assert ['self'] + open.args == init.args
-    assert open.varargs == init.varargs
-    assert open.keywords == init.keywords
-    assert open.defaults == init.defaults
-
-
 def test_read_defaults():
     func_defaults = defaults(read_function)
     meth_defaults = defaults(read_method)
-    open_defaults = defaults(open)
+    init_defaults = defaults(init)
 
-    del open_defaults['mode']  # Not meaningful in read() function:
+    del init_defaults['mode']  # Not meaningful in read() function:
 
     del func_defaults['start']
     del func_defaults['stop']
 
-    # Same default values as open() and SoundFile.read():
-    for spec in open_defaults, meth_defaults:
+    # Same default values as SoundFile.__init__() and SoundFile.read():
+    for spec in init_defaults, meth_defaults:
         func_defaults = remove_items(func_defaults, spec)
 
     assert not func_defaults  # No more arguments should be left
@@ -52,27 +44,27 @@ def test_read_defaults():
 
 def test_write_defaults():
     write_defaults = defaults(write_function)
-    open_defaults = defaults(open)
+    init_defaults = defaults(init)
 
-    # Same default values as open()
-    open_defaults = remove_items(open_defaults, write_defaults)
+    # Same default values as SoundFile.__init__()
+    init_defaults = remove_items(init_defaults, write_defaults)
 
-    del open_defaults['mode']  # mode is always 'w'
-    del open_defaults['channels']  # Inferred from data
-    del open_defaults['samplerate']  # Obligatory in write()
-    assert not open_defaults  # No more arguments should be left
+    del init_defaults['mode']  # mode is always 'w'
+    del init_defaults['channels']  # Inferred from data
+    del init_defaults['samplerate']  # Obligatory in write()
+    assert not init_defaults  # No more arguments should be left
 
 
 def test_if_blocks_function_and_method_have_same_defaults():
     func_defaults = defaults(blocks_function)
     meth_defaults = defaults(blocks_method)
-    open_defaults = defaults(open)
+    init_defaults = defaults(init)
 
     del func_defaults['start']
     del func_defaults['stop']
-    del open_defaults['mode']
+    del init_defaults['mode']
 
-    for spec in open_defaults, meth_defaults:
+    for spec in init_defaults, meth_defaults:
         func_defaults = remove_items(func_defaults, spec)
 
     assert not func_defaults
@@ -81,6 +73,6 @@ def test_if_blocks_function_and_method_have_same_defaults():
 def test_order_of_blocks_arguments():
     meth_args = blocks_method.args[1:]  # remove 'self'
     meth_args[2:2] = ['start', 'stop']
-    open_args = open.args[:]
-    open_args.remove('mode')
-    assert blocks_function.args == open_args + meth_args
+    init_args = init.args[1:]  # remove 'self'
+    init_args.remove('mode')
+    assert blocks_function.args == init_args + meth_args
