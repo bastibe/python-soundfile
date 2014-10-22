@@ -277,6 +277,419 @@ _ffi_types = {
 _snd = _ffi.dlopen('sndfile')
 
 
+def read(file, samplerate=None, channels=None, subtype=None, endian=None,
+         format=None, closefd=True, start=0, stop=None, frames=-1,
+         dtype='float64', always_2d=True, fill_value=None, out=None):
+    """Read a sound file and return its contents as NumPy array.
+
+    The number of frames to read can be specified with ``frames``, the
+    position to start reading can be specified with ``start``. By
+    default, the whole file is read from the beginning. Alternatively,
+    a range can be specified with ``start`` and ``stop``. Both
+    ``start`` and ``stop`` accept negative indices to specify
+    positions relative to the end of the file.
+
+    A two-dimensional NumPy array is returned, where the channels are
+    stored along the first dimension, i.e. as columns. A
+    two-dimensional array is returned even if the sound file has only
+    one channel. Use ``always_2d=False`` to return a one-dimensional
+    array in this case.
+
+    If ``out`` is specified, the data is written into the given NumPy
+    array. In this case, the arguments ``frames``, ``dtype`` and
+    ``always_2d`` are silently ignored!
+
+    If there is less data left in the file than requested, the rest of
+    the frames are filled with ``fill_value``. If ``fill_value=None``,
+    a smaller array is returned. If ``out`` is given, only a part of
+    it is overwritten and a view containing all valid frames is
+    returned.
+
+    The keyword arguments ``samplerate``, ``channels``, ``format``,
+    ``subtype`` and endian are only needed for ``'RAW'`` files. See
+    :class:`pysoundfile.SoundFile` for details.
+
+    Parameters
+    ----------
+    file : A filename or a ``file`` object or file descriptor
+        The file to open.
+    samplerate : int, sometimes optional
+        The samplerate of the file. Not necessary in ``'r'`` and
+        ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+    channels : int, sometimes optional
+        The number of channels of the file. Not necessary in
+        ``'r'`` and ``'r+'`` mode. Always necessary in ``'RAW'``
+        format.
+    subtype : str, optional
+        The subtype of the sound file. Not necessary in ``'r'``
+        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+        If not given, all formats except for ``'RAW'`` will use
+        their default subtype. See
+        :func:`pysoundfile.available_subtypes` for all possible
+        values.
+    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
+        The endianness of the sound file. Not necessary in ``'r'``
+        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+        By default, this is set to ``'FILE'``, which is correct in
+        most cases.
+    format : str, optional
+        The format of the sound file. Not necessary in ``'r'`` and
+        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
+        when no file extension is given. If not given, this will
+        be determined based on the file extension. See
+        :func:`pysoundfile.available_formats` for all possible
+        values.
+    closefd : bool, optional
+        Whether to close the file descriptor on destruction. Only
+        applicable to file descriptors.
+    start : int, optional
+        Where to start reading. Only two of ``start``, ``stop``, and
+        ``frames`` can be given.
+    stop : int, optional
+        Where to stop reading. Only two of ``start``, ``stop``, and
+        ``frames`` can be given. Ignored if ``None``.
+    frames : int, optional
+        The number of frames to read. If ``-1``, the whole rest of the
+        file is read. Only two of ``start``, ``stop``, and ``frames``
+        can be given.
+    dtype : {'float64', 'float32', 'int32', 'int16'}, optional
+        The data type to read. Floating point data is typically in
+        the range -1..1, and integer data is always in the range
+        ``-2**15``..``2**15-1`` for ``int16`` or
+        ``-2**31``..``2**31-1`` for ``int32``.
+    always_2d : bool, optional
+        Whether to always return a 2D array. If ``False``, single
+        channel reads will return 1D arrays.
+    fill_value : float, optional
+        If given and more frames were requested than available in
+        the file, the rest of the output will be filled with
+        ``fill_value``.
+    out : ndarray, optional
+        If given, the data will be read into this ``ndarray``
+        instead of creating a new ``ndarray``.
+
+    Returns
+    -------
+    ndarray
+        The read data; either a new ndarray or ``out``. If more
+        frames were requested than available in the file and
+        ``out`` was given, this will be a view into ``out``.
+
+    Examples
+    --------
+    Reading 3 frames from a stereo file:
+
+    >>> sf.read('stereo_file.wav', 3)
+    array([[ 0.71329652,  1.06294799],
+           [-1.26450912, -0.38874483],
+           [ 0.67398441, -1.11516333]])  # random
+
+    """
+    if frames >= 0 and stop is not None:
+        raise TypeError("Only one of {frames, stop} may be used")
+
+    with SoundFile(file, 'r', samplerate, channels,
+                   subtype, endian, format, closefd) as f:
+        start, frames = _get_read_range(start, stop, frames, f.frames)
+        f.seek(start, SEEK_SET)
+        data = f.read(frames, dtype, always_2d, fill_value, out)
+    return data, f.samplerate
+
+
+def write(data, file, samplerate,
+          subtype=None, endian=None, format=None, closefd=True):
+    """Write data from a NumPy array into a sound file.
+
+    If ``file`` exists, it will be overwritten!
+
+    If ``data`` is one-dimensional, a mono file is written. For
+    two-dimensional ``data``, the columns are interpreted as channels.
+
+    All further arguments are forwarded to :class:`pysoundfile.SoundFile`.
+
+    Parameters
+    ----------
+    data : ndarray
+        The data to write. Must be ``float64``, ``float32``,
+        ``int32``, or ``int16``. Regardless of data type, the data
+        will be written in the sound file's native file format.
+        Must be (channels x frames) or a 1D-array for mono files.
+    file : A filename or a ``file`` object or file descriptor
+        The file to open.
+    samplerate : int, sometimes optional
+        The samplerate of the file. Not necessary in ``'r'`` and
+        ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+    subtype : str, optional
+        The subtype of the sound file. Not necessary in ``'r'``
+        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+        If not given, all formats except for ``'RAW'`` will use
+        their default subtype. See
+        :func:`pysoundfile.available_subtypes` for all possible
+        values.
+    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
+        The endianness of the sound file. Not necessary in ``'r'``
+        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+        By default, this is set to ``'FILE'``, which is correct in
+        most cases.
+    format : str, optional
+        The format of the sound file. Not necessary in ``'r'`` and
+        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
+        when no file extension is given. If not given, this will
+        be determined based on the file extension. See
+        :func:`pysoundfile.available_formats` for all possible
+        values.
+    closefd : bool, optional
+       Whether to close the file descriptor on destruction. Only
+       applicable to file descriptors.
+
+    Examples
+    --------
+
+    Write 10 frames of random data to a file:
+
+    >>> sf.write(np.random.randn(10, 2), 'stereo_file.wav', 44100, 'PCM_24')
+
+    """
+    data = _np.asarray(data)
+    if data.ndim == 1:
+        channels = 1
+    else:
+        channels = data.shape[1]
+    with SoundFile(file, 'w', samplerate, channels,
+                   subtype, endian, format, closefd) as f:
+        f.write(data)
+
+
+def blocks(file, samplerate=None, channels=None,
+           subtype=None, endian=None, format=None, closefd=True,
+           blocksize=None, overlap=0, start=0, stop=None, frames=-1,
+           dtype='float64', always_2d=True, fill_value=None, out=None):
+    """Return a generator for block-wise processing.
+
+    All keyword arguments of :func:`pysoundfile.SoundFile.blocks` are
+    allowed. All further arguments are forwarded to
+    :class:`pysoundfile.SoundFile`.
+
+    By default, iteration stops at the end of the file. Use ``frames``
+    or ``stop`` to stop earlier.
+
+    If you stop iterating over the generator before it's exhausted,
+    the sound file is not closed. This is normally not a problem
+    because the file is opened in read-only mode. To close the file
+    properly, the generator's ``close()`` method can be called.
+
+    Parameters
+    ----------
+    file : A filename or a ``file`` object or file descriptor
+        The file to open.
+    samplerate : int, sometimes optional
+        The samplerate of the file. Not necessary in ``'r'`` and
+        ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+    channels : int, sometimes optional
+        The number of channels of the file. Not necessary in
+        ``'r'`` and ``'r+'`` mode. Always necessary in ``'RAW'``
+        format.
+    subtype : str, optional
+        The subtype of the sound file. Not necessary in ``'r'``
+        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+        If not given, all formats except for ``'RAW'`` will use
+        their default subtype. See
+        :func:`pysoundfile.available_subtypes` for all possible
+        values.
+    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
+        The endianness of the sound file. Not necessary in ``'r'``
+        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+        By default, this is set to ``'FILE'``, which is correct in
+        most cases.
+    format : str, optional
+        The format of the sound file. Not necessary in ``'r'`` and
+        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
+        when no file extension is given. If not given, this will
+        be determined based on the file extension. See
+        :func:`pysoundfile.available_formats` for all possible
+        values.
+    closefd : bool, optional
+        Whether to close the file descriptor on destruction. Only
+        applicable to file descriptors.
+    blocksize : int
+        The number of frames to read per block. Either this or ``out``
+        must be given.
+    overlap : int, optional
+        The number of frames to rewind between each block.
+    start : int, optional
+        Where to start reading. Only two of ``start``, ``stop``, and
+        ``frames`` can be given.
+    stop : int, optional
+        Where to stop reading. Only two of ``start``, ``stop``, and
+        ``frames`` can be given. Ignored if ``None``.
+    frames : int, optional
+        The number of frames to read. If ``-1``, the whole rest of the
+        file is read. Only two of ``start``, ``stop``, and ``frames``
+        can be given.
+    dtype : {'float64', 'float32', 'int32', 'int16'}, optional
+        The data type to read. Floating point data is always in
+        the range -1..1, and integer data is always in the range
+        ``INT16_MIN``..``INT16_MAX`` or
+        ``INT32_MIN``..``INT32_MAX``.
+    always_2d : bool, optional
+        Whether to always return a 2D array. If ``False``, single
+        channel reads will return 1D arrays.
+    fill_value : float, optional
+        If given and more frames were requested than available in
+        the file, the rest of the output will be filled with
+        ``fill_value``.
+    out : ndarray, optional
+        If given, the data will be read into this ``ndarray``
+        instead of creating a new ``ndarray``.
+
+    Returns
+    -------
+    generator
+        A generator that returns blocks of data; each block is
+        either a new ndarray or ``out``. If ``out`` was given, and
+        the remaining frames are not cleanly divisible by
+        ``blocksize``, the last block will be a view into ``out``.
+
+    Examples
+    --------
+
+    Read the whole file block by block of 1024 frames each:
+
+    >>> for block in sf.blocks('stereo_file.wav', blocksize=1024):
+    >>>     pass  # do something with `block`
+    """
+    if frames >= 0 and stop is not None:
+        raise TypeError("Only one of {frames, stop} may be used")
+
+    with SoundFile(file, 'r', samplerate, channels,
+                   subtype, endian, format, closefd) as f:
+        start, frames = _get_read_range(start, stop, frames, f.frames)
+        f.seek(start, SEEK_SET)
+        for block in f.blocks(blocksize, overlap, frames,
+                              dtype, always_2d, fill_value, out):
+            yield block
+
+
+def available_formats():
+    """Return a dictionary of available major formats.
+
+    Returns
+    -------
+    dict
+        A dictionary of all available major formats, with the internal
+        short name as keys, and a longer description as values.
+
+    Examples
+    --------
+    >>> sf.available_formats()
+    {'FLAC': 'FLAC (FLAC Lossless Audio Codec)',
+     'WAV': 'WAV (Microsoft)',
+     'MAT5': 'MAT5 (GNU Octave 2.1 / Matlab 5.0)',
+     ... }
+
+    """
+    return dict(_available_formats_helper(_snd.SFC_GET_FORMAT_MAJOR_COUNT,
+                                          _snd.SFC_GET_FORMAT_MAJOR))
+
+
+def available_subtypes(format=None):
+    """Return a dictionary of available subtypes.
+
+    Parameters
+    ----------
+    format : str
+        If given, only compatible subtypes are returned.
+
+    Returns
+    -------
+    dict
+        A dictionary of all available or compatible subtypes, with the
+        internal short names as keys, and a longer description as
+        values.
+
+    Examples
+    --------
+    >>> sf.available_subtypes('FLAC')
+    {'PCM_24': 'Signed 24 bit PCM',
+     'PCM_S8': 'Signed 8 bit PCM',
+     'PCM_16': 'Signed 16 bit PCM'}
+
+    """
+    subtypes = _available_formats_helper(_snd.SFC_GET_FORMAT_SUBTYPE_COUNT,
+                                         _snd.SFC_GET_FORMAT_SUBTYPE)
+    return dict((subtype, name) for subtype, name in subtypes
+                if format is None or format_check(format, subtype))
+
+
+def format_check(format, subtype=None, endian=None):
+    """Check if the combination of format/subtype/endian is valid.
+
+    Parameters
+    ----------
+    format : str, optional
+        The format of the sound file. Not necessary in ``'r'`` and
+        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
+        when no file extension is given. If not given, this will
+        be determined based on the file extension. See
+        :func:`pysoundfile.available_formats` for all possible
+        values.
+    subtype : str, optional
+        The subtype of the sound file. Not necessary in ``'r'``
+        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+        If not given, all formats except for ``'RAW'`` will use
+        their default subtype. See
+        :func:`pysoundfile.available_subtypes` for all possible
+        values.
+    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
+        The endianness of the sound file. Not necessary in ``'r'``
+        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
+        By default, this is set to ``'FILE'``, which is correct in
+        most cases.
+
+    Returns
+    -------
+    bool
+        Whether this combination is valid or not.
+
+    Examples
+    --------
+    >>> sf.format_check('WAV', 'INT_16')
+    True
+
+    >>> sf.format_check('FLAC', 'VORBIS')
+    False
+
+    """
+    try:
+        return bool(_format_int(format, subtype, endian))
+    except (ValueError, TypeError):
+        return False
+
+
+def default_subtype(format):
+    """Return the default subtype for a given format.
+
+    Parameters
+    ----------
+    format : str
+        The name of a format.
+
+    Returns
+    -------
+    str
+        The name of a subtype appropriate for ``format``.
+
+    Examples
+    --------
+    >>> sf.default_subtype('WAV')
+    'PCM_16'
+
+    >>> sf.default_subtype('MAT5')
+    'DOUBLE'
+    """
+    return _default_subtypes.get(str(format).upper())
+
+
 class SoundFile(object):
 
     """SoundFile handles reading and writing to sound files.
@@ -985,299 +1398,6 @@ class SoundFile(object):
             yield block
 
 
-def read(file, samplerate=None, channels=None, subtype=None, endian=None,
-         format=None, closefd=True, start=0, stop=None, frames=-1,
-         dtype='float64', always_2d=True, fill_value=None, out=None):
-    """Read a sound file and return its contents as NumPy array.
-
-    The number of frames to read can be specified with ``frames``, the
-    position to start reading can be specified with ``start``. By
-    default, the whole file is read from the beginning. Alternatively,
-    a range can be specified with ``start`` and ``stop``. Both
-    ``start`` and ``stop`` accept negative indices to specify
-    positions relative to the end of the file.
-
-    A two-dimensional NumPy array is returned, where the channels are
-    stored along the first dimension, i.e. as columns. A
-    two-dimensional array is returned even if the sound file has only
-    one channel. Use ``always_2d=False`` to return a one-dimensional
-    array in this case.
-
-    If ``out`` is specified, the data is written into the given NumPy
-    array. In this case, the arguments ``frames``, ``dtype`` and
-    ``always_2d`` are silently ignored!
-
-    If there is less data left in the file than requested, the rest of
-    the frames are filled with ``fill_value``. If ``fill_value=None``,
-    a smaller array is returned. If ``out`` is given, only a part of
-    it is overwritten and a view containing all valid frames is
-    returned.
-
-    The keyword arguments ``samplerate``, ``channels``, ``format``,
-    ``subtype`` and endian are only needed for ``'RAW'`` files. See
-    :class:`pysoundfile.SoundFile` for details.
-
-    Parameters
-    ----------
-    file : A filename or a ``file`` object or file descriptor
-        The file to open.
-    samplerate : int, sometimes optional
-        The samplerate of the file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-    channels : int, sometimes optional
-        The number of channels of the file. Not necessary in
-        ``'r'`` and ``'r+'`` mode. Always necessary in ``'RAW'``
-        format.
-    subtype : str, optional
-        The subtype of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        If not given, all formats except for ``'RAW'`` will use
-        their default subtype. See
-        :func:`pysoundfile.available_subtypes` for all possible
-        values.
-    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
-        The endianness of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        By default, this is set to ``'FILE'``, which is correct in
-        most cases.
-    format : str, optional
-        The format of the sound file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
-        when no file extension is given. If not given, this will
-        be determined based on the file extension. See
-        :func:`pysoundfile.available_formats` for all possible
-        values.
-    closefd : bool, optional
-        Whether to close the file descriptor on destruction. Only
-        applicable to file descriptors.
-    start : int, optional
-        Where to start reading. Only two of ``start``, ``stop``, and
-        ``frames`` can be given.
-    stop : int, optional
-        Where to stop reading. Only two of ``start``, ``stop``, and
-        ``frames`` can be given. Ignored if ``None``.
-    frames : int, optional
-        The number of frames to read. If ``-1``, the whole rest of the
-        file is read. Only two of ``start``, ``stop``, and ``frames``
-        can be given.
-    dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-        The data type to read. Floating point data is typically in
-        the range -1..1, and integer data is always in the range
-        ``-2**15``..``2**15-1`` for ``int16`` or
-        ``-2**31``..``2**31-1`` for ``int32``.
-    always_2d : bool, optional
-        Whether to always return a 2D array. If ``False``, single
-        channel reads will return 1D arrays.
-    fill_value : float, optional
-        If given and more frames were requested than available in
-        the file, the rest of the output will be filled with
-        ``fill_value``.
-    out : ndarray, optional
-        If given, the data will be read into this ``ndarray``
-        instead of creating a new ``ndarray``.
-
-    Returns
-    -------
-    ndarray
-        The read data; either a new ndarray or ``out``. If more
-        frames were requested than available in the file and
-        ``out`` was given, this will be a view into ``out``.
-
-    Examples
-    --------
-    Reading 3 frames from a stereo file:
-
-    >>> sf.read('stereo_file.wav', 3)
-    array([[ 0.71329652,  1.06294799],
-           [-1.26450912, -0.38874483],
-           [ 0.67398441, -1.11516333]])  # random
-
-    """
-    if frames >= 0 and stop is not None:
-        raise TypeError("Only one of {frames, stop} may be used")
-
-    with SoundFile(file, 'r', samplerate, channels,
-                   subtype, endian, format, closefd) as f:
-        start, frames = _get_read_range(start, stop, frames, f.frames)
-        f.seek(start, SEEK_SET)
-        data = f.read(frames, dtype, always_2d, fill_value, out)
-    return data, f.samplerate
-
-
-def write(data, file, samplerate,
-          subtype=None, endian=None, format=None, closefd=True):
-    """Write data from a NumPy array into a sound file.
-
-    If ``file`` exists, it will be overwritten!
-
-    If ``data`` is one-dimensional, a mono file is written. For
-    two-dimensional ``data``, the columns are interpreted as channels.
-
-    All further arguments are forwarded to :class:`pysoundfile.SoundFile`.
-
-    Parameters
-    ----------
-    data : ndarray
-        The data to write. Must be ``float64``, ``float32``,
-        ``int32``, or ``int16``. Regardless of data type, the data
-        will be written in the sound file's native file format.
-        Must be (channels x frames) or a 1D-array for mono files.
-    file : A filename or a ``file`` object or file descriptor
-        The file to open.
-    samplerate : int, sometimes optional
-        The samplerate of the file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-    subtype : str, optional
-        The subtype of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        If not given, all formats except for ``'RAW'`` will use
-        their default subtype. See
-        :func:`pysoundfile.available_subtypes` for all possible
-        values.
-    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
-        The endianness of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        By default, this is set to ``'FILE'``, which is correct in
-        most cases.
-    format : str, optional
-        The format of the sound file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
-        when no file extension is given. If not given, this will
-        be determined based on the file extension. See
-        :func:`pysoundfile.available_formats` for all possible
-        values.
-    closefd : bool, optional
-       Whether to close the file descriptor on destruction. Only
-       applicable to file descriptors.
-
-    Examples
-    --------
-
-    Write 10 frames of random data to a file:
-
-    >>> sf.write(np.random.randn(10, 2), 'stereo_file.wav', 44100, 'PCM_24')
-
-    """
-    data = _np.asarray(data)
-    if data.ndim == 1:
-        channels = 1
-    else:
-        channels = data.shape[1]
-    with SoundFile(file, 'w', samplerate, channels,
-                   subtype, endian, format, closefd) as f:
-        f.write(data)
-
-
-def blocks(file, samplerate=None, channels=None,
-           subtype=None, endian=None, format=None, closefd=True,
-           blocksize=None, overlap=0, start=0, stop=None, frames=-1,
-           dtype='float64', always_2d=True, fill_value=None, out=None):
-    """Return a generator for block-wise processing.
-
-    All keyword arguments of :func:`pysoundfile.SoundFile.blocks` are
-    allowed. All further arguments are forwarded to
-    :class:`pysoundfile.SoundFile`.
-
-    By default, iteration stops at the end of the file. Use ``frames``
-    or ``stop`` to stop earlier.
-
-    If you stop iterating over the generator before it's exhausted,
-    the sound file is not closed. This is normally not a problem
-    because the file is opened in read-only mode. To close the file
-    properly, the generator's ``close()`` method can be called.
-
-    Parameters
-    ----------
-    file : A filename or a ``file`` object or file descriptor
-        The file to open.
-    samplerate : int, sometimes optional
-        The samplerate of the file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-    channels : int, sometimes optional
-        The number of channels of the file. Not necessary in
-        ``'r'`` and ``'r+'`` mode. Always necessary in ``'RAW'``
-        format.
-    subtype : str, optional
-        The subtype of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        If not given, all formats except for ``'RAW'`` will use
-        their default subtype. See
-        :func:`pysoundfile.available_subtypes` for all possible
-        values.
-    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
-        The endianness of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        By default, this is set to ``'FILE'``, which is correct in
-        most cases.
-    format : str, optional
-        The format of the sound file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
-        when no file extension is given. If not given, this will
-        be determined based on the file extension. See
-        :func:`pysoundfile.available_formats` for all possible
-        values.
-    closefd : bool, optional
-        Whether to close the file descriptor on destruction. Only
-        applicable to file descriptors.
-    blocksize : int
-        The number of frames to read per block. Either this or ``out``
-        must be given.
-    overlap : int, optional
-        The number of frames to rewind between each block.
-    start : int, optional
-        Where to start reading. Only two of ``start``, ``stop``, and
-        ``frames`` can be given.
-    stop : int, optional
-        Where to stop reading. Only two of ``start``, ``stop``, and
-        ``frames`` can be given. Ignored if ``None``.
-    frames : int, optional
-        The number of frames to read. If ``-1``, the whole rest of the
-        file is read. Only two of ``start``, ``stop``, and ``frames``
-        can be given.
-    dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-        The data type to read. Floating point data is always in
-        the range -1..1, and integer data is always in the range
-        ``INT16_MIN``..``INT16_MAX`` or
-        ``INT32_MIN``..``INT32_MAX``.
-    always_2d : bool, optional
-        Whether to always return a 2D array. If ``False``, single
-        channel reads will return 1D arrays.
-    fill_value : float, optional
-        If given and more frames were requested than available in
-        the file, the rest of the output will be filled with
-        ``fill_value``.
-    out : ndarray, optional
-        If given, the data will be read into this ``ndarray``
-        instead of creating a new ``ndarray``.
-
-    Returns
-    -------
-    generator
-        A generator that returns blocks of data; each block is
-        either a new ndarray or ``out``. If ``out`` was given, and
-        the remaining frames are not cleanly divisible by
-        ``blocksize``, the last block will be a view into ``out``.
-
-    Examples
-    --------
-
-    Read the whole file block by block of 1024 frames each:
-
-    >>> for block in sf.blocks('stereo_file.wav', blocksize=1024):
-    >>>     pass  # do something with `block`
-    """
-    if frames >= 0 and stop is not None:
-        raise TypeError("Only one of {frames, stop} may be used")
-
-    with SoundFile(file, 'r', samplerate, channels,
-                   subtype, endian, format, closefd) as f:
-        start, frames = _get_read_range(start, stop, frames, f.frames)
-        f.seek(start, SEEK_SET)
-        for block in f.blocks(blocksize, overlap, frames,
-                              dtype, always_2d, fill_value, out):
-            yield block
-
-
 def _get_read_range(start, stop, frames, total_frames):
     # Calculate start frame and length
     start, stop, _ = slice(start, stop).indices(total_frames)
@@ -1286,30 +1406,6 @@ def _get_read_range(start, stop, frames, total_frames):
     if frames < 0:
         frames = stop - start
     return start, frames
-
-
-def default_subtype(format):
-    """Return the default subtype for a given format.
-
-    Parameters
-    ----------
-    format : str
-        The name of a format.
-
-    Returns
-    -------
-    str
-        The name of a subtype appropriate for ``format``.
-
-    Examples
-    --------
-    >>> sf.default_subtype('WAV')
-    'PCM_16'
-
-    >>> sf.default_subtype('MAT5')
-    'DOUBLE'
-    """
-    return _default_subtypes.get(str(format).upper())
 
 
 def _format_int(format, subtype, endian):
@@ -1342,51 +1438,6 @@ def _format_int(format, subtype, endian):
     return result
 
 
-def format_check(format, subtype=None, endian=None):
-    """Check if the combination of format/subtype/endian is valid.
-
-    Parameters
-    ----------
-    format : str, optional
-        The format of the sound file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
-        when no file extension is given. If not given, this will
-        be determined based on the file extension. See
-        :func:`pysoundfile.available_formats` for all possible
-        values.
-    subtype : str, optional
-        The subtype of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        If not given, all formats except for ``'RAW'`` will use
-        their default subtype. See
-        :func:`pysoundfile.available_subtypes` for all possible
-        values.
-    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
-        The endianness of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        By default, this is set to ``'FILE'``, which is correct in
-        most cases.
-
-    Returns
-    -------
-    bool
-        Whether this combination is valid or not.
-
-    Examples
-    --------
-    >>> sf.format_check('WAV', 'INT_16')
-    True
-
-    >>> sf.format_check('FLAC', 'VORBIS')
-    False
-
-    """
-    try:
-        return bool(_format_int(format, subtype, endian))
-    except (ValueError, TypeError):
-        return False
-
-
 def _format_str(format_int):
     # Return the string representation of a given numeric format
     for dictionary in _formats, _subtypes, _endians:
@@ -1413,54 +1464,3 @@ def _available_formats_helper(count_flag, format_flag):
     _snd.sf_command(_ffi.NULL, count_flag, count, _ffi.sizeof("int"))
     for format_int in range(count[0]):
         yield _format_info(format_int, format_flag)
-
-
-def available_formats():
-    """Return a dictionary of available major formats.
-
-    Returns
-    -------
-    dict
-        A dictionary of all available major formats, with the internal
-        short name as keys, and a longer description as values.
-
-    Examples
-    --------
-    >>> sf.available_formats()
-    {'FLAC': 'FLAC (FLAC Lossless Audio Codec)',
-     'WAV': 'WAV (Microsoft)',
-     'MAT5': 'MAT5 (GNU Octave 2.1 / Matlab 5.0)',
-     ... }
-
-    """
-    return dict(_available_formats_helper(_snd.SFC_GET_FORMAT_MAJOR_COUNT,
-                                          _snd.SFC_GET_FORMAT_MAJOR))
-
-
-def available_subtypes(format=None):
-    """Return a dictionary of available subtypes.
-
-    Parameters
-    ----------
-    format : str
-        If given, only compatible subtypes are returned.
-
-    Returns
-    -------
-    dict
-        A dictionary of all available or compatible subtypes, with the
-        internal short names as keys, and a longer description as
-        values.
-
-    Examples
-    --------
-    >>> sf.available_subtypes('FLAC')
-    {'PCM_24': 'Signed 24 bit PCM',
-     'PCM_S8': 'Signed 8 bit PCM',
-     'PCM_16': 'Signed 16 bit PCM'}
-
-    """
-    subtypes = _available_formats_helper(_snd.SFC_GET_FORMAT_SUBTYPE_COUNT,
-                                         _snd.SFC_GET_FORMAT_SUBTYPE)
-    return dict((subtype, name) for subtype, name in subtypes
-                if format is None or format_check(format, subtype))
