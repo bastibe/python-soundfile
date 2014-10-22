@@ -902,76 +902,6 @@ class SoundFile(object):
     _file = None
     _filestream = None
 
-    def seekable(self):
-        """Return True if the file supports seeking.
-
-        Examples
-        --------
-        >>> soundFile = sf.SoundFile('stereo_file.wav')
-        >>> soundFile.seekable()
-        True
-
-        >>> soundFile = sf.SoundFile('new_file.flac', 'w', 44100, 1)
-        >>> soundFile.seekable()
-        False
-
-        """
-        return self._info.seekable == _snd.SF_TRUE
-
-    def _init_virtual_io(self, file):
-        @_ffi.callback("sf_vio_get_filelen")
-        def vio_get_filelen(user_data):
-            # first try __len__(), if not available fall back to seek()/tell()
-            try:
-                size = len(file)
-            except TypeError:
-                curr = file.tell()
-                file.seek(0, SEEK_END)
-                size = file.tell()
-                file.seek(curr, SEEK_SET)
-            return size
-
-        @_ffi.callback("sf_vio_seek")
-        def vio_seek(offset, whence, user_data):
-            file.seek(offset, whence)
-            return file.tell()
-
-        @_ffi.callback("sf_vio_read")
-        def vio_read(ptr, count, user_data):
-            # first try readinto(), if not available fall back to read()
-            try:
-                buf = _ffi.buffer(ptr, count)
-                data_read = file.readinto(buf)
-            except AttributeError:
-                data = file.read(count)
-                data_read = len(data)
-                buf = _ffi.buffer(ptr, data_read)
-                buf[0:data_read] = data
-            return data_read
-
-        @_ffi.callback("sf_vio_write")
-        def vio_write(ptr, count, user_data):
-            buf = _ffi.buffer(ptr, count)
-            data = buf[:]
-            written = file.write(data)
-            # write() returns None for file objects in Python <= 2.7:
-            if written is None:
-                written = count
-            return written
-
-        @_ffi.callback("sf_vio_tell")
-        def vio_tell(user_data):
-            return file.tell()
-
-        # Note: the callback functions must be kept alive!
-        self._virtual_io = {'get_filelen': vio_get_filelen,
-                            'seek': vio_seek,
-                            'read': vio_read,
-                            'write': vio_write,
-                            'tell': vio_tell}
-
-        return _ffi.new("SF_VIRTUAL_IO*", self._virtual_io)
-
     def __del__(self):
         self.close()
 
@@ -980,29 +910,6 @@ class SoundFile(object):
 
     def __exit__(self, *args):
         self.close()
-
-    def _handle_error(self):
-        # this checks the error flag of the SNDFILE* structure
-        self._check_if_closed()
-        err = _snd.sf_error(self._file)
-        self._handle_error_number(err)
-
-    def _handle_error_number(self, err):
-        # pretty-print a numerical error code
-        if err != 0:
-            err_str = _snd.sf_error_number(err)
-            raise RuntimeError(_ffi.string(err_str).decode())
-
-    def _getAttributeNames(self):
-        # return all possible attributes used in __setattr__ and __getattr__.
-        # This is useful for auto-completion (e.g. IPython)
-        return _str_types
-
-    def _check_if_closed(self):
-        # check if the file is closed and raise an error if it is.
-        # This should be used in every method that tries to access self._file.
-        if self.closed:
-            raise ValueError("I/O operation on closed file")
 
     def __setattr__(self, name, value):
         # access text data in the sound file through properties
@@ -1025,17 +932,6 @@ class SoundFile(object):
 
     def __len__(self):
         return self.frames
-
-    def _get_slice_bounds(self, frame):
-        # get start and stop index from slice, asserting step==1
-        if not isinstance(frame, slice):
-            frame = slice(frame, frame + 1)
-        start, stop, step = frame.indices(len(self))
-        if step != 1:
-            raise RuntimeError("Step size must be 1")
-        if start > stop:
-            stop = start
-        return start, stop
 
     def __getitem__(self, frame):
         # access the file as if it where a Numpy array. The data is
@@ -1071,44 +967,21 @@ class SoundFile(object):
         self.seek(curr, SEEK_SET)
         return data
 
-    def flush(self):
-        """Write unwritten data to disk.
-
-        Examples
-        --------
-        Create a new file:
-
-        >>> soundFile = sf.SoundFile('new_file.wav', 'w', 44100, 2)
-        >>> soundFile.write(np.random.randn(10, 2))
-        >>> soundFile.flush()
-
-        It is now guaranteed safe to read the new file from another
-        program:
-
-        >>> sf.read('stereo_file.wav')
-
-        """
-        self._check_if_closed()
-        _snd.sf_write_sync(self._file)
-
-    def close(self):
-        """Close the file. Can be called multiple times.
+    def seekable(self):
+        """Return True if the file supports seeking.
 
         Examples
         --------
         >>> soundFile = sf.SoundFile('stereo_file.wav')
-        >>> soundFile.close()
-        >>> soundFile.read()  # this will fail!
+        >>> soundFile.seekable()
+        True
+
+        >>> soundFile = sf.SoundFile('new_file.flac', 'w', 44100, 1)
+        >>> soundFile.seekable()
+        False
 
         """
-        if not self.closed:
-            # be sure to flush data to disk before closing the file
-            self.flush()
-            err = _snd.sf_close(self._file)
-            self._file = None
-            if self._filestream:
-                self._filestream.close()
-            self._handle_error_number(err)
+        return self._info.seekable == _snd.SF_TRUE
 
     def seek(self, frames, whence=SEEK_SET):
         """Set the read/write pointer.
@@ -1149,44 +1022,6 @@ class SoundFile(object):
         """
         self._check_if_closed()
         return _snd.sf_seek(self._file, frames, whence)
-
-    def _check_array(self, array):
-        # Do some error checking
-        if (array.ndim not in (1, 2) or
-                array.ndim == 1 and self.channels != 1 or
-                array.ndim == 2 and array.shape[1] != self.channels):
-            raise ValueError("Invalid shape: %s" % repr(array.shape))
-
-        if array.dtype not in _ffi_types:
-            raise ValueError("dtype must be one of %s" %
-                             repr([dt.name for dt in _ffi_types]))
-
-    def _create_empty_array(self, frames, always_2d, dtype):
-        # Create an empty array with appropriate shape
-        if always_2d or self.channels > 1:
-            shape = frames, self.channels
-        else:
-            shape = frames,
-        return _np.empty(shape, dtype, order='C')
-
-    def _read_or_write(self, funcname, array, frames):
-        # Call into libsndfile
-        self._check_if_closed()
-
-        ffi_type = _ffi_types[array.dtype]
-        assert array.flags.c_contiguous
-        assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
-        assert array.size >= frames * self.channels
-
-        if self.seekable():
-            curr = self.seek(0, SEEK_CUR)
-        func = getattr(_snd, funcname + ffi_type)
-        ptr = _ffi.cast(ffi_type + '*', array.ctypes.data)
-        frames = func(self._file, ptr, frames)
-        self._handle_error()
-        if self.seekable():
-            self.seek(curr + frames, SEEK_SET)  # Update read & write position
-        return frames
 
     def read(self, frames=-1, dtype='float64', always_2d=True,
              fill_value=None, out=None):
@@ -1396,6 +1231,171 @@ class SoundFile(object):
                 self.seek(-overlap, SEEK_CUR)
                 frames += overlap
             yield block
+
+    def flush(self):
+        """Write unwritten data to disk.
+
+        Examples
+        --------
+        Create a new file:
+
+        >>> soundFile = sf.SoundFile('new_file.wav', 'w', 44100, 2)
+        >>> soundFile.write(np.random.randn(10, 2))
+        >>> soundFile.flush()
+
+        It is now guaranteed safe to read the new file from another
+        program:
+
+        >>> sf.read('stereo_file.wav')
+
+        """
+        self._check_if_closed()
+        _snd.sf_write_sync(self._file)
+
+    def close(self):
+        """Close the file. Can be called multiple times.
+
+        Examples
+        --------
+        >>> soundFile = sf.SoundFile('stereo_file.wav')
+        >>> soundFile.close()
+        >>> soundFile.read()  # this will fail!
+
+        """
+        if not self.closed:
+            # be sure to flush data to disk before closing the file
+            self.flush()
+            err = _snd.sf_close(self._file)
+            self._file = None
+            if self._filestream:
+                self._filestream.close()
+            self._handle_error_number(err)
+
+    def _init_virtual_io(self, file):
+        @_ffi.callback("sf_vio_get_filelen")
+        def vio_get_filelen(user_data):
+            # first try __len__(), if not available fall back to seek()/tell()
+            try:
+                size = len(file)
+            except TypeError:
+                curr = file.tell()
+                file.seek(0, SEEK_END)
+                size = file.tell()
+                file.seek(curr, SEEK_SET)
+            return size
+
+        @_ffi.callback("sf_vio_seek")
+        def vio_seek(offset, whence, user_data):
+            file.seek(offset, whence)
+            return file.tell()
+
+        @_ffi.callback("sf_vio_read")
+        def vio_read(ptr, count, user_data):
+            # first try readinto(), if not available fall back to read()
+            try:
+                buf = _ffi.buffer(ptr, count)
+                data_read = file.readinto(buf)
+            except AttributeError:
+                data = file.read(count)
+                data_read = len(data)
+                buf = _ffi.buffer(ptr, data_read)
+                buf[0:data_read] = data
+            return data_read
+
+        @_ffi.callback("sf_vio_write")
+        def vio_write(ptr, count, user_data):
+            buf = _ffi.buffer(ptr, count)
+            data = buf[:]
+            written = file.write(data)
+            # write() returns None for file objects in Python <= 2.7:
+            if written is None:
+                written = count
+            return written
+
+        @_ffi.callback("sf_vio_tell")
+        def vio_tell(user_data):
+            return file.tell()
+
+        # Note: the callback functions must be kept alive!
+        self._virtual_io = {'get_filelen': vio_get_filelen,
+                            'seek': vio_seek,
+                            'read': vio_read,
+                            'write': vio_write,
+                            'tell': vio_tell}
+
+        return _ffi.new("SF_VIRTUAL_IO*", self._virtual_io)
+
+    def _handle_error(self):
+        # this checks the error flag of the SNDFILE* structure
+        self._check_if_closed()
+        err = _snd.sf_error(self._file)
+        self._handle_error_number(err)
+
+    def _handle_error_number(self, err):
+        # pretty-print a numerical error code
+        if err != 0:
+            err_str = _snd.sf_error_number(err)
+            raise RuntimeError(_ffi.string(err_str).decode())
+
+    def _getAttributeNames(self):
+        # return all possible attributes used in __setattr__ and __getattr__.
+        # This is useful for auto-completion (e.g. IPython)
+        return _str_types
+
+    def _check_if_closed(self):
+        # check if the file is closed and raise an error if it is.
+        # This should be used in every method that tries to access self._file.
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
+
+    def _get_slice_bounds(self, frame):
+        # get start and stop index from slice, asserting step==1
+        if not isinstance(frame, slice):
+            frame = slice(frame, frame + 1)
+        start, stop, step = frame.indices(len(self))
+        if step != 1:
+            raise RuntimeError("Step size must be 1")
+        if start > stop:
+            stop = start
+        return start, stop
+
+    def _check_array(self, array):
+        # Do some error checking
+        if (array.ndim not in (1, 2) or
+                array.ndim == 1 and self.channels != 1 or
+                array.ndim == 2 and array.shape[1] != self.channels):
+            raise ValueError("Invalid shape: %s" % repr(array.shape))
+
+        if array.dtype not in _ffi_types:
+            raise ValueError("dtype must be one of %s" %
+                             repr([dt.name for dt in _ffi_types]))
+
+    def _create_empty_array(self, frames, always_2d, dtype):
+        # Create an empty array with appropriate shape
+        if always_2d or self.channels > 1:
+            shape = frames, self.channels
+        else:
+            shape = frames,
+        return _np.empty(shape, dtype, order='C')
+
+    def _read_or_write(self, funcname, array, frames):
+        # Call into libsndfile
+        self._check_if_closed()
+
+        ffi_type = _ffi_types[array.dtype]
+        assert array.flags.c_contiguous
+        assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
+        assert array.size >= frames * self.channels
+
+        if self.seekable():
+            curr = self.seek(0, SEEK_CUR)
+        func = getattr(_snd, funcname + ffi_type)
+        ptr = _ffi.cast(ffi_type + '*', array.ctypes.data)
+        frames = func(self._file, ptr, frames)
+        self._handle_error()
+        if self.seekable():
+            self.seek(curr + frames, SEEK_SET)  # Update read & write position
+        return frames
 
 
 def _get_read_range(start, stop, frames, total_frames):
