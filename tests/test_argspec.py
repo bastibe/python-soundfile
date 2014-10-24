@@ -71,8 +71,7 @@ def test_if_blocks_function_and_method_have_same_defaults():
 
 
 def test_order_of_blocks_arguments():
+    # Only the first few are checked
     meth_args = blocks_method.args[1:]  # remove 'self'
-    meth_args[2:2] = ['start', 'stop']
-    init_args = init.args[1:]  # remove 'self'
-    init_args.remove('mode')
-    assert blocks_function.args == init_args + meth_args
+    meth_args[3:3] = ['start', 'stop']
+    assert blocks_function.args[:10] == ['file'] + meth_args
