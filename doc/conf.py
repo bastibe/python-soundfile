@@ -267,6 +267,8 @@ texinfo_documents = [
 autodoc_member_order = 'bysource'
 autoclass_content = "init"
 napoleon_use_rtype = False
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = False
 
 # Fake imports to avoid actually loading NumPy and libsndfile
 import fake_numpy
