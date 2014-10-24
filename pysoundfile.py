@@ -13,11 +13,11 @@ arrays.
 .. _CFFI: http://cffi.readthedocs.org/
 
 Sound files can be read or written directly using the functions
-:func:`pysoundfile.read`, :func:`pysoundfile.write`, and
-:func:`pysoundfile.blocks`.
+:func:`read`, :func:`write`, and
+:func:`blocks`.
 
 Alternatively, every sound file can be opened as a SoundFile object
-using the :func:`pysoundfile.SoundFile` constructor.
+using the :class:`SoundFile` constructor.
 SoundFile objects can be created
 for reading, writing, or both. Each SoundFile object has a samplerate,
 a number of channels, and a file format. These can not be changed at
@@ -416,9 +416,9 @@ def blocks(file, samplerate=None, channels=None,
            dtype='float64', always_2d=True, fill_value=None, out=None):
     """Return a generator for block-wise processing.
 
-    All keyword arguments of :func:`pysoundfile.SoundFile.blocks` are
+    All keyword arguments of :meth:`SoundFile.blocks` are
     allowed. All further arguments are forwarded to
-    :class:`pysoundfile.SoundFile`.
+    :class:`SoundFile`.
 
     By default, iteration stops at the end of the file. Use ``frames``
     or ``stop`` to stop earlier.
@@ -590,8 +590,8 @@ class SoundFile(object):
         * an *endian-ness*, which doesn't have to be specified at all in
           most cases.
 
-        The functions :func:`pysoundfile.available_formats` and
-        :func:`pysoundfile.available_subtypes()` can be used to obtain
+        The functions :func:`available_formats` and
+        :func:`available_subtypes()` can be used to obtain
         a list of all avaliable major formats and subtypes,
         respectively.
 
@@ -616,7 +616,7 @@ class SoundFile(object):
             and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
             If not given, all formats except for ``'RAW'`` will use
             their default subtype. See
-            :func:`pysoundfile.available_subtypes` for all possible
+            :func:`available_subtypes` for all possible
             values.
         endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
             The endianness of the sound file. Not necessary in ``'r'``
@@ -628,7 +628,7 @@ class SoundFile(object):
             ``'r+'`` mode. Always necessary in ``'RAW'`` format or
             when no file extension is given. If not given, this will
             be determined based on the file extension. See
-            :func:`pysoundfile.available_formats` for all possible
+            :func:`available_formats` for all possible
             values.
         closefd : bool, optional
            Whether to close the file descriptor on destruction. Only
