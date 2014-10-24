@@ -755,7 +755,7 @@ class SoundFile(object):
         self.close()
 
     def __setattr__(self, name, value):
-        # access text data in the sound file through properties
+        """Write text data in the sound file through properties."""
         if name in _str_types:
             self._check_if_closed()
             data = _ffi.new('char[]', value.encode())
@@ -765,7 +765,7 @@ class SoundFile(object):
             super(SoundFile, self).__setattr__(name, value)
 
     def __getattr__(self, name):
-        # access text data in the sound file through properties
+        """Read text data in the sound file through properties."""
         if name in _str_types:
             self._check_if_closed()
             data = _snd.sf_get_string(self._file, _str_types[name])
@@ -1085,6 +1085,7 @@ class SoundFile(object):
             self._handle_error_number(err)
 
     def _init_virtual_io(self, file):
+        """Initialize callback functions for sf_open_virtual()."""
         @_ffi.callback("sf_vio_get_filelen")
         def vio_get_filelen(user_data):
             # first try __len__(), if not available fall back to seek()/tell()
@@ -1139,25 +1140,31 @@ class SoundFile(object):
         return _ffi.new("SF_VIRTUAL_IO*", self._virtual_io)
 
     def _handle_error(self):
-        # this checks the error flag of the SNDFILE* structure
+        """Check the error flag of the SNDFILE* structure."""
         self._check_if_closed()
         err = _snd.sf_error(self._file)
         self._handle_error_number(err)
 
     def _handle_error_number(self, err):
-        # pretty-print a numerical error code
+        """Pretty-print a numerical error code."""
         if err != 0:
             err_str = _snd.sf_error_number(err)
             raise RuntimeError(_ffi.string(err_str).decode())
 
     def _getAttributeNames(self):
-        # return all possible attributes used in __setattr__ and __getattr__.
-        # This is useful for auto-completion (e.g. IPython)
+        """Return all attributes used in __setattr__ and __getattr__.
+
+        This is useful for auto-completion (e.g. IPython).
+
+        """
         return _str_types
 
     def _check_if_closed(self):
-        # check if the file is closed and raise an error if it is.
-        # This should be used in every method that tries to access self._file.
+        """Check if the file is closed and raise an error if it is.
+
+        This should be used in every method that uses self._file.
+
+        """
         if self.closed:
             raise ValueError("I/O operation on closed file")
 
@@ -1173,7 +1180,7 @@ class SoundFile(object):
         return start, stop
 
     def _check_array(self, array):
-        # Do some error checking
+        """Do some error checking."""
         if (array.ndim not in (1, 2) or
                 array.ndim == 1 and self.channels != 1 or
                 array.ndim == 2 and array.shape[1] != self.channels):
@@ -1184,7 +1191,7 @@ class SoundFile(object):
                              repr([dt.name for dt in _ffi_types]))
 
     def _create_empty_array(self, frames, always_2d, dtype):
-        # Create an empty array with appropriate shape
+        """Create an empty array with appropriate shape."""
         if always_2d or self.channels > 1:
             shape = frames, self.channels
         else:
@@ -1192,7 +1199,7 @@ class SoundFile(object):
         return _np.empty(shape, dtype, order='C')
 
     def _read_or_write(self, funcname, array, frames):
-        # Call into libsndfile
+        """Call into libsndfile."""
         self._check_if_closed()
 
         ffi_type = _ffi_types[array.dtype]
@@ -1212,7 +1219,7 @@ class SoundFile(object):
 
 
 def _get_read_range(frames, start, stop, total_frames):
-    # Calculate start frame and length
+    """Calculate start frame and length."""
     start, stop, _ = slice(start, stop).indices(total_frames)
     if stop < start:
         stop = start
@@ -1222,7 +1229,7 @@ def _get_read_range(frames, start, stop, total_frames):
 
 
 def _format_int(format, subtype, endian):
-    # Return numeric format ID for given format|subtype|endian combo
+    """Return numeric ID for given format|subtype|endian combo."""
     try:
         result = _formats[str(format).upper()]
     except KeyError:
@@ -1252,7 +1259,7 @@ def _format_int(format, subtype, endian):
 
 
 def _format_str(format_int):
-    # Return the string representation of a given numeric format
+    """Return the string representation of a given numeric format."""
     for dictionary in _formats, _subtypes, _endians:
         for k, v in dictionary.items():
             if v == format_int:
@@ -1261,7 +1268,7 @@ def _format_str(format_int):
 
 
 def _format_info(format_int, format_flag=_snd.SFC_GET_FORMAT_INFO):
-    # Return the ID and short description of a given format.
+    """Return the ID and short description of a given format."""
     format_info = _ffi.new("SF_FORMAT_INFO*")
     format_info.format = format_int
     _snd.sf_command(_ffi.NULL, format_flag, format_info,
@@ -1272,7 +1279,7 @@ def _format_info(format_int, format_flag=_snd.SFC_GET_FORMAT_INFO):
 
 
 def _available_formats_helper(count_flag, format_flag):
-    # Generator function used in available_formats() and available_subtypes()
+    """Helper for available_formats() and available_subtypes()."""
     count = _ffi.new("int*")
     _snd.sf_command(_ffi.NULL, count_flag, count, _ffi.sizeof("int"))
     for format_int in range(count[0]):
