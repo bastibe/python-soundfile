@@ -277,9 +277,9 @@ _ffi_types = {
 _snd = _ffi.dlopen('sndfile')
 
 
-def read(file, samplerate=None, channels=None, subtype=None, endian=None,
-         format=None, closefd=True, start=0, stop=None, frames=-1,
-         dtype='float64', always_2d=True, fill_value=None, out=None):
+def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
+         fill_value=None, out=None, samplerate=None, channels=None,
+         format=None, subtype=None, endian=None, closefd=True):
     """Read a sound file and return its contents as NumPy array.
 
     The number of frames to read can be specified with ``frames``, the
@@ -309,16 +309,16 @@ def read(file, samplerate=None, channels=None, subtype=None, endian=None,
     ----------
     file : A filename or a ``file`` object or file descriptor
         The file to open.
+    frames : int, optional
+        The number of frames to read. If ``-1``, the whole rest of the
+        file is read. Only two of ``start``, ``stop``, and ``frames``
+        can be given.
     start : int, optional
         Where to start reading. Only two of ``start``, ``stop``, and
         ``frames`` can be given.
     stop : int, optional
         Where to stop reading. Only two of ``start``, ``stop``, and
         ``frames`` can be given. Ignored if ``None``.
-    frames : int, optional
-        The number of frames to read. If ``-1``, the whole rest of the
-        file is read. Only two of ``start``, ``stop``, and ``frames``
-        can be given.
     dtype : {'float64', 'float32', 'int32', 'int16'}, optional
         The data type to read. Floating point data is typically in
         the range -1..1, and integer data is always in the range
@@ -362,7 +362,7 @@ def read(file, samplerate=None, channels=None, subtype=None, endian=None,
 
     with SoundFile(file, 'r', samplerate, channels,
                    subtype, endian, format, closefd) as f:
-        start, frames = _get_read_range(start, stop, frames, f.frames)
+        start, frames = _get_read_range(frames, start, stop, f.frames)
         f.seek(start, SEEK_SET)
         data = f.read(frames, dtype, always_2d, fill_value, out)
     return data, f.samplerate
@@ -410,10 +410,10 @@ def write(data, file, samplerate,
         f.write(data)
 
 
-def blocks(file, samplerate=None, channels=None,
-           subtype=None, endian=None, format=None, closefd=True,
-           blocksize=None, overlap=0, start=0, stop=None, frames=-1,
-           dtype='float64', always_2d=True, fill_value=None, out=None):
+def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
+           dtype='float64', always_2d=True, fill_value=None, out=None,
+           samplerate=None, channels=None,
+           format=None, subtype=None, endian=None, closefd=True):
     """Return a generator for block-wise processing.
 
     All keyword arguments of :meth:`SoundFile.blocks` are
@@ -437,7 +437,7 @@ def blocks(file, samplerate=None, channels=None,
         must be given.
     overlap : int, optional
         The number of frames to rewind between each block.
-    start, stop, frames
+    frames, start, stop
         See :func:`read`.
     dtype : {'float64', 'float32', 'int32', 'int16'}, optional
         See :func:`read`.
@@ -452,10 +452,10 @@ def blocks(file, samplerate=None, channels=None,
 
     Other Parameters
     ----------------
-    samplerate, channels, format, subtype, endian, closefd
-        See :class:`SoundFile`.
     always_2d, fill_value, out
         See :func:`read`.
+    samplerate, channels, format, subtype, endian, closefd
+        See :class:`SoundFile`.
 
     Examples
     --------
@@ -470,7 +470,7 @@ def blocks(file, samplerate=None, channels=None,
 
     with SoundFile(file, 'r', samplerate, channels,
                    subtype, endian, format, closefd) as f:
-        start, frames = _get_read_range(start, stop, frames, f.frames)
+        start, frames = _get_read_range(frames, start, stop, f.frames)
         f.seek(start, SEEK_SET)
         for block in f.blocks(blocksize, overlap, frames,
                               dtype, always_2d, fill_value, out):
@@ -1211,7 +1211,7 @@ class SoundFile(object):
         return frames
 
 
-def _get_read_range(start, stop, frames, total_frames):
+def _get_read_range(frames, start, stop, total_frames):
     # Calculate start frame and length
     start, stop, _ = slice(start, stop).indices(total_frames)
     if stop < start:
