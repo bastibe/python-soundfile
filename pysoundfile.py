@@ -305,43 +305,10 @@ def read(file, samplerate=None, channels=None, subtype=None, endian=None,
     it is overwritten and a view containing all valid frames is
     returned.
 
-    The keyword arguments ``samplerate``, ``channels``, ``format``,
-    ``subtype`` and endian are only needed for ``'RAW'`` files. See
-    :class:`pysoundfile.SoundFile` for details.
-
     Parameters
     ----------
     file : A filename or a ``file`` object or file descriptor
         The file to open.
-    samplerate : int, sometimes optional
-        The samplerate of the file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-    channels : int, sometimes optional
-        The number of channels of the file. Not necessary in
-        ``'r'`` and ``'r+'`` mode. Always necessary in ``'RAW'``
-        format.
-    subtype : str, optional
-        The subtype of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        If not given, all formats except for ``'RAW'`` will use
-        their default subtype. See
-        :func:`pysoundfile.available_subtypes` for all possible
-        values.
-    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
-        The endianness of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        By default, this is set to ``'FILE'``, which is correct in
-        most cases.
-    format : str, optional
-        The format of the sound file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
-        when no file extension is given. If not given, this will
-        be determined based on the file extension. See
-        :func:`pysoundfile.available_formats` for all possible
-        values.
-    closefd : bool, optional
-        Whether to close the file descriptor on destruction. Only
-        applicable to file descriptors.
     start : int, optional
         Where to start reading. Only two of ``start``, ``stop``, and
         ``frames`` can be given.
@@ -375,6 +342,11 @@ def read(file, samplerate=None, channels=None, subtype=None, endian=None,
         frames were requested than available in the file and
         ``out`` was given, this will be a view into ``out``.
 
+    Other Parameters
+    ----------------
+    samplerate, channels, format, subtype, endian, closefd
+        See :class:`SoundFile`.
+
     Examples
     --------
     Reading 3 frames from a stereo file:
@@ -405,8 +377,6 @@ def write(data, file, samplerate,
     If ``data`` is one-dimensional, a mono file is written. For
     two-dimensional ``data``, the columns are interpreted as channels.
 
-    All further arguments are forwarded to :class:`pysoundfile.SoundFile`.
-
     Parameters
     ----------
     data : ndarray
@@ -416,31 +386,11 @@ def write(data, file, samplerate,
         Must be (channels x frames) or a 1D-array for mono files.
     file : A filename or a ``file`` object or file descriptor
         The file to open.
-    samplerate : int, sometimes optional
-        The samplerate of the file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-    subtype : str, optional
-        The subtype of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        If not given, all formats except for ``'RAW'`` will use
-        their default subtype. See
-        :func:`pysoundfile.available_subtypes` for all possible
-        values.
-    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
-        The endianness of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        By default, this is set to ``'FILE'``, which is correct in
-        most cases.
-    format : str, optional
-        The format of the sound file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
-        when no file extension is given. If not given, this will
-        be determined based on the file extension. See
-        :func:`pysoundfile.available_formats` for all possible
-        values.
-    closefd : bool, optional
-       Whether to close the file descriptor on destruction. Only
-       applicable to file descriptors.
+
+    Other Parameters
+    ----------------
+    samplerate, format, subtype, endian, closefd
+        See :class:`SoundFile`.
 
     Examples
     --------
@@ -482,65 +432,15 @@ def blocks(file, samplerate=None, channels=None,
     ----------
     file : A filename or a ``file`` object or file descriptor
         The file to open.
-    samplerate : int, sometimes optional
-        The samplerate of the file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-    channels : int, sometimes optional
-        The number of channels of the file. Not necessary in
-        ``'r'`` and ``'r+'`` mode. Always necessary in ``'RAW'``
-        format.
-    subtype : str, optional
-        The subtype of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        If not given, all formats except for ``'RAW'`` will use
-        their default subtype. See
-        :func:`pysoundfile.available_subtypes` for all possible
-        values.
-    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
-        The endianness of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        By default, this is set to ``'FILE'``, which is correct in
-        most cases.
-    format : str, optional
-        The format of the sound file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
-        when no file extension is given. If not given, this will
-        be determined based on the file extension. See
-        :func:`pysoundfile.available_formats` for all possible
-        values.
-    closefd : bool, optional
-        Whether to close the file descriptor on destruction. Only
-        applicable to file descriptors.
     blocksize : int
         The number of frames to read per block. Either this or ``out``
         must be given.
     overlap : int, optional
         The number of frames to rewind between each block.
-    start : int, optional
-        Where to start reading. Only two of ``start``, ``stop``, and
-        ``frames`` can be given.
-    stop : int, optional
-        Where to stop reading. Only two of ``start``, ``stop``, and
-        ``frames`` can be given. Ignored if ``None``.
-    frames : int, optional
-        The number of frames to read. If ``-1``, the whole rest of the
-        file is read. Only two of ``start``, ``stop``, and ``frames``
-        can be given.
+    start, stop, frames
+        See :func:`read`.
     dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-        The data type to read. Floating point data is always in
-        the range -1..1, and integer data is always in the range
-        ``INT16_MIN``..``INT16_MAX`` or
-        ``INT32_MIN``..``INT32_MAX``.
-    always_2d : bool, optional
-        Whether to always return a 2D array. If ``False``, single
-        channel reads will return 1D arrays.
-    fill_value : float, optional
-        If given and more frames were requested than available in
-        the file, the rest of the output will be filled with
-        ``fill_value``.
-    out : ndarray, optional
-        If given, the data will be read into this ``ndarray``
-        instead of creating a new ``ndarray``.
+        See :func:`read`.
 
     Returns
     -------
@@ -549,6 +449,13 @@ def blocks(file, samplerate=None, channels=None,
         either a new ndarray or ``out``. If ``out`` was given, and
         the remaining frames are not cleanly divisible by
         ``blocksize``, the last block will be a view into ``out``.
+
+    Other Parameters
+    ----------------
+    samplerate, channels, format, subtype, endian, closefd
+        See :class:`SoundFile`.
+    always_2d, fill_value, out
+        See :func:`read`.
 
     Examples
     --------
@@ -624,33 +531,6 @@ def available_subtypes(format=None):
 def format_check(format, subtype=None, endian=None):
     """Check if the combination of format/subtype/endian is valid.
 
-    Parameters
-    ----------
-    format : str, optional
-        The format of the sound file. Not necessary in ``'r'`` and
-        ``'r+'`` mode. Always necessary in ``'RAW'`` format or
-        when no file extension is given. If not given, this will
-        be determined based on the file extension. See
-        :func:`pysoundfile.available_formats` for all possible
-        values.
-    subtype : str, optional
-        The subtype of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        If not given, all formats except for ``'RAW'`` will use
-        their default subtype. See
-        :func:`pysoundfile.available_subtypes` for all possible
-        values.
-    endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, optional
-        The endianness of the sound file. Not necessary in ``'r'``
-        and ``'r+'`` mode. Always necessary in ``'RAW'`` format.
-        By default, this is set to ``'FILE'``, which is correct in
-        most cases.
-
-    Returns
-    -------
-    bool
-        Whether this combination is valid or not.
-
     Examples
     --------
     >>> sf.format_check('WAV', 'INT_16')
@@ -668,16 +548,6 @@ def format_check(format, subtype=None, endian=None):
 
 def default_subtype(format):
     """Return the default subtype for a given format.
-
-    Parameters
-    ----------
-    format : str
-        The name of a format.
-
-    Returns
-    -------
-    str
-        The name of a subtype appropriate for ``format``.
 
     Examples
     --------
@@ -998,28 +868,14 @@ class SoundFile(object):
 
     def read(self, frames=-1, dtype='float64', always_2d=True,
              fill_value=None, out=None):
-        """Read from the file.
+        """Read from the file and return data as NumPy array.
 
-        Reads the given number of ``frames`` in the given data format
-        from the current read/write position. This advances the
-        read/write position by the same number of frames. Use
-        ``frames=-1`` to read until the end of the file.
-
-        A two-dimensional NumPy array is returned, where the channels
-        are stored along the first dimension, i.e. as columns. A
-        two-dimensional array is returned even if the sound file has
-        only one channel. Use ``always_2d=False`` to return a
-        one-dimensional array in this case.
-
-        If ``out`` is specified, the data is written into the given
-        NumPy array. In this case, the arguments ``dtype`` and
-        ``always_2d`` are silently ignored!
-
-        If there is less data left in the file than requested, the
-        rest of the frames are filled with ``fill_value``. If
-        ``fill_value=None``, a smaller array is returned. If ``out``
-        is given, only a part of it is overwritten and a view
-        containing all valid frames is returned.
+        Reads the given number of frames in the given data format
+        starting at the current read/write position.  This advances the
+        read/write position by the same number of frames.
+        By default, all frames from the current read/write position to
+        the end of the file are returned.
+        Use :meth:`.seek` to move the current read/write position.
 
         Parameters
         ----------
@@ -1027,20 +883,7 @@ class SoundFile(object):
             The number of frames to read. If ``-1``, the whole rest of
             the file is read.
         dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-            The data type to read. Floating point data is always in
-            the range -1..1, and integer data is always in the range
-            ``INT16_MIN``..``INT16_MAX`` or
-            ``INT32_MIN``..``INT32_MAX``.
-        always_2d : bool, optional
-            Whether to always return a 2D array. If ``False``, single
-            channel reads will return 1D arrays.
-        fill_value : float, optional
-            If given and more frames were requested than available in
-            the file, the rest of the output will be filled with
-            ``fill_value``.
-        out : ndarray, optional
-            If given, the data will be read into this ``ndarray``
-            instead of creating a new ``ndarray``.
+            See :func:`read`.
 
         Returns
         -------
@@ -1048,6 +891,11 @@ class SoundFile(object):
             The read data; either a new array or ``out``. If more
             frames were requested than available in the file and
             ``out`` was given, this will be a view into ``out``.
+
+        Other Parameters
+        ----------------
+        always_2d, fill_value, out
+            See :func:`read`.
 
         Examples
         --------
@@ -1144,20 +992,7 @@ class SoundFile(object):
             The maximum number of frames to read. This can be used
             with the read/write pointer to read only part of a file.
         dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-            The data type to read. Floating point data is always in
-            the range -1..1, and integer data is always in the range
-            ``INT16_MIN``..``INT16_MAX`` or
-            ``INT32_MIN``..``INT32_MAX``.
-        always_2d : bool, optional
-            Whether to always return a 2D array. If ``False``, single
-            channel reads will return 1D arrays.
-        fill_value : float, optional
-            If given and more frames were requested than available in
-            the file, the rest of the output will be filled with
-            ``fill_value``.
-        out : ndarray, optional
-            If given, the data will be read into this ``ndarray``
-            instead of creating a new ``ndarray``.
+            See :func:`read`.
 
         Returns
         -------
@@ -1166,6 +1001,11 @@ class SoundFile(object):
             either a new ndarray or ``out``. If ``out`` was given, and
             the remaining frames are not cleanly divisible by
             ``blocksize``, the last block will be a view into ``out``.
+
+        Other Parameters
+        ----------------
+        always_2d, fill_value, out
+            See :func:`read`.
 
         Examples
         --------
