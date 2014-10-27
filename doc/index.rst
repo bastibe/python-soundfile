@@ -7,9 +7,7 @@ API Documentation
    :members:
    :undoc-members:
 
-Indices and tables
-==================
+Index
+=====
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
