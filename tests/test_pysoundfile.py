@@ -5,8 +5,6 @@ import shutil
 import pytest
 import sys
 
-PY2 = sys.version_info[0] == 2
-
 data_stereo = np.array([[1.0,  -1.0],
                         [0.75, -0.75],
                         [0.5,  -0.5],
@@ -401,7 +399,8 @@ def test_open_with_mode_is_none():
             assert f.mode == 'rb'
 
 
-@pytest.mark.skipif(PY2, reason="mode='x' not supported in Python 2")
+@pytest.mark.skipif(sys.version_info < (3, 3),
+                    reason="mode='x' not supported in Python < 3.3")
 def test_open_with_mode_is_x():
     with pytest.raises(FileExistsError):
         sf.SoundFile(filename_stereo, 'x', 44100, 2)
