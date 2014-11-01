@@ -38,7 +38,7 @@ PySoundFile:
 [PySoundFile-0.5.0.win32-py2.7](https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win32-py2.7.exe)  
 [PySoundFile-0.5.0.win32-py3.3](https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win32-py3.3.exe)
 
-[WinPython]: https://code.google.com/p/winpython/
+[WinPython]: https://winpython.github.io/
 [pybuilds]: http://www.lfd.uci.edu/~gohlke/pythonlibs/
 
 Usage
