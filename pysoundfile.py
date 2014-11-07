@@ -1146,7 +1146,7 @@ class SoundFile(object):
         if self.seekable():
             curr = self.seek(0, SEEK_CUR)
         func = getattr(_snd, funcname + ffi_type)
-        ptr = _ffi.cast(ffi_type + '*', array.ctypes.data)
+        ptr = _ffi.cast(ffi_type + '*', array.__array_interface__['data'][0])
         frames = func(self._file, ptr, frames)
         self._handle_error()
         if self.seekable():
