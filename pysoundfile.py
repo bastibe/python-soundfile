@@ -461,6 +461,7 @@ def available_formats():
     {'FLAC': 'FLAC (FLAC Lossless Audio Codec)',
      'OGG': 'OGG (OGG Container format)',
      'WAV': 'WAV (Microsoft)',
+     'AIFF': 'AIFF (Apple/SGI)',
      ...
      'WAVEX': 'WAVEX (Microsoft)',
      'RAW': 'RAW (header-less)',
