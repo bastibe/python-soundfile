@@ -245,12 +245,13 @@ _ffi_types = {
 }
 
 
-if platform == 'win32' and architecture()[0] == '32bit':
-    _snd = _ffi.dlopen('sndfile32')
-elif platform == 'win32' and architecture()[0] == '64bit':
-    _snd = _ffi.dlopen('sndfile64')
-else:
+try:
     _snd = _ffi.dlopen('sndfile')
+except OSError:
+    if _platform == 'win32':
+        _snd = _ffi.dlopen('sndfile' + _architecture()[0][:2])  # sndfile32/64
+    else:
+        raise
 
 
 def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
