@@ -241,7 +241,13 @@ _ffi_types = {
     _np.dtype('int16'): 'short'
 }
 
-_snd = _ffi.dlopen('sndfile')
+
+if platform == 'win32' and architecture()[0] == '32bit':
+    _snd = _ffi.dlopen('sndfile32')
+elif platform == 'win32' and architecture()[0] == '64bit':
+    _snd = _ffi.dlopen('sndfile64')
+else:
+    _snd = _ffi.dlopen('sndfile')
 
 
 def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,

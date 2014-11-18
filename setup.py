@@ -4,12 +4,12 @@ from sys import platform
 from platform import architecture
 import shutil
 
-if platform == 'win32' and architecture()[0] == '32bit':
-    shutil.copy2('win/sndfile32.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
-elif platform == 'win32' and architecture()[0] == '64bit':
-    shutil.copy2('win/sndfile64.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
+if platform == 'win32':
+    sndfile = [('', [
+        'win/sndfile32.dll',
+        'win/sndfile64.dll',
+        'win/sndfile_license']
+    )]
 else:
     sndfile = []
 
