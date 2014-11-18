@@ -4,14 +4,11 @@ from sys import platform
 from platform import architecture
 import shutil
 
-if platform == 'win32':
-    sndfile = [('', [
-        'win/sndfile32.dll',
-        'win/sndfile64.dll',
-        'win/sndfile_license']
-    )]
-else:
-    sndfile = []
+sndfile = [('', [
+    'win/sndfile32.dll',
+    'win/sndfile64.dll',
+    'win/sndfile_license']
+)]
 
 setup(
     name='PySoundFile',
