@@ -1,14 +1,10 @@
 #!/usr/bin/env python
+import setuptools
 from setuptools import setup
 from sys import platform
 from platform import architecture
 import shutil
 
-sndfile = [('', [
-    'win/sndfile32.dll',
-    'win/sndfile64.dll',
-    'win/sndfile_license']
-)]
 
 setup(
     name='PySoundFile',
@@ -18,8 +14,7 @@ setup(
     author_email='basti@bastibe.de',
     url='https://github.com/bastibe/PySoundFile',
     keywords=['audio', 'libsndfile'],
-    py_modules=['pysoundfile'],
-    data_files=sndfile,
+    packages=setuptools.find_packages(),
     license='BSD 3-Clause License',
     install_requires=['numpy',
                       'cffi>=0.6'],
@@ -38,4 +33,11 @@ setup(
         'Topic :: Multimedia :: Sound/Audio'
     ],
     long_description=open('README.rst').read(),
+    zip_safe=False,
+    include_package_data=True,
+    package_data={'pysoundfile': [
+        'pysoundfile/win/sndfile32.dll',
+        'pysoundfile/win/sndfile64.dll',
+        'pysoundfile/win/sndfile_license']
+    },
 )

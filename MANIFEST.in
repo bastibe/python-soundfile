@@ -1,0 +1,1 @@
+recursive-include pysoundfile/win sndfile32.dll sndfile64.dll sndfile_license
