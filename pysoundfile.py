@@ -14,6 +14,9 @@ import numpy as _np
 from cffi import FFI as _FFI
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
+from sys import platform
+from platform import architecture
+
 try:
     import builtins as _builtins
 except ImportError:
