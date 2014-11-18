@@ -1,3 +1,2 @@
-pysoundfile
 cffi>=0.6
 numpy
