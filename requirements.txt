@@ -1,3 +1,6 @@
 pysoundfile
 cffi>=0.6
 numpy
+pytest
+pytest-cov
+pytest-pep8
