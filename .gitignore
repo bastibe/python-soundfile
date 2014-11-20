@@ -4,3 +4,9 @@ dist
 build
 PySoundFile.egg-info
 MANIFEST
+*.pyc
+*.wav
+*.raw
+delme.please
+.coverage
+.cache

@@ -1,17 +1,10 @@
 #!/usr/bin/env python
+import setuptools
 from setuptools import setup
 from sys import platform
 from platform import architecture
 import shutil
 
-if platform == 'win32' and architecture()[0] == '32bit':
-    shutil.copy2('win/sndfile32.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
-elif platform == 'win32' and architecture()[0] == '64bit':
-    shutil.copy2('win/sndfile64.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
-else:
-    sndfile = []
 
 setup(
     name='PySoundFile',
@@ -21,8 +14,7 @@ setup(
     author_email='basti@bastibe.de',
     url='https://github.com/bastibe/PySoundFile',
     keywords=['audio', 'libsndfile'],
-    py_modules=['pysoundfile'],
-    data_files=sndfile,
+    packages=setuptools.find_packages(),
     license='BSD 3-Clause License',
     install_requires=['numpy',
                       'cffi>=0.6'],
@@ -41,4 +33,11 @@ setup(
         'Topic :: Multimedia :: Sound/Audio'
     ],
     long_description=open('README.rst').read(),
+    zip_safe=False,
+    include_package_data=True,
+    package_data={'pysoundfile': [
+        'pysoundfile/win/sndfile32.dll',
+        'pysoundfile/win/sndfile64.dll',
+        'pysoundfile/win/sndfile_license']
+    },
 )

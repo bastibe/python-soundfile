@@ -14,6 +14,9 @@ import numpy as _np
 from cffi import FFI as _FFI
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
+from sys import platform
+from platform import architecture
+
 try:
     import builtins as _builtins
 except ImportError:
@@ -241,7 +244,14 @@ _ffi_types = {
     _np.dtype('int16'): 'short'
 }
 
-_snd = _ffi.dlopen('sndfile')
+
+try:
+    _snd = _ffi.dlopen('sndfile')
+except OSError:
+    if _platform == 'win32':
+        _snd = _ffi.dlopen('sndfile' + _architecture()[0][:2])  # sndfile32/64
+    else:
+        raise
 
 
 def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
