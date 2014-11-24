@@ -126,7 +126,7 @@ def test_read_int16(file_mono_r):
 
 def test_read_int32(file_mono_r):
     data, fs = sf.read(file_mono_r, dtype='int32')
-    assert np.all(data == data_mono * 2 ** 16)
+    assert np.all(data // 2**16 == data_mono)
     assert data.dtype == np.int32
 
 
