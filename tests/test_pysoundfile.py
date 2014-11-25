@@ -419,7 +419,6 @@ def test_file_attributes_in_read_mode(sf_stereo_r):
     if not isinstance(sf_stereo_r.name, int):
         assert sf_stereo_r.name == filename_stereo
     assert sf_stereo_r.mode == 'r'
-    assert sf_stereo_r.frames == len(data_stereo)
     assert sf_stereo_r.samplerate == 44100
     assert sf_stereo_r.channels == 2
     assert sf_stereo_r.format == 'WAV'
@@ -654,9 +653,9 @@ def test_read_raw_files_with_too_few_arguments_should_fail():
 def test_write_non_seekable_file():
     with sf.SoundFile(filename_new, 'w', 44100, 1, format='XI') as f:
         assert not f.seekable()
-        assert f.frames == 0
+        assert len(f) == 0
         f.write(data_mono)
-        assert f.frames == len(data_mono)
+        assert len(f) == len(data_mono)
 
         with pytest.raises(RuntimeError) as excinfo:
             f.seek(2)
@@ -664,7 +663,7 @@ def test_write_non_seekable_file():
 
     with sf.SoundFile(filename_new) as f:
         assert not f.seekable()
-        assert f.frames == len(data_mono)
+        assert len(f) == len(data_mono)
         data = f.read(3, dtype='int16')
         assert np.all(data == data_mono[:3])
         data = f.read(666, dtype='int16')

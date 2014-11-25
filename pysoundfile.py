@@ -691,8 +691,6 @@ class SoundFile(object):
     """The file name of the sound file."""
     mode = property(lambda self: self._mode)
     """The open mode the sound file was opened with."""
-    frames = property(lambda self: self._info.frames)
-    """The number of frames in the sound file."""
     samplerate = property(lambda self: self._info.samplerate)
     """The sample rate of the sound file."""
     channels = property(lambda self: self._info.channels)
@@ -752,7 +750,7 @@ class SoundFile(object):
             raise AttributeError("SoundFile has no attribute %s" % repr(name))
 
     def __len__(self):
-        return self.frames
+        return self._info.frames
 
     def __getitem__(self, frame):
         # access the file as if it where a Numpy array. The data is
@@ -1107,7 +1105,7 @@ class SoundFile(object):
     def _check_frames(self, frames, fill_value):
         # Check if frames is larger than the remaining frames in the file
         if self.seekable():
-            remaining_frames = self.frames - self.seek(0, SEEK_CUR)
+            remaining_frames = len(self) - self.seek(0, SEEK_CUR)
             if frames < 0 or (frames > remaining_frames
                               and fill_value is None):
                 frames = remaining_frames
@@ -1160,7 +1158,7 @@ class SoundFile(object):
         if frames >= 0 and stop is not None:
             raise TypeError("Only one of {frames, stop} may be used")
 
-        start, stop, _ = slice(start, stop).indices(self.frames)
+        start, stop, _ = slice(start, stop).indices(len(self))
         if stop < start:
             stop = start
         if frames < 0:
