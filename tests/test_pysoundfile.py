@@ -442,13 +442,15 @@ def test_mode_should_be_in_readwrite_mode(sf_stereo_rplus):
 
 
 # -----------------------------------------------------------------------------
-# Test seek
+# Test seek/tell
 # -----------------------------------------------------------------------------
 
 
 def test_seek_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 0
+    assert sf_stereo_r.tell() == 0
     assert sf_stereo_r.seek(2) == 2
+    assert sf_stereo_r.tell() == 2
     assert sf_stereo_r.seek(2, sf.SEEK_CUR) == 4
     assert sf_stereo_r.seek(-2, sf.SEEK_END) == len(data_stereo) - 2
     with pytest.raises(RuntimeError):
@@ -459,13 +461,17 @@ def test_seek_in_read_mode(sf_stereo_r):
 
 def test_seek_in_write_mode(sf_stereo_w):
     assert sf_stereo_w.seek(0, sf.SEEK_CUR) == 0
+    assert sf_stereo_w.tell() == 0
     assert sf_stereo_w.seek(2) == 2
+    assert sf_stereo_w.tell() == 2
 
 
 def test_seek_in_rplus_mode(sf_stereo_rplus):
     assert sf_stereo_rplus.seek(0, sf.SEEK_CUR) == 0
+    assert sf_stereo_rplus.tell() == 0
     assert sf_stereo_rplus.seek(2) == 2
     assert sf_stereo_rplus.seek(0, sf.SEEK_CUR) == 2
+    assert sf_stereo_rplus.tell() == 2
 
 
 # -----------------------------------------------------------------------------

@@ -831,6 +831,10 @@ class SoundFile(object):
         self._handle_error()
         return position
 
+    def tell(self):
+        """Return the current read/write position."""
+        return self.seek(0, SEEK_CUR)
+
     def read(self, frames=-1, dtype='float64', always_2d=True,
              fill_value=None, out=None):
         """Read from the file and return data as NumPy array.
@@ -916,7 +920,7 @@ class SoundFile(object):
         assert written == len(data)
 
         if self.seekable():
-            curr = self.seek(0, SEEK_CUR)
+            curr = self.tell()
             self._info.frames = self.seek(0, SEEK_END)
             self.seek(curr, SEEK_SET)
         else:
@@ -1105,7 +1109,7 @@ class SoundFile(object):
     def _check_frames(self, frames, fill_value):
         # Check if frames is larger than the remaining frames in the file
         if self.seekable():
-            remaining_frames = len(self) - self.seek(0, SEEK_CUR)
+            remaining_frames = len(self) - self.tell()
             if frames < 0 or (frames > remaining_frames
                               and fill_value is None):
                 frames = remaining_frames
@@ -1142,7 +1146,7 @@ class SoundFile(object):
         assert array.size >= frames * self.channels
 
         if self.seekable():
-            curr = self.seek(0, SEEK_CUR)
+            curr = self.tell()
         func = getattr(_snd, funcname + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', array.__array_interface__['data'][0])
         frames = func(self._file, ptr, frames)
