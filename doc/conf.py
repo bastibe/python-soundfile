@@ -209,7 +209,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'PySoundFile.tex', 'PySoundFile Documentation',
-   'Bastian Bechtold, Matthias Geier', 'manual'),
+   'Bastian Bechtold, Matthias Geier', 'howto'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
