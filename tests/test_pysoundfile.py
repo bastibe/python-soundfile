@@ -3,7 +3,6 @@ import numpy as np
 import os
 import shutil
 import pytest
-import sys
 
 data_stereo = np.array([[1.0,  -1.0],
                         [0.75, -0.75],
@@ -397,13 +396,28 @@ def test_open_with_mode_is_none():
             assert f.mode == 'rb'
 
 
-@pytest.mark.skipif(sys.version_info < (3, 3),
-                    reason="mode='x' not supported in Python < 3.3")
 def test_open_with_mode_is_x():
-    with pytest.raises(FileExistsError):
+    with pytest.raises(OSError) as excinfo:
         sf.SoundFile(filename_stereo, 'x', 44100, 2)
-    with pytest.raises(FileExistsError):
+    assert "exists" in str(excinfo.value)
+    with pytest.raises(OSError) as excinfo:
         sf.SoundFile(filename_stereo, 'x+', 44100, 2)
+    assert "exists" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("mode", ['w', 'w+'])
+def test_if_open_with_mode_w_truncates(file_stereo_rplus, mode):
+    with sf.SoundFile(file_stereo_rplus, mode, 48000, 6, format='AIFF') as f:
+        pass
+    with sf.SoundFile(filename_new) as f:
+        if isinstance(file_stereo_rplus, str):
+            assert f.samplerate == 48000
+            assert f.channels == 6
+            assert f.format == 'AIFF'
+            assert len(f) == 0
+        else:
+            # This doesn't really work for file descriptors and file objects
+            pass
 
 
 # -----------------------------------------------------------------------------
