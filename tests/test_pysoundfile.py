@@ -194,6 +194,12 @@ def test_write_function(file_w):
     assert np.all(data == data_mono)
 
 
+def test_write_with_exclusive_creation():
+    with pytest.raises(OSError) as excinfo:
+        sf.write(data_mono, filename_mono, 44100)
+    assert "File exists" in str(excinfo.value)
+
+
 # -----------------------------------------------------------------------------
 # Test blocks() function
 # -----------------------------------------------------------------------------

@@ -30,7 +30,7 @@ def test_read_defaults():
     meth_defaults = defaults(read_method)
     init_defaults = defaults(init)
 
-    del init_defaults['mode']  # Not meaningful in read() function:
+    del init_defaults['mode']  # mode is always 'r'
 
     del func_defaults['start']
     del func_defaults['stop']
@@ -44,12 +44,13 @@ def test_read_defaults():
 
 def test_write_defaults():
     write_defaults = defaults(write_function)
+    del write_defaults['exclusive_creation']
     init_defaults = defaults(init)
 
     # Same default values as SoundFile.__init__()
     init_defaults = remove_items(init_defaults, write_defaults)
 
-    del init_defaults['mode']  # mode is always 'w'
+    del init_defaults['mode']  # mode is always 'x' or 'w'
     del init_defaults['channels']  # Inferred from data
     del init_defaults['samplerate']  # Obligatory in write()
     assert not init_defaults  # No more arguments should be left
