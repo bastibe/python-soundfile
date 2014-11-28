@@ -480,10 +480,10 @@ def available_subtypes(format=None):
     subtypes = _available_formats_helper(_snd.SFC_GET_FORMAT_SUBTYPE_COUNT,
                                          _snd.SFC_GET_FORMAT_SUBTYPE)
     return dict((subtype, name) for subtype, name in subtypes
-                if format is None or format_check(format, subtype))
+                if format is None or check_format(format, subtype))
 
 
-def format_check(format, subtype=None, endian=None):
+def check_format(format, subtype=None, endian=None):
     """Check if the combination of format/subtype/endian is valid.
 
     Examples
