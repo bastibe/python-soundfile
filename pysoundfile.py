@@ -717,6 +717,11 @@ class SoundFile(object):
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
 
+    def __repr__(self):
+        return ('SoundFile("{}", mode="{}", samplerate={}, channels={}, '
+                'format="{}")').format(self.name, self.mode, self.samplerate,
+                                     self.channels, self.format)
+
     def __del__(self):
         self.close()
 
