@@ -445,6 +445,11 @@ def test_file_attributes_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.seekable() is True
     assert len(sf_stereo_r) == len(data_stereo)
 
+def test__repr__(sf_stereo_r):
+    if not isinstance(sf_stereo_r.name, int):
+        assert repr(sf_stereo_r) == ('SoundFile("{}", mode="r", '
+                                     'samplerate=44100, channels=2, '
+                                     'format="WAV")').format(filename_stereo)
 
 def test_mode_should_be_in_write_mode(sf_stereo_w):
     assert sf_stereo_w.mode == 'w'
