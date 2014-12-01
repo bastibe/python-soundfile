@@ -489,9 +489,9 @@ def check_format(format, subtype=None, endian=None):
     Examples
     --------
     >>> import pysoundfile as sf
-    >>> sf.format_check('WAV', 'PCM_24')
+    >>> sf.check_format('WAV', 'PCM_24')
     True
-    >>> sf.format_check('FLAC', 'VORBIS')
+    >>> sf.check_format('FLAC', 'VORBIS')
     False
 
     """
