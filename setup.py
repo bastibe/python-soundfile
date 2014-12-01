@@ -51,7 +51,6 @@ setup(
     platforms='any',
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'Environment :: Other Environment',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
