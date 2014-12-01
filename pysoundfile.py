@@ -758,7 +758,7 @@ class SoundFile(object):
         # returned as numpy array.
         from warnings import warn
         warn('indexing has been deprecated and will be removed in the future',
-             DeprecationWarning)
+             Warning)
         second_frame = None
         if isinstance(frame, tuple):
             if len(frame) > 2:
@@ -781,7 +781,7 @@ class SoundFile(object):
         # Both open slice bounds and negative values are allowed.
         from warnings import warn
         warn('indexing has been deprecated and will be removed in the future',
-             DeprecationWarning)
+             Warning)
         start, stop = self._get_slice_bounds(frame)
         if stop - start != len(data):
             raise IndexError(
