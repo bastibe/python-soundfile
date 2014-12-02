@@ -756,6 +756,9 @@ class SoundFile(object):
     def __getitem__(self, frame):
         # access the file as if it where a Numpy array. The data is
         # returned as numpy array.
+        from warnings import warn
+        warn('indexing has been deprecated and will be removed in the future',
+             Warning)
         second_frame = None
         if isinstance(frame, tuple):
             if len(frame) > 2:
@@ -776,6 +779,9 @@ class SoundFile(object):
         # access the file as if it where a one-dimensional Numpy
         # array. Data must be in the form (frames x channels).
         # Both open slice bounds and negative values are allowed.
+        from warnings import warn
+        warn('indexing has been deprecated and will be removed in the future',
+             Warning)
         start, stop = self._get_slice_bounds(frame)
         if stop - start != len(data):
             raise IndexError(
