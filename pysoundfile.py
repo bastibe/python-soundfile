@@ -480,18 +480,18 @@ def available_subtypes(format=None):
     subtypes = _available_formats_helper(_snd.SFC_GET_FORMAT_SUBTYPE_COUNT,
                                          _snd.SFC_GET_FORMAT_SUBTYPE)
     return dict((subtype, name) for subtype, name in subtypes
-                if format is None or format_check(format, subtype))
+                if format is None or check_format(format, subtype))
 
 
-def format_check(format, subtype=None, endian=None):
+def check_format(format, subtype=None, endian=None):
     """Check if the combination of format/subtype/endian is valid.
 
     Examples
     --------
     >>> import pysoundfile as sf
-    >>> sf.format_check('WAV', 'PCM_24')
+    >>> sf.check_format('WAV', 'PCM_24')
     True
-    >>> sf.format_check('FLAC', 'VORBIS')
+    >>> sf.check_format('FLAC', 'VORBIS')
     False
 
     """
