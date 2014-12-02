@@ -51,7 +51,6 @@ setup(
     platforms='any',
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'Environment :: Other Environment',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
@@ -59,7 +58,9 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: Implementation :: PyPy',
+        'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Multimedia :: Sound/Audio'
     ],
     long_description=open('README.rst').read(),
