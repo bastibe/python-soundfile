@@ -1,18 +1,21 @@
 PySoundFile
 ===========
 
-PySoundFile is an audio library based on libsndfile, CFFI and Numpy
+`PySoundFile <https://github.com/bastibe/PySoundFile>`__ is an audio
+library based on libsndfile, CFFI and Numpy. Full documentation is
+available on `pysoundfile.readthedocs.org
+<http://pysoundfile.readthedocs.org/en/documentation/>`__.
 
 PySoundFile can read and write sound files. File reading/writing is
 supported through `libsndfile <http://www.mega-nerd.com/libsndfile/>`__,
-which is a free, cross-platform, open-source library for reading and
-writing many different sampled sound file formats that runs on many
+which is a free, cross-platform, open-source (LGPL) library for reading
+and writing many different sampled sound file formats that runs on many
 platforms including Windows, OS X, and Unix. It is accessed through
 `CFFI <http://cffi.readthedocs.org/>`__, which is a foreign function
 interface for Python calling C code. CFFI is supported for CPython 2.6+,
 3.x and PyPy 2.0+. PySoundFile represents audio data as NumPy arrays.
 
-| PySoundFile is BSD licensed.
+| PySoundFile is BSD licensed (BSD 3-Clause License).
 | (c) 2013, Bastian Bechtold
 
 Installation
