@@ -18,18 +18,29 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 Installation
 ------------
 
-On the Python side, you need to have CFFI and Numpy in order to use
-PySoundFile. Additionally, You need the library libsndfile installed on
-your computer. On Unix, use your package manager to install libsndfile.
-Then just install PySoundFile using pip or ``python setup.py install``.
+PySoundFile depends on the Python packages CFFI and Numpy, and the
+system library libsndfile.
 
-If you are running Windows, I recommend using
-`WinPython <http://winpython.github.io/>`__ or some similar
-distribution. This should set you up with Numpy. However, you also need
-CFFI and it's dependency, PyCParser. A good place to get these are the
-`Unofficial Windows Binaries for
-Python <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`__. Having installed
-those, you can download the Windows installers for PySoundFile:
+To install the Python dependencies, I recommend using the `Anaconda
+<http://continuum.io/downloads#34>`__ Distribution of Python. Anaconda
+provides the ``conda`` package manager, which will install all
+dependencies using ``conda install cffi numpy`` (conda is also
+independently available on pip).
+
+You will also need to install `libsndfile
+<http://www.mega-nerd.com/libsndfile/>`__. On Windows, libsndfile is
+included in the binary installers (see below). On OS X, `homebrew
+<http://www.mega-nerd.com/libsndfile/>`__ can install libsndfile using
+``brew install libsndfile``. On Linux, use your distribution's package
+manager, for example ``sudo apt-get install libsndfile``.
+
+With CFFI, Numpy, and libsndfile installed, you can use `pip
+<http://pip.readthedocs.org/en/latest/installing.html>`__ to install
+`PySoundFile <https://pypi.python.org/pypi/PySoundFile/0.5.0>`__ with
+``pip install pysoundfile`` or ``pip install pysoundfile --user`` if you
+don't have administrator privileges. If you are running Windows you
+should download the Windows installers for PySoundFile instead (which
+also include libsndfile):
 
 | `PySoundFile-0.5.0.win-amd64-py2.7 <https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win-amd64-py2.7.exe>`__
 | `PySoundFile-0.5.0.win-amd64-py3.3 <https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win-amd64-py3.3.exe>`__
