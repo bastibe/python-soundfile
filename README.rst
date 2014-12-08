@@ -110,3 +110,30 @@ sound file. In particular, you can set a title, a copyright notice, a
 software description, the artist name, a comment, a date, the album
 name, a license, a tracknumber and a genre. Note however, that not all
 of these fields are supported for every file format.
+
+News
+----
+
+- 2013-08-27 V0.1.0 Bastian Bechtold
+  Initial prototype. A simple wrapper for libsndfile in Python
+
+- 2013-08-30 V0.2.0 Bastian Bechtold
+  Bugfixes and more consistency with PySoundCard
+
+- 2013-08-30 V0.2.1 Bastian Bechtold
+  Bugfixes
+
+- 2013-09-27 V0.3.0 Bastian Bechtold
+  Added binary installer for Windows, and context manager
+
+- 2013-11-06 V0.3.1 Bastian Bechtold
+  Switched from distutils to setuptools for easier installation
+
+- 2013-11-29 V0.4.0 Bastian Bechtold
+  Thanks to David Blewett, now with Virtual IO!
+
+- 2013-12-08 V0.4.1 Bastian Bechtold
+  Thanks to Xidorn Quan, FLAC files are not float32 any more.
+
+- 2014-02-26 V0.5.0 Bastian Bechtold
+  Thanks to Matthias Geier, improved seeking.
