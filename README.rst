@@ -50,33 +50,13 @@ also include libsndfile):
 | `PySoundFile-0.5.0.win32-py2.7 <https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win32-py2.7.exe>`__
 | `PySoundFile-0.5.0.win32-py3.3 <https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win32-py3.3.exe>`__
 
-Usage
------
-
-Each SoundFile can either open a sound file on the disk, or a file-like
-object (using ``libsndfile``'s `virtual file
-interface <http://www.mega-nerd.com/libsndfile/api.html#open_virtual>`__).
-Every sound file has a specific samplerate, data format and a set number
-of channels.
-
-You can read and write any file that
-`libsndfile <http://www.mega-nerd.com/libsndfile/#Features>`__ can
-open. This includes Microsoft WAV, OGG, FLAC and Matlab MAT files.
-
-If a file on disk is opened, it is kept open for as long as the
-SoundFile object exists and closes automatically when it goes out of
-scope. Alternatively, the SoundFile object can be used as a context
-manager, which closes the file when it exits.
-
-All data access uses frames as index. A frame is one discrete time-step
-in the sound file. Every frame contains as many samples as there are
-channels in the file.
-
 Read/Write Functions
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
-Data can be written to the file using ``write()``, or read from the
-file using ``read()``.
+Data can be written to the file using ``write()``, or read from the file
+using ``read()``. PySoundFile can open all file formats that `libsndfile
+supports <http://www.mega-nerd.com/libsndfile/#Features>`__, for example
+WAV, FLAC, OGG and MAT files.
 
 Here is an example for a program that reads a wave file and copies it
 into an ogg-vorbis file:
@@ -88,17 +68,73 @@ into an ogg-vorbis file:
     data, samplerate = sf.read('existing_file.wav')
     sf.write(data, 'new_file.ogg', samplerate=samplerate)
 
-Virtual IO
-~~~~~~~~~~
+Block Processing
+----------------
 
-If you have an open file-like object, you can use something similar to
-this to decode it:
+Sound files can also be read in short, overlapping blocks. For example,
+this calculates the signal level for a long file:
 
 .. code:: python
 
-    from pysoundfile import SoundFile
-    with SoundFile('filename.flac', 'rb') as fObj:
-        data, samplerate = sf.read(fObj)
+   import numpy as np
+   import pysoundfile as sf
+
+   rms = [np.sqrt(np.mean(block**2)) for block in
+          sf.blocks('myfile.wav', blocksize=1024, overlap=512)]
+
+SoundFile Objects
+-----------------
+
+Sound file can also be opened as SoundFile objects. Every SoundFile has
+a specific sample rate, data format and a set number of channels.
+
+If a file is opened, it is kept open for as long as the SoundFile object
+exists and closes automatically when it goes out of scope.
+Alternatively, there is a context managers, which opens and closes the
+file automatically:
+
+.. code:: python
+
+   import pysoundfile as sf
+
+   with sf.SoundFile('myfile.wav', 'rw') as f:
+       while f.tell() < len(f)-1:
+           pos = f.tell()
+           data = f.read(1024)
+           f.seek(pos)
+           f.write(data*2)
+
+All data access uses frames as index. A frame is one discrete time-step
+in the sound file. Every frame contains as many samples as there are
+channels in the file.
+
+RAW Files
+---------
+
+Pysoundfile can usually auto-detect the file type of sound files. This
+is not possible for RAW files, though. This is a useful idiom for
+opening RAW files without having to provide all the format for every
+file:
+
+.. code:: python
+
+   import pysoundfile as sf
+
+   format = {'format':'RAW', 'subtype':'FLOAT', 'endian':'FILE'}
+   data = sf.read('myfile.raw', dtype='float32', **format)
+   sf.write(data, 'otherfile.raw', **format)
+
+Virtual IO
+----------
+
+If you have an open file-like object, Pysoundfile can open it just like
+regular files:
+
+.. code:: python
+
+    import pysoundfile as sf
+    with open('filename.flac', 'rb') as f:
+        data, samplerate = sf.read(f)
 
 Here is an example using an HTTP request:
 
@@ -108,19 +144,19 @@ Here is an example using an HTTP request:
     import pysoundfile as sf
     import requests
 
-    fObj = BytesIO()
+    f = BytesIO()
     response = requests.get('http://www.example.com/my.flac', stream=True)
     for data in response.iter_content(4096):
         if data:
-            fObj.write(data)
-    fObj.seek(0)
-    data, samplerate = sf.read(fObj)
+            f.write(data)
+    f.seek(0)
+    data, samplerate = sf.read(f)
 
 Accessing Text Data
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 In addition to audio data, there are a number of text fields in every
 sound file. In particular, you can set a title, a copyright notice, a
 software description, the artist name, a comment, a date, the album
-name, a license, a tracknumber and a genre. Note however, that not all
+name, a license, a track number and a genre. Note however, that not all
 of these fields are supported for every file format.
