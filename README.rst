@@ -4,7 +4,7 @@ PySoundFile
 `PySoundFile <https://github.com/bastibe/PySoundFile>`__ is an audio
 library based on libsndfile, CFFI and Numpy. Full documentation is
 available on `pysoundfile.readthedocs.org
-<http://pysoundfile.readthedocs.org/en/documentation/>`__.
+<http://pysoundfile.readthedocs.org/>`__.
 
 PySoundFile can read and write sound files. File reading/writing is
 supported through `libsndfile <http://www.mega-nerd.com/libsndfile/>`__,
@@ -71,8 +71,9 @@ into an ogg-vorbis file:
 Block Processing
 ----------------
 
-Sound files can also be read in short, overlapping blocks. For example,
-this calculates the signal level for a long file:
+Sound files can also be read in short, optionally overlapping blocks.
+For example, this calculates the signal level for each block of a long
+file:
 
 .. code:: python
 
@@ -85,20 +86,21 @@ this calculates the signal level for a long file:
 SoundFile Objects
 -----------------
 
-Sound file can also be opened as SoundFile objects. Every SoundFile has
-a specific sample rate, data format and a set number of channels.
+Sound files can also be opened as SoundFile objects. Every SoundFile
+has a specific sample rate, data format and a set number of channels.
 
-If a file is opened, it is kept open for as long as the SoundFile object
-exists and closes automatically when it goes out of scope.
-Alternatively, there is a context managers, which opens and closes the
-file automatically:
+If a file is opened, it is kept open for as long as the SoundFile
+object exists and closes automatically when it goes out of scope. You
+can also use the `close()` method to close SoundFile objects
+explicitly. Alternatively, there is a context managers, which opens
+and closes the file automatically:
 
 .. code:: python
 
    import pysoundfile as sf
 
    with sf.SoundFile('myfile.wav', 'rw') as f:
-       while f.tell() < len(f)-1:
+       while f.tell() < len(f):
            pos = f.tell()
            data = f.read(1024)
            f.seek(pos)
@@ -152,11 +154,11 @@ Here is an example using an HTTP request:
     f.seek(0)
     data, samplerate = sf.read(f)
 
-Accessing Text Data
--------------------
+Accessing File Metadata
+-----------------------
 
-In addition to audio data, there are a number of text fields in every
-sound file. In particular, you can set a title, a copyright notice, a
+In addition to audio data, there are a number of text fields in some
+sound files. In particular, you can set a title, a copyright notice, a
 software description, the artist name, a comment, a date, the album
-name, a license, a track number and a genre. Note however, that not all
-of these fields are supported for every file format.
+name, a license, a track number and a genre. Note however, that not
+all of these fields are supported for every file format.
