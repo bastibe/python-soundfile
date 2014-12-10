@@ -5,7 +5,7 @@ Sound files can be read or written directly using the functions
 To read a sound file in a block-wise fashion, use :func:`blocks`.
 Alternatively, sound files can be opened as :class:`SoundFile` objects.
 
-For further information, see http://pysoundfile.rtfd.org/.
+For further information, see http://pysoundfile.readthedocs.org/.
 
 """
 __version__ = "0.5.0"
@@ -521,7 +521,7 @@ class SoundFile(object):
     """A sound file.
 
     For more documentation see the __init__() docstring (which is also
-    used for the online documentation (http://pysoundfile.rtfd.org/).
+    used for the online documentation (http://pysoundfile.readthedocs.org/).
 
     """
 
