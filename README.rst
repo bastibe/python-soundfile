@@ -90,10 +90,9 @@ Sound files can also be opened as SoundFile objects. Every SoundFile
 has a specific sample rate, data format and a set number of channels.
 
 If a file is opened, it is kept open for as long as the SoundFile
-object exists and closes automatically when it goes out of scope. You
-can also use the `close()` method to close SoundFile objects
-explicitly. Alternatively, there is a context managers, which opens
-and closes the file automatically:
+object exists and closes when the object is garbage collected. Use the
+``close()`` method or the context manager to close the file
+explicitly:
 
 .. code:: python
 
