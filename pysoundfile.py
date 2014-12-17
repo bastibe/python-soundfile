@@ -719,8 +719,9 @@ class SoundFile(object):
 
     def __repr__(self):
         return ('SoundFile("%s", mode="%s", samplerate=%i, channels=%i, '
-                'format="%s")' % (self.name, self.mode, self.samplerate,
-                                  self.channels, self.format))
+                'format="%s", subtype="%s", endian="%s")' %
+                (self.name, self.mode, self.samplerate, self.channels,
+                 self.format, self.subtype, self.endian))
 
     def __del__(self):
         self.close()
