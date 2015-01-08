@@ -329,11 +329,9 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
     return data, f.samplerate
 
 
-def write(data, file, samplerate,
-          subtype=None, endian=None, format=None, closefd=True):
+def write(data, file, samplerate, subtype=None, endian=None, format=None,
+          closefd=True, exclusive_creation=True):
     """Write data to a sound file.
-
-    .. note:: If `file` exists, it will be truncated and overwritten!
 
     Parameters
     ----------
@@ -357,6 +355,9 @@ def write(data, file, samplerate,
 
     Other Parameters
     ----------------
+    exclusive_creation : bool
+        If ``True`` (the default), the file is opened with ``mode='x'``.
+        Otherwise, it is opened with ``mode='w'``.
     format, endian, closefd
         See :class:`SoundFile`.
 
@@ -375,7 +376,8 @@ def write(data, file, samplerate,
         channels = 1
     else:
         channels = data.shape[1]
-    with SoundFile(file, 'w', samplerate, channels,
+    mode = 'x' if exclusive_creation else 'w'
+    with SoundFile(file, mode, samplerate, channels,
                    subtype, endian, format, closefd) as f:
         f.write(data)
 
