@@ -32,7 +32,7 @@ def _file_existing(request, filename, fdarg, objarg=None):
         request.addfinalizer(finalizer)
         return fd
     elif request.param == 'obj':
-        obj = open(filename, objarg)
+        obj = open(filename, objarg, buffering=False)
         request.addfinalizer(obj.close)
         return obj
 
@@ -638,21 +638,19 @@ def test_closing_should_close_file():
     assert f.closed
 
 
-def test_file_attributes_should_save_to_disk():
-    with sf.SoundFile(filename_new, 'w', 44100, 2, format='WAV') as f:
+def test_file_attributes_should_save_to_disk(file_w):
+    with sf.SoundFile(file_w, 'w', 44100, 2, format='WAV') as f:
         f.title = 'testing'
     with sf.SoundFile(filename_new) as f:
         assert f.title == 'testing'
-    os.remove(filename_new)
 
 
-def test_non_file_attributes_should_not_save_to_disk():
-    with sf.SoundFile(filename_new, 'w', 44100, 2, format='WAV') as f:
+def test_non_file_attributes_should_not_save_to_disk(file_w):
+    with sf.SoundFile(file_w, 'w', 44100, 2, format='WAV') as f:
         f.foobar = 'testing'
     with sf.SoundFile(filename_new) as f:
         with pytest.raises(AttributeError):
             f.foobar
-    os.remove(filename_new)
 
 
 # -----------------------------------------------------------------------------
@@ -681,8 +679,8 @@ def test_read_raw_files_with_too_few_arguments_should_fail():
 # -----------------------------------------------------------------------------
 
 
-def test_write_non_seekable_file():
-    with sf.SoundFile(filename_new, 'w', 44100, 1, format='XI') as f:
+def test_write_non_seekable_file(file_w):
+    with sf.SoundFile(file_w, 'w', 44100, 1, format='XI') as f:
         assert not f.seekable()
         assert len(f) == 0
         f.write(data_mono)
