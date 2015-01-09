@@ -638,10 +638,10 @@ class SoundFile(object):
             mode_int = _snd.SFM_WRITE
 
         old_fmt = format
-        self._name = getattr(file, 'name', file)
+        self._name = file
         if format is None:
-            format = str(self.name).rsplit('.', 1)[-1].upper()
-            if format not in _formats and 'r' not in modes:
+            format = str(getattr(file, 'name', file)).rsplit('.', 1)[-1]
+            if format.upper() not in _formats and 'r' not in modes:
                 raise TypeError(
                     "No format specified and unable to get format from "
                     "file extension: %s" % repr(self.name))
@@ -720,9 +720,10 @@ class SoundFile(object):
     _file = None
 
     def __repr__(self):
-        return ('SoundFile("{}", mode="{}", samplerate={}, channels={}, '
-                'format="{}")').format(self.name, self.mode, self.samplerate,
-                                     self.channels, self.format)
+        return ('SoundFile(%r, mode=%r, samplerate=%i, channels=%i, '
+                'format=%r, subtype=%r, endian=%r)' %
+                (self.name, self.mode, self.samplerate, self.channels,
+                 self.format, self.subtype, self.endian))
 
     def __del__(self):
         self.close()
