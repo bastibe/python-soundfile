@@ -12,6 +12,8 @@ __version__ = "0.5.0"
 
 import numpy as _np
 import os as _os
+from sys import platform as _platform
+from platform import architecture as _architecture
 from cffi import FFI as _FFI
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
@@ -237,7 +239,13 @@ _ffi_types = {
     _np.dtype('int16'): 'short'
 }
 
-_snd = _ffi.dlopen('sndfile')
+if _platform == 'win32':
+    try:
+        _snd = _ffi.dlopen('libsndfile-1')
+    except OSError:
+        _snd = _ffi.dlopen('libsndfile' + _architecture()[0])
+else:
+    _snd = _ffi.dlopen('sndfile')
 
 
 def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
