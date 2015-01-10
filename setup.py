@@ -65,5 +65,5 @@ setup(
     ],
     long_description=open('README.rst').read(),
     tests_require=['pytest'],
-    cmdclass = {'test': PyTest},
+    cmdclass={'test': PyTest},
 )
