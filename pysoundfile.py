@@ -8,7 +8,7 @@ Alternatively, sound files can be opened as :class:`SoundFile` objects.
 For further information, see http://pysoundfile.readthedocs.org/.
 
 """
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 import numpy as _np
 import os as _os
