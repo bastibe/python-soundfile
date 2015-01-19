@@ -22,11 +22,20 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 Breaking Changes
 ----------------
 
-The latest release of PySoundFile cleans up many small inconsistencies, particularly in the the ordering and naming of function arguments. Therefore, old code will probably not work any more.
+The latest release of PySoundFile cleans up many small
+inconsistencies, particularly in the the ordering and naming of
+function arguments. Therefore, old code will probably not work any
+more.
 
-It also adds a number of great new features, such as global ``read`` and ``write`` functions that do not require you to open a ``SoundFile``, or a ``blocks`` function that can read a sound file one block at a time. It has also grown a lot more flexible and powerful at opening things like streams, buffers, or file descriptors.
+It also adds a number of great new features, such as global ``read``
+and ``write`` functions that do not require you to open a
+``SoundFile``, or a ``blocks`` function that can read a sound file one
+block at a time. It has also grown a lot more flexible and powerful at
+opening things like streams, buffers, or file descriptors.
 
-With all these improvements, we feel that the indexing interface is not needed any more. It is now officially marked as deprecated and might be removed in the future.
+With all these improvements, we feel that the indexing interface is
+not needed any more. It is now officially marked as deprecated and
+might be removed in the future.
 
 Installation
 ------------
@@ -205,7 +214,8 @@ News
     - Switched to ``float64`` as default data type.
     - Function arguments changed for consistency.
     - Added unit tests.
-    - Added global ``read()``, ``write()``, ``blocks()`` convenience functions.
+    - Added global ``read()``, ``write()``, ``blocks()`` convenience
+      functions.
     - Documentation overhaul and hosting on readthedocs.
     - Added ``'x'`` open mode.
     - Added ``tell()`` method.
