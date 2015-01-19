@@ -18,6 +18,25 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 | PySoundFile is BSD licensed (BSD 3-Clause License).
 | (c) 2013, Bastian Bechtold
 
+
+Breaking Changes
+----------------
+
+The latest release of PySoundFile cleans up many small
+inconsistencies, particularly in the the ordering and naming of
+function arguments. Therefore, old code will probably not work any
+more.
+
+It also adds a number of great new features, such as global ``read``
+and ``write`` functions that do not require you to open a
+``SoundFile``, or a ``blocks`` function that can read a sound file one
+block at a time. It has also grown a lot more flexible and powerful at
+opening things like streams, buffers, or file descriptors.
+
+With all these improvements, we feel that the indexing interface is
+not needed any more. It is now officially marked as deprecated and
+might be removed in the future.
+
 Installation
 ------------
 
@@ -39,16 +58,16 @@ manager, for example ``sudo apt-get install libsndfile``.
 
 With CFFI, Numpy, and libsndfile installed, you can use `pip
 <http://pip.readthedocs.org/en/latest/installing.html>`__ to install
-`PySoundFile <https://pypi.python.org/pypi/PySoundFile/0.5.0>`__ with
+`PySoundFile <https://pypi.python.org/pypi/PySoundFile/0.6.0>`__ with
 ``pip install pysoundfile`` or ``pip install pysoundfile --user`` if you
 don't have administrator privileges. If you are running Windows you
 should download the Windows installers for PySoundFile instead (which
 also include libsndfile):
 
-| `PySoundFile-0.5.0.win-amd64-py2.7 <https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win-amd64-py2.7.exe>`__
-| `PySoundFile-0.5.0.win-amd64-py3.3 <https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win-amd64-py3.3.exe>`__
-| `PySoundFile-0.5.0.win32-py2.7 <https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win32-py2.7.exe>`__
-| `PySoundFile-0.5.0.win32-py3.3 <https://github.com/bastibe/PySoundFile/releases/download/0.5.0/PySoundFile-0.5.0.win32-py3.3.exe>`__
+| `PySoundFile-0.6.0.win-amd64-py2.7 <https://github.com/bastibe/PySoundFile/releases/download/0.6.0/PySoundFile-0.6.0.win-amd64-py2.7.exe>`__
+| `PySoundFile-0.6.0.win-amd64-py3.4 <https://github.com/bastibe/PySoundFile/releases/download/0.6.0/PySoundFile-0.6.0.win-amd64-py3.4.exe>`__
+| `PySoundFile-0.6.0.win32-py2.7 <https://github.com/bastibe/PySoundFile/releases/download/0.6.0/PySoundFile-0.6.0.win32-py2.7.exe>`__
+| `PySoundFile-0.6.0.win32-py3.4 <https://github.com/bastibe/PySoundFile/releases/download/0.6.0/PySoundFile-0.6.0.win32-py3.4.exe>`__
 
 Read/Write Functions
 --------------------
@@ -187,4 +206,17 @@ News
     Thanks to Xidorn Quan, FLAC files are not float32 any more.
 
 2014-02-26 V0.5.0 Bastian Bechtold:
-    Thanks to Matthias Geier, improved seeking.
+    Thanks to Matthias Geier, improved seeking and a flush() method.
+
+2015-01-19 V0.6.0 Bastian Bechtold:
+    A big, big thank you to Matthias Geier, who did most of the work!
+
+    - Switched to ``float64`` as default data type.
+    - Function arguments changed for consistency.
+    - Added unit tests.
+    - Added global ``read()``, ``write()``, ``blocks()`` convenience
+      functions.
+    - Documentation overhaul and hosting on readthedocs.
+    - Added ``'x'`` open mode.
+    - Added ``tell()`` method.
+    - Added ``__repr__()`` method.
