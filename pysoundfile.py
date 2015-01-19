@@ -673,6 +673,13 @@ class SoundFile(object):
                     # truncate the file, because SFM_RDWR doesn't:
                     _os.close(_os.open(file, _os.O_WRONLY | _os.O_TRUNC))
             self._file = _snd.sf_open(file.encode(), mode_int, self._info)
+            if mode_int == _snd.SFM_WRITE:
+                # Due to a bug in libsndfile version <= 1.0.25, frames != 0
+                # when opening a named pipe in SFM_WRITE mode.
+                # See http://github.com/erikd/libsndfile/issues/77.
+                self._info.frames = 0
+                # This is not necessary for "normal" files (because
+                # frames == 0 in this case), but it doesn't hurt, either.
         elif isinstance(file, int):
             self._file = _snd.sf_open_fd(file, mode_int, self._info, closefd)
         elif all(hasattr(file, a) for a in ('seek', 'read', 'write', 'tell')):
