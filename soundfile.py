@@ -312,7 +312,7 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
 
     Examples
     --------
-    >>> import pysoundfile as sf
+    >>> import soundfile as sf
     >>> data, samplerate = sf.read('stereo_file.wav')
     >>> data
     array([[ 0.71329652,  0.06294799],
@@ -368,7 +368,7 @@ def write(data, file, samplerate, subtype=None, endian=None, format=None,
     Write 10 frames of random data to a file:
 
     >>> import numpy as np
-    >>> import pysoundfile as sf
+    >>> import soundfile as sf
     >>> sf.write(np.random.randn(10, 2), 'stereo_file.wav', 44100, 'PCM_24')
 
     """
@@ -429,7 +429,7 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
 
     Examples
     --------
-    >>> import pysoundfile as sf
+    >>> import soundfile as sf
     >>> for block in sf.blocks('stereo_file.wav', blocksize=1024):
     >>>     pass  # do something with 'block'
 
@@ -447,7 +447,7 @@ def available_formats():
 
     Examples
     --------
-    >>> import pysoundfile as sf
+    >>> import soundfile as sf
     >>> sf.available_formats()
     {'FLAC': 'FLAC (FLAC Lossless Audio Codec)',
      'OGG': 'OGG (OGG Container format)',
@@ -473,7 +473,7 @@ def available_subtypes(format=None):
 
     Examples
     --------
-    >>> import pysoundfile as sf
+    >>> import soundfile as sf
     >>> sf.available_subtypes('FLAC')
     {'PCM_24': 'Signed 24 bit PCM',
      'PCM_16': 'Signed 16 bit PCM',
@@ -491,7 +491,7 @@ def check_format(format, subtype=None, endian=None):
 
     Examples
     --------
-    >>> import pysoundfile as sf
+    >>> import soundfile as sf
     >>> sf.check_format('WAV', 'PCM_24')
     True
     >>> sf.check_format('FLAC', 'VORBIS')
@@ -509,7 +509,7 @@ def default_subtype(format):
 
     Examples
     --------
-    >>> import pysoundfile as sf
+    >>> import soundfile as sf
     >>> sf.default_subtype('WAV')
     'PCM_16'
     >>> sf.default_subtype('MAT5')
@@ -601,7 +601,7 @@ class SoundFile(object):
 
         Examples
         --------
-        >>> from pysoundfile import SoundFile
+        >>> from soundfile import SoundFile
 
         Open an existing file for reading:
 
@@ -831,7 +831,7 @@ class SoundFile(object):
 
         Examples
         --------
-        >>> from pysoundfile import SoundFile, SEEK_END
+        >>> from soundfile import SoundFile, SEEK_END
         >>> myfile = SoundFile('stereo_file.wav')
 
         Seek to the beginning of the file:
@@ -886,7 +886,7 @@ class SoundFile(object):
 
         Examples
         --------
-        >>> from pysoundfile import SoundFile
+        >>> from soundfile import SoundFile
         >>> myfile = SoundFile('stereo_file.wav')
 
         Reading 3 frames from a stereo file:

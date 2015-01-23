@@ -3,8 +3,7 @@ PySoundFile
 
 `PySoundFile <https://github.com/bastibe/PySoundFile>`__ is an audio
 library based on libsndfile, CFFI and Numpy. Full documentation is
-available on `pysoundfile.readthedocs.org
-<http://pysoundfile.readthedocs.org/>`__.
+available on http://pysoundfile.readthedocs.org/.
 
 PySoundFile can read and write sound files. File reading/writing is
 supported through `libsndfile <http://www.mega-nerd.com/libsndfile/>`__,
@@ -59,7 +58,7 @@ manager, for example ``sudo apt-get install libsndfile``.
 With CFFI, Numpy, and libsndfile installed, you can use `pip
 <http://pip.readthedocs.org/en/latest/installing.html>`__ to install
 `PySoundFile <https://pypi.python.org/pypi/PySoundFile/0.6.0>`__ with
-``pip install pysoundfile`` or ``pip install pysoundfile --user`` if you
+``pip install PySoundFile`` or ``pip install PySoundFile --user`` if you
 don't have administrator privileges. If you are running Windows you
 should download the Windows installers for PySoundFile instead (which
 also include libsndfile):
@@ -82,7 +81,7 @@ into an ogg-vorbis file:
 
 .. code:: python
 
-    import pysoundfile as sf
+    import soundfile as sf
 
     data, samplerate = sf.read('existing_file.wav')
     sf.write(data, 'new_file.ogg', samplerate=samplerate)
@@ -97,7 +96,7 @@ file:
 .. code:: python
 
    import numpy as np
-   import pysoundfile as sf
+   import soundfile as sf
 
    rms = [np.sqrt(np.mean(block**2)) for block in
           sf.blocks('myfile.wav', blocksize=1024, overlap=512)]
@@ -115,7 +114,7 @@ close the file explicitly:
 
 .. code:: python
 
-   import pysoundfile as sf
+   import soundfile as sf
 
    with sf.SoundFile('myfile.wav', 'rw') as f:
        while f.tell() < len(f):
@@ -138,7 +137,7 @@ file:
 
 .. code:: python
 
-   import pysoundfile as sf
+   import soundfile as sf
 
    format = {'format':'RAW', 'subtype':'FLOAT', 'endian':'FILE'}
    data = sf.read('myfile.raw', dtype='float32', **format)
@@ -152,7 +151,7 @@ regular files:
 
 .. code:: python
 
-    import pysoundfile as sf
+    import soundfile as sf
     with open('filename.flac', 'rb') as f:
         data, samplerate = sf.read(f)
 
@@ -161,7 +160,7 @@ Here is an example using an HTTP request:
 .. code:: python
 
     from io import BytesIO
-    import pysoundfile as sf
+    import soundfile as sf
     import requests
 
     f = BytesIO()

@@ -43,7 +43,7 @@ setup(
     author_email='basti@bastibe.de',
     url='https://github.com/bastibe/PySoundFile',
     keywords=['audio', 'libsndfile'],
-    py_modules=['pysoundfile'],
+    py_modules=['soundfile'],
     data_files=sndfile,
     license='BSD 3-Clause License',
     install_requires=['numpy',
