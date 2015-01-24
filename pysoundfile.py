@@ -662,9 +662,6 @@ class SoundFile(object):
                     "Not allowed for existing files (except 'RAW'): "
                     "samplerate, channels, format, subtype, endian")
 
-        if not closefd and not isinstance(file, int):
-            raise ValueError("closefd=False only allowed for file descriptors")
-
         if isinstance(file, str):
             if _os.path.isfile(file):
                 if 'x' in modes:
