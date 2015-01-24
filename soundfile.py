@@ -751,7 +751,7 @@ class SoundFile(object):
             err = _snd.sf_set_string(self._file, _str_types[name], data)
             self._handle_error_number(err)
         else:
-            super(SoundFile, self).__setattr__(name, value)
+            object.__setattr__(self, name, value)
 
     def __getattr__(self, name):
         """Read text meta-data in the sound file through properties."""
