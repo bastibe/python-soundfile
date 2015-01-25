@@ -356,9 +356,6 @@ def test_open_with_more_invalid_arguments():
     with pytest.raises(ValueError) as excinfo:
         sf.SoundFile(filename_new, 'w', 44100, 2, endian='BOTH', format='WAV')
     assert "Invalid endian-ness" in str(excinfo.value)
-    with pytest.raises(ValueError) as excinfo:
-        sf.SoundFile(filename_stereo, closefd=False)
-    assert "closefd=False" in str(excinfo.value)
 
 
 def test_open_r_and_rplus_with_too_many_arguments():
