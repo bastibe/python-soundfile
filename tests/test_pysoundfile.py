@@ -1,6 +1,7 @@
 import pysoundfile as sf
 import numpy as np
 import os
+import io
 import shutil
 import pytest
 
@@ -72,6 +73,12 @@ def file_stereo_rplus(request):
 @pytest.fixture(params=open_variants)
 def file_wplus(request):
     return _file_new(request, os.O_CREAT | os.O_RDWR, 'w+b')
+
+
+@pytest.yield_fixture
+def file_inmemory():
+    with io.BytesIO() as f:
+        yield f
 
 
 @pytest.yield_fixture
@@ -421,6 +428,33 @@ def test_if_open_with_mode_w_truncates(file_stereo_rplus, mode):
         else:
             # This doesn't really work for file descriptors and file objects
             pass
+
+
+def test_clipping_float_to_int(file_inmemory):
+    float_to_clipped_int16 = [
+        (-1.0 - 2**-15, -2**15    ),
+        (-1.0         , -2**15    ),
+        (-1.0 + 2**-15, -2**15 + 1),
+        ( 0.0         ,  0        ),
+        ( 1.0 - 2**-14,  2**15 - 2),
+        ( 1.0 - 2**-15,  2**15 - 1),
+        ( 1.0         ,  2**15 - 1),
+    ]
+    written, expected = zip(*float_to_clipped_int16)
+    sf.write(written, file_inmemory, 44100, format='WAV', subtype='PCM_16')
+    file_inmemory.seek(0)
+    read, fs = sf.read(file_inmemory, always_2d=False, dtype='int16')
+    assert np.all(read == expected)
+    assert fs == 44100
+
+
+def test_non_clipping_float_to_float(file_inmemory):
+    data = -2.0, -1.0, 0.0, 1.0, 2.0
+    sf.write(data, file_inmemory, 44100, format='WAV', subtype='FLOAT')
+    file_inmemory.seek(0)
+    read, fs = sf.read(file_inmemory, always_2d=False)
+    assert np.all(read == data)
+    assert fs == 44100
 
 
 # -----------------------------------------------------------------------------

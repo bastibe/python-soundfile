@@ -32,6 +32,7 @@ enum
     SFC_GET_FORMAT_MAJOR            = 0x1031,
     SFC_GET_FORMAT_SUBTYPE_COUNT    = 0x1032,
     SFC_GET_FORMAT_SUBTYPE          = 0x1033,
+    SFC_SET_CLIPPING                = 0x10C0,
 } ;
 
 enum
@@ -689,6 +690,9 @@ class SoundFile(object):
         if modes.issuperset('r+') and self.seekable():
             # Move write position to 0 (like in Python file objects)
             self.seek(0)
+
+        _snd.sf_command(self._file, _snd.SFC_SET_CLIPPING, _ffi.NULL,
+                        _snd.SF_TRUE)
 
     name = property(lambda self: self._name)
     """The file name of the sound file."""
