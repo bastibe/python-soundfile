@@ -201,6 +201,13 @@ def test_write_function(file_w):
     assert np.all(data == data_mono)
 
 
+@pytest.mark.parametrize("filename", ["wav", ".wav", "wav.py"])
+def test_write_with_unknown_extension(filename):
+    with pytest.raises(TypeError) as excinfo:
+        sf.write([0.0], filename, 44100)
+    assert "file extension" in str(excinfo.value)
+
+
 def test_write_with_exclusive_creation():
     with pytest.raises(OSError) as excinfo:
         sf.write(data_mono, filename_mono, 44100)

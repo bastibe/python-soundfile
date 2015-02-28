@@ -641,7 +641,8 @@ class SoundFile(object):
         old_fmt = format
         self._name = file
         if format is None:
-            format = str(getattr(file, 'name', file)).rsplit('.', 1)[-1]
+            extension = _os.path.splitext(str(getattr(file, 'name', file)))[-1]
+            format = extension.lstrip('.')
             if format.upper() not in _formats and 'r' not in modes:
                 raise TypeError(
                     "No format specified and unable to get format from "
