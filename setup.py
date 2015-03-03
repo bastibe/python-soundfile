@@ -6,15 +6,6 @@ from sys import platform
 from platform import architecture
 import shutil
 
-if platform == 'win32' and architecture()[0] == '32bit':
-    shutil.copy2('win/sndfile32.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
-elif platform == 'win32' and architecture()[0] == '64bit':
-    shutil.copy2('win/sndfile64.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
-else:
-    sndfile = []
-
 
 class PyTest(TestCommand):
     user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
@@ -44,7 +35,13 @@ setup(
     url='https://github.com/bastibe/PySoundFile',
     keywords=['audio', 'libsndfile'],
     py_modules=['pysoundfile'],
-    data_files=sndfile,
+    data_files=[
+        ('', [
+            'win/sndfile64bit.dll',
+            'win/sndfile32bit.dll',
+            'win/sndfile_license'
+        ])
+    ],
     license='BSD 3-Clause License',
     install_requires=['numpy',
                       'cffi>=0.6'],
