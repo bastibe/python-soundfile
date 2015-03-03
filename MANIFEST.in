@@ -1,3 +1,4 @@
 include LICENSE
+graft win
 recursive-include doc *.py *.rst *.txt Makefile
 recursive-include tests *.py *.wav *.raw
