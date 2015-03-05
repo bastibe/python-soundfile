@@ -58,7 +58,7 @@ manager, for example ``sudo apt-get install libsndfile``.
 With CFFI, Numpy, and libsndfile installed, you can use `pip
 <http://pip.readthedocs.org/en/latest/installing.html>`__ to install
 `PySoundFile <https://pypi.python.org/pypi/PySoundFile/0.6.0>`__ with
-``pip install PySoundFile`` or ``pip install PySoundFile --user`` if you
+``pip install pysoundfile`` or ``pip install pysoundfile --user`` if you
 don't have administrator privileges. If you are running Windows you
 should download the Windows installers for PySoundFile instead (which
 also include libsndfile):
