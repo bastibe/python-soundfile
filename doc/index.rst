@@ -3,7 +3,7 @@
 API Documentation
 =================
 
-.. automodule:: pysoundfile
+.. automodule:: soundfile
    :members:
    :undoc-members:
 

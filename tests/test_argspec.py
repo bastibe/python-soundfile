@@ -1,6 +1,6 @@
 """Make sure that arguments of open/read/write don't diverge."""
 
-import pysoundfile as sf
+import soundfile as sf
 from inspect import getargspec
 
 

@@ -1,4 +1,4 @@
-import pysoundfile as sf
+import soundfile as sf
 import numpy as np
 import os
 import io
