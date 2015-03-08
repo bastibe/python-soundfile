@@ -623,10 +623,10 @@ class SoundFile(object):
         if mode is None:
             mode = getattr(file, 'mode', None)
         if not isinstance(mode, str):
-            raise TypeError("Invalid mode: %s" % repr(mode))
+            raise TypeError("Invalid mode: {0!r}".format(mode))
         modes = set(mode)
         if modes.difference('xrwb+') or len(mode) > len(modes):
-            raise ValueError("Invalid mode: %s" % repr(mode))
+            raise ValueError("Invalid mode: {0!r}".format(mode))
         if len(modes.intersection('xrw')) != 1:
             raise ValueError("mode must contain exactly one of 'xrw'")
         self._mode = mode
@@ -646,7 +646,7 @@ class SoundFile(object):
             if format.upper() not in _formats and 'r' not in modes:
                 raise TypeError(
                     "No format specified and unable to get format from "
-                    "file extension: %s" % repr(self.name))
+                    "file extension: {0!r}".format(file))
 
         self._info = _ffi.new("SF_INFO*")
         if 'r' not in modes or str(format).upper() == 'RAW':
@@ -667,7 +667,7 @@ class SoundFile(object):
         if isinstance(file, str):
             if _os.path.isfile(file):
                 if 'x' in modes:
-                    raise OSError("File exists: %s" % repr(file))
+                    raise OSError("File exists: {0!r}".format(file))
                 elif modes.issuperset('w+'):
                     # truncate the file, because SFM_RDWR doesn't:
                     _os.close(_os.open(file, _os.O_WRONLY | _os.O_TRUNC))
@@ -685,7 +685,7 @@ class SoundFile(object):
             self._file = _snd.sf_open_virtual(
                 self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
         else:
-            raise TypeError("Invalid file: %s" % repr(file))
+            raise TypeError("Invalid file: {0!r}".format(file))
         self._handle_error()
 
         if modes.issuperset('r+') and self.seekable():
@@ -729,10 +729,10 @@ class SoundFile(object):
     _file = None
 
     def __repr__(self):
-        return ('SoundFile(%r, mode=%r, samplerate=%i, channels=%i, '
-                'format=%r, subtype=%r, endian=%r)' %
-                (self.name, self.mode, self.samplerate, self.channels,
-                 self.format, self.subtype, self.endian))
+        return ("SoundFile({0.name!r}, mode={0.mode!r}, "
+                "samplerate={0.samplerate}, channels={0.channels}, "
+                "format={0.format!r}, subtype={0.subtype!r}, "
+                "endian={0.endian!r})".format(self))
 
     def __del__(self):
         self.close()
@@ -760,7 +760,8 @@ class SoundFile(object):
             data = _snd.sf_get_string(self._file, _str_types[name])
             return _ffi.string(data).decode() if data else ""
         else:
-            raise AttributeError("SoundFile has no attribute %s" % repr(name))
+            raise AttributeError(
+                "'SoundFile' object has no attribute {0!r}".format(name))
 
     def __len__(self):
         return self._info.frames
@@ -1139,11 +1140,11 @@ class SoundFile(object):
         if (array.ndim not in (1, 2) or
                 array.ndim == 1 and self.channels != 1 or
                 array.ndim == 2 and array.shape[1] != self.channels):
-            raise ValueError("Invalid shape: %s" % repr(array.shape))
+            raise ValueError("Invalid shape: {0!r}".format(array.shape))
 
         if array.dtype not in _ffi_types:
-            raise ValueError("dtype must be one of %s" %
-                             repr([dt.name for dt in _ffi_types]))
+            raise ValueError("dtype must be one of {0!r}".format(
+                sorted(dt.name for dt in _ffi_types)))
 
     def _create_empty_array(self, frames, always_2d, dtype):
         """Create an empty array with appropriate shape."""
@@ -1194,21 +1195,21 @@ def _format_int(format, subtype, endian):
     try:
         result = _formats[str(format).upper()]
     except KeyError:
-        raise ValueError("Invalid format string: %s" % repr(format))
+        raise ValueError("Invalid format string: {0!r}".format(format))
     if subtype is None:
         subtype = default_subtype(format)
         if subtype is None:
             raise TypeError(
-                "No default subtype for major format %s" % repr(format))
+                "No default subtype for major format {0!r}".format(format))
     try:
         result |= _subtypes[str(subtype).upper()]
     except KeyError:
-        raise ValueError("Invalid subtype string: %s" % repr(subtype))
+        raise ValueError("Invalid subtype string: {0!r}".format(subtype))
     try:
         result |= _endians[str(endian).upper()
                            if endian is not None else 'FILE']
     except KeyError:
-        raise ValueError("Invalid endian-ness: %s" % repr(endian))
+        raise ValueError("Invalid endian-ness: {0!r}".format(endian))
 
     info = _ffi.new("SF_INFO*")
     info.format = result
