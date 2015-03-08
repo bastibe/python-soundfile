@@ -686,7 +686,7 @@ class SoundFile(object):
                 self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
         else:
             raise TypeError("Invalid file: {0!r}".format(file))
-        self._handle_error()
+        self._handle_error("Error opening {0!r}: ".format(file))
 
         if modes.issuperset('r+') and self.seekable():
             # Move write position to 0 (like in Python file objects)
@@ -1084,17 +1084,17 @@ class SoundFile(object):
 
         return _ffi.new("SF_VIRTUAL_IO*", self._virtual_io)
 
-    def _handle_error(self):
+    def _handle_error(self, prefix=""):
         """Check the error flag of the SNDFILE* structure."""
         self._check_if_closed()
         err = _snd.sf_error(self._file)
-        self._handle_error_number(err)
+        self._handle_error_number(err, prefix)
 
-    def _handle_error_number(self, err):
+    def _handle_error_number(self, err, prefix=""):
         """Pretty-print a numerical error code."""
         if err != 0:
             err_str = _snd.sf_error_number(err)
-            raise RuntimeError(_ffi.string(err_str).decode())
+            raise RuntimeError(prefix + _ffi.string(err_str).decode())
 
     def _getAttributeNames(self):
         """Return all attributes used in __setattr__ and __getattr__.
