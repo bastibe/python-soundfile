@@ -44,7 +44,6 @@ def test_read_defaults():
 
 def test_write_defaults():
     write_defaults = defaults(write_function)
-    del write_defaults['exclusive_creation']
     init_defaults = defaults(init)
 
     # Same default values as SoundFile.__init__()
