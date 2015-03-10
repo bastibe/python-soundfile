@@ -188,6 +188,12 @@ def test_read_mono_into_2d_out(file_mono_r):
     assert np.all(data == data_mono)
 
 
+def test_read_non_existing_file():
+    with pytest.raises(RuntimeError) as excinfo:
+        sf.read("i_do_not_exist.wav")
+    assert "Error opening 'i_do_not_exist.wav'" in str(excinfo.value)
+
+
 # -----------------------------------------------------------------------------
 # Test write() function
 # -----------------------------------------------------------------------------
