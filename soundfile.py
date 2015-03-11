@@ -441,6 +441,132 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
                               dtype, always_2d, fill_value, out):
             yield block
 
+def append(data, file, samplerate=None, channels=None, format=None,
+           subtype=None, endian=None, closefd=True):
+    """Append data to a sound file.
+
+    Parameters
+    ----------
+    data : array_like
+        The data to append.  Usually two-dimensional (channels x frames),
+        but one-dimensional `data` can be used for mono files.
+        Only the data types ``'float64'``, ``'float32'``, ``'int32'``
+        and ``'int16'`` are supported.
+
+        .. note:: The data type of `data` does **not** select the data
+                  type of the written file.
+                  Audio data will be converted to the given `subtype`.
+
+    file : str or int or file-like object
+        The file to write to.  See :class:`SoundFile` for details.
+
+    Other Parameters
+    ----------------
+    format, endian, closefd
+        See :class:`SoundFile`.
+
+    Examples
+    --------
+
+    Append 10 frames of random data to a file:
+
+    >>> import numpy as np
+    >>> import soundfile as sf
+    >>> sf.append(np.random.randn(10, 2), 'stereo_file.wav', 44100, 'PCM_24')
+
+    """
+    with SoundFile(file, 'r+', samplerate, channels,
+                   subtype, endian, format, closefd) as f:
+        f.seek(0, SEEK_END)
+        f.write(data)
+
+
+def overwrite(data, file, start, samplerate=None, channels=None, format=None,
+           subtype=None, endian=None, closefd=True):
+    """Overwrite data in a sound file.
+
+    Parameters
+    ----------
+    data : array_like
+        The data to write.  Usually two-dimensional (channels x frames),
+        but one-dimensional `data` can be used for mono files.
+        Only the data types ``'float64'``, ``'float32'``, ``'int32'``
+        and ``'int16'`` are supported.
+
+        .. note:: The data type of `data` does **not** select the data
+                  type of the written file.
+                  Audio data will be converted to the given `subtype`.
+
+    file : str or int or file-like object
+        The file to write to.  See :class:`SoundFile` for details.
+    where : int
+        The frame index where overwriting should start.
+
+    Other Parameters
+    ----------------
+    format, endian, closefd
+        See :class:`SoundFile`.
+
+    Examples
+    --------
+
+    Write 10 frames of random data to a file at frame 20:
+
+    >>> import numpy as np
+    >>> import soundfile as sf
+    >>> sf.overwrite(np.random.randn(10, 2), 'stereo_file.wav', 20, 44100, 'PCM_24')
+
+    """
+    with SoundFile(file, 'r+', samplerate, channels,
+                   subtype, endian, format, closefd) as f:
+        f.seek(start)
+        f.write(data)
+
+
+def accumulate(data, file, start, samplerate=None, channels=None, format=None,
+           subtype=None, endian=None, closefd=True):
+    """Accumulate data into a sound file.
+
+    Parameters
+    ----------
+    data : array_like
+        The data to added to the existing data. Usually
+        two-dimensional (channels x frames), but one-dimensional
+        `data` can be used for mono files. Only the data types
+        ``'float64'``, ``'float32'``, ``'int32'`` and ``'int16'`` are
+        supported.
+
+        .. note:: The data type of `data` does **not** select the data
+                  type of the written file.
+                  Audio data will be converted to the given `subtype`.
+
+    file : str or int or file-like object
+        The file to write to.  See :class:`SoundFile` for details.
+    where : int
+        The frame index where accumulation should start.
+
+    Other Parameters
+    ----------------
+    format, endian, closefd
+        See :class:`SoundFile`.
+
+    Examples
+    --------
+
+    Append 10 frames of random data to a file:
+
+    >>> import numpy as np
+    >>> import soundfile as sf
+    >>> sf.overwrite(np.random.randn(10, 2), 'stereo_file.wav', 10, 44100, 'PCM_24')
+
+    """
+    with SoundFile(file, 'r+', samplerate, channels,
+                   subtype, endian, format, closefd) as f:
+        f.seek(start)
+        existing = f.read(len(data), fill_value=0)
+        f.seek(start)
+        f.write(_np.asarray(data)+existing)
+
 
 def available_formats():
     """Return a dictionary of available major formats.
