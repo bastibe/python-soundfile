@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 import sys
-from setuptools import setup
+from setuptools import setup, Distribution
 from setuptools.command.test import test as TestCommand
 from sys import platform
 from platform import architecture
 import shutil
 
 if platform == 'win32' and architecture()[0] == '32bit':
-    shutil.copy2('win/sndfile32.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
+    sndfile = [('lib', ['win32/libsndfile.dll', 'win32/sndfile_license'])]
 elif platform == 'win32' and architecture()[0] == '64bit':
-    shutil.copy2('win/sndfile64.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
+    sndfile = [('lib', ['win64/libsndfile.dll', 'win64/sndfile_license'])]
+elif platform == 'darwin':
+    sndfile = [('lib', ['darwin/libsndfile.dylib', 'darwin/sndfile_license'])]
 else:
     sndfile = []
 
@@ -33,6 +33,11 @@ class PyTest(TestCommand):
         import pytest
         errno = pytest.main(self.pytest_args)
         sys.exit(errno)
+
+
+class BinaryDistribution(Distribution):
+    def is_pure(self):
+        return False
 
 
 setup(
@@ -66,4 +71,5 @@ setup(
     long_description=open('README.rst').read(),
     tests_require=['pytest'],
     cmdclass={'test': PyTest},
+    distclass=BinaryDistribution,
 )
