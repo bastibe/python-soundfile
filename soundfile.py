@@ -242,7 +242,8 @@ _ffi_types = {
 try:
     _snd = _ffi.dlopen('sndfile')
 except OSError:
-    _snd = _ffi.dlopen(_os.path.dirname(__file__)+'/../../libsndfile')
+    import sys as _sys
+    _snd = _ffi.dlopen(_os.path.join(_sys.prefix, 'lib/libsndfile'))
 
 
 def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,

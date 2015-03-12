@@ -4,7 +4,6 @@ from setuptools import setup, Distribution
 from setuptools.command.test import test as TestCommand
 from sys import platform
 from platform import architecture
-import shutil
 
 if platform == 'win32' and architecture()[0] == '32bit':
     sndfile = [('lib', ['win32/libsndfile.dll', 'win32/sndfile_license'])]
