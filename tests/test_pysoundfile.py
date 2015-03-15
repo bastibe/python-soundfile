@@ -547,12 +547,17 @@ def test_seek_in_rplus_mode(sf_stereo_rplus):
     assert sf_stereo_rplus.tell() == 2
 
 
-def test_truncate(file_stereo_rplus):
+@pytest.mark.parametrize("use_default", [True, False])
+def test_truncate(file_stereo_rplus, use_default):
     if not isinstance(file_stereo_rplus, (str, int)):
         # file objects don't support truncate()
         return
     with sf.SoundFile(file_stereo_rplus, 'r+', closefd=False) as f:
-        f.truncate(2)
+        if use_default:
+            f.seek(2)
+            f.truncate()
+        else:
+            f.truncate(2)
         assert f.tell() == 2
         assert len(f) == 2
     if isinstance(file_stereo_rplus, int):

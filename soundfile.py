@@ -1007,20 +1007,27 @@ class SoundFile(object):
                 frames += overlap
             yield block
 
-    def truncate(self, frames=0):
+    def truncate(self, frames=None):
         """Truncate the file to a given number of frames.
 
         After this command, the read/write position will be at the new
         end of the file.
 
+        Parameters
+        ----------
+        frames : int, optional
+            Only the data before `frames` is kept, the rest is deleted.
+            If not specified, the current read/write position is used.
+
         """
+        if frames is None:
+            frames = self.tell()
         frames_ptr = _ffi.new("sf_count_t*", frames)
         err = _snd.sf_command(self._file, _snd.SFC_FILE_TRUNCATE, frames_ptr,
                               _ffi.sizeof("sf_count_t"))
         if err:
             raise RuntimeError("Error truncating the file")
-        else:
-            self._info.frames = frames
+        self._info.frames = frames
 
     def flush(self):
         """Write unwritten data to the file system.
