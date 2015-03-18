@@ -1022,8 +1022,8 @@ class SoundFile(object):
         """
         if frames is None:
             frames = self.tell()
-        frames_ptr = _ffi.new("sf_count_t*", frames)
-        err = _snd.sf_command(self._file, _snd.SFC_FILE_TRUNCATE, frames_ptr,
+        err = _snd.sf_command(self._file, _snd.SFC_FILE_TRUNCATE,
+                              _ffi.new("sf_count_t*", frames),
                               _ffi.sizeof("sf_count_t"))
         if err:
             raise RuntimeError("Error truncating the file")
