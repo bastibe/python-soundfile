@@ -32,6 +32,7 @@ enum
     SFC_GET_FORMAT_MAJOR            = 0x1031,
     SFC_GET_FORMAT_SUBTYPE_COUNT    = 0x1032,
     SFC_GET_FORMAT_SUBTYPE          = 0x1033,
+    SFC_FILE_TRUNCATE               = 0x1080,
     SFC_SET_CLIPPING                = 0x10C0,
 } ;
 
@@ -1003,6 +1004,28 @@ class SoundFile(object):
                 self.seek(-overlap, SEEK_CUR)
                 frames += overlap
             yield block
+
+    def truncate(self, frames=None):
+        """Truncate the file to a given number of frames.
+
+        After this command, the read/write position will be at the new
+        end of the file.
+
+        Parameters
+        ----------
+        frames : int, optional
+            Only the data before `frames` is kept, the rest is deleted.
+            If not specified, the current read/write position is used.
+
+        """
+        if frames is None:
+            frames = self.tell()
+        err = _snd.sf_command(self._file, _snd.SFC_FILE_TRUNCATE,
+                              _ffi.new("sf_count_t*", frames),
+                              _ffi.sizeof("sf_count_t"))
+        if err:
+            raise RuntimeError("Error truncating the file")
+        self._info.frames = frames
 
     def flush(self):
         """Write unwritten data to the file system.
