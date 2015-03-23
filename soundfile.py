@@ -746,8 +746,8 @@ class SoundFile(object):
         """Write text meta-data in the sound file through properties."""
         if name in _str_types:
             self._check_if_closed()
-            data = _ffi.new('char[]', value.encode())
-            err = _snd.sf_set_string(self._file, _str_types[name], data)
+            err = _snd.sf_set_string(self._file, _str_types[name],
+                                     value.encode())
             self._handle_error_number(err)
         else:
             object.__setattr__(self, name, value)
