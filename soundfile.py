@@ -12,6 +12,7 @@ __version__ = "0.6.0"
 
 import numpy as _np
 import os as _os
+import sys as _sys
 from cffi import FFI as _FFI
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
@@ -681,7 +682,7 @@ class SoundFile(object):
 
         self._name = file
         if isinstance(file, _unicode):
-            file = file.encode()
+            file = file.encode(_sys.getfilesystemencoding())
 
         if isinstance(file, bytes):
             if _os.path.isfile(file):
