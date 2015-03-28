@@ -47,7 +47,8 @@ setup(
     data_files=sndfile,
     license='BSD 3-Clause License',
     install_requires=['numpy',
-                      'cffi>=0.6'],
+                      'cffi>=0.6',
+                      'six'],
     platforms='any',
     classifiers=[
         'Development Status :: 3 - Alpha',
