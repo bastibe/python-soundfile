@@ -12,6 +12,7 @@ __version__ = "0.6.0"
 
 import numpy as _np
 import os as _os
+import six
 from cffi import FFI as _FFI
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
@@ -621,7 +622,7 @@ class SoundFile(object):
         """
         if mode is None:
             mode = getattr(file, 'mode', None)
-        if not isinstance(mode, str):
+        if not isinstance(mode, six.string_types):
             raise TypeError("Invalid mode: {0!r}".format(mode))
         modes = set(mode)
         if modes.difference('xrwb+') or len(mode) > len(modes):
@@ -663,7 +664,7 @@ class SoundFile(object):
                     "Not allowed for existing files (except 'RAW'): "
                     "samplerate, channels, format, subtype, endian")
 
-        if isinstance(file, str):
+        if isinstance(file, six.string_types):
             if _os.path.isfile(file):
                 if 'x' in modes:
                     raise OSError("File exists: {0!r}".format(file))
