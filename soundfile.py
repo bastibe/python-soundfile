@@ -629,89 +629,19 @@ class SoundFile(object):
         >>> assert myfile.closed
 
         """
-        if mode is None:
-            mode = getattr(file, 'mode', None)
-        if not isinstance(mode, (_unicode, str)):
-            raise TypeError("Invalid mode: {0!r}".format(mode))
-        modes = set(mode)
-        if modes.difference('xrwb+') or len(mode) > len(modes):
-            raise ValueError("Invalid mode: {0!r}".format(mode))
-        if len(modes.intersection('xrw')) != 1:
-            raise ValueError("mode must contain exactly one of 'xrw'")
-        self._mode = mode
-
-        if '+' in modes:
-            mode_int = _snd.SFM_RDWR
-        elif 'r' in modes:
-            mode_int = _snd.SFM_READ
-        else:
-            mode_int = _snd.SFM_WRITE
-
-        old_fmt = format
-        if format is None:
-            format = ''
-            try:
-                filename = getattr(file, 'name', file)
-                format = _os.path.splitext(filename)[-1][1:]
-                format = format.decode()  # raises on Python 3 str
-            except Exception:
-                pass
-            if format.upper() not in _formats and 'r' not in modes:
-                raise TypeError(
-                    "No format specified and unable to get format from "
-                    "file extension: {0!r}".format(file))
-        else:
-            if not isinstance(format, (_unicode, str)):
-                raise TypeError("Invalid format: {0!r}".format(format))
-
-        self._info = _ffi.new("SF_INFO*")
-        if 'r' not in modes or format.upper() == 'RAW':
-            if samplerate is None:
-                raise TypeError("samplerate must be specified")
-            self._info.samplerate = samplerate
-            if channels is None:
-                raise TypeError("channels must be specified")
-            self._info.channels = channels
-            self._info.format = _format_int(format, subtype, endian)
-        else:
-            if any(arg is not None for arg in (samplerate, channels, old_fmt,
-                                               subtype, endian)):
-                raise TypeError(
-                    "Not allowed for existing files (except 'RAW'): "
-                    "samplerate, channels, format, subtype, endian")
-
         self._name = file
         if isinstance(file, _unicode):
             file = file.encode(_sys.getfilesystemencoding())
-
-        if isinstance(file, bytes):
-            if _os.path.isfile(file):
-                if 'x' in modes:
-                    raise OSError("File exists: {0!r}".format(self.name))
-                elif modes.issuperset('w+'):
-                    # truncate the file, because SFM_RDWR doesn't:
-                    _os.close(_os.open(file, _os.O_WRONLY | _os.O_TRUNC))
-            self._file = _snd.sf_open(file, mode_int, self._info)
-            if mode_int == _snd.SFM_WRITE:
-                # Due to a bug in libsndfile version <= 1.0.25, frames != 0
-                # when opening a named pipe in SFM_WRITE mode.
-                # See http://github.com/erikd/libsndfile/issues/77.
-                self._info.frames = 0
-                # This is not necessary for "normal" files (because
-                # frames == 0 in this case), but it doesn't hurt, either.
-        elif isinstance(file, int):
-            self._file = _snd.sf_open_fd(file, mode_int, self._info, closefd)
-        elif all(hasattr(file, a) for a in ('seek', 'read', 'write', 'tell')):
-            self._file = _snd.sf_open_virtual(
-                self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
-        else:
-            raise TypeError("Invalid file: {0!r}".format(self.name))
-        self._handle_error("Error opening {0!r}: ".format(self.name))
-
-        if modes.issuperset('r+') and self.seekable():
+        if mode is None:
+            mode = getattr(file, 'mode', None)
+        mode_int = _check_mode(mode)
+        self._mode = mode
+        self._info = _create_info_struct(file, mode, samplerate, channels,
+                                         format, subtype, endian)
+        self._file = self._open(file, mode_int, closefd)
+        if set(mode).issuperset('r+') and self.seekable():
             # Move write position to 0 (like in Python file objects)
             self.seek(0)
-
         _snd.sf_command(self._file, _snd.SFC_SET_CLIPPING, _ffi.NULL,
                         _snd.SF_TRUE)
 
@@ -1071,6 +1001,35 @@ class SoundFile(object):
             self._file = None
             self._handle_error_number(err)
 
+    def _open(self, file, mode_int, closefd):
+        """Call the appropriate sf_open*() function from libsndfile."""
+        assert not isinstance(file, _unicode)
+        if isinstance(file, bytes):
+            if _os.path.isfile(file):
+                if 'x' in self.mode:
+                    raise OSError("File exists: {0!r}".format(self.name))
+                elif set(self.mode).issuperset('w+'):
+                    # truncate the file, because SFM_RDWR doesn't:
+                    _os.close(_os.open(file, _os.O_WRONLY | _os.O_TRUNC))
+            file_ptr = _snd.sf_open(file, mode_int, self._info)
+            if mode_int == _snd.SFM_WRITE:
+                # Due to a bug in libsndfile version <= 1.0.25, frames != 0
+                # when opening a named pipe in SFM_WRITE mode.
+                # See http://github.com/erikd/libsndfile/issues/77.
+                self._info.frames = 0
+                # This is not necessary for "normal" files (because
+                # frames == 0 in this case), but it doesn't hurt, either.
+        elif isinstance(file, int):
+            file_ptr = _snd.sf_open_fd(file, mode_int, self._info, closefd)
+        elif all(hasattr(file, a) for a in ('seek', 'read', 'write', 'tell')):
+            file_ptr = _snd.sf_open_virtual(
+                self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
+        else:
+            raise TypeError("Invalid file: {0!r}".format(self.name))
+        self._handle_error_number(_snd.sf_error(file_ptr),
+                                  "Error opening {0!r}: ".format(self.name))
+        return file_ptr
+
     def _init_virtual_io(self, file):
         """Initialize callback functions for sf_open_virtual()."""
         @_ffi.callback("sf_vio_get_filelen")
@@ -1129,8 +1088,7 @@ class SoundFile(object):
     def _handle_error(self, prefix=""):
         """Check the error flag of the SNDFILE* structure."""
         self._check_if_closed()
-        err = _snd.sf_error(self._file)
-        self._handle_error_number(err, prefix)
+        self._handle_error_number(_snd.sf_error(self._file), prefix)
 
     def _handle_error_number(self, err, prefix=""):
         """Pretty-print a numerical error code."""
@@ -1267,6 +1225,77 @@ def _format_int(format, subtype, endian):
         raise ValueError(
             "Invalid combination of format, subtype and endian")
     return result
+
+
+def _check_mode(mode):
+    """Check if mode is valid and return its integer representation."""
+    if not isinstance(mode, (_unicode, str)):
+        raise TypeError("Invalid mode: {0!r}".format(mode))
+    mode_set = set(mode)
+    if mode_set.difference('xrwb+') or len(mode) > len(mode_set):
+        raise ValueError("Invalid mode: {0!r}".format(mode))
+    if len(mode_set.intersection('xrw')) != 1:
+        raise ValueError("mode must contain exactly one of 'xrw'")
+
+    if '+' in mode_set:
+        mode_int = _snd.SFM_RDWR
+    elif 'r' in mode_set:
+        mode_int = _snd.SFM_READ
+    else:
+        mode_int = _snd.SFM_WRITE
+    return mode_int
+
+
+def _create_info_struct(file, mode, samplerate, channels,
+                        format, subtype, endian):
+    """Check arguments and create SF_INFO struct."""
+    original_format = format
+    if format is None:
+        format = _get_format_from_filename(file, mode)
+        assert isinstance(format, (_unicode, str))
+    else:
+        if not isinstance(format, (_unicode, str)):
+            raise TypeError("Invalid format: {0!r}".format(format))
+
+    info = _ffi.new("SF_INFO*")
+    if 'r' not in mode or format.upper() == 'RAW':
+        if samplerate is None:
+            raise TypeError("samplerate must be specified")
+        info.samplerate = samplerate
+        if channels is None:
+            raise TypeError("channels must be specified")
+        info.channels = channels
+        info.format = _format_int(format, subtype, endian)
+    else:
+        if any(arg is not None for arg in (
+                samplerate, channels, original_format, subtype, endian)):
+            raise TypeError("Not allowed for existing files (except 'RAW'): "
+                            "samplerate, channels, format, subtype, endian")
+    return info
+
+
+def _get_format_from_filename(file, mode):
+    """Return a format string obtained from file (or file.name).
+
+    If file already exists (= read mode), an empty string is returned on
+    error.  If not, an exception is raised.
+    The return type will always be str or unicode (even if
+    file/file.name is a bytes object).
+
+    """
+    format = ''
+    file = getattr(file, 'name', file)
+    try:
+        # This raises an exception if file is not a (Unicode/byte) string:
+        format = _os.path.splitext(file)[-1][1:]
+        # Convert bytes to unicode (raises AttributeError on Python 3 str):
+        format = format.decode()
+    except Exception:
+        pass
+    if format.upper() not in _formats and 'r' not in mode:
+        raise TypeError("No format specified and unable to get format from "
+                        "file extension: {0!r}".format(file))
+    return format
 
 
 def _format_str(format_int):
