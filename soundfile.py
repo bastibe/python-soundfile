@@ -16,6 +16,11 @@ import sys as _sys
 from cffi import FFI as _FFI
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 
+try:
+    _unicode = unicode  # doesn't exist in Python 3.x
+except NameError:
+    _unicode = str
+
 _ffi = _FFI()
 _ffi.cdef("""
 enum
@@ -624,14 +629,9 @@ class SoundFile(object):
         >>> assert myfile.closed
 
         """
-        try:
-            _unicode = unicode  # doesn't exist in Python 3.x
-        except NameError:
-            _unicode = str
-
         if mode is None:
             mode = getattr(file, 'mode', None)
-        if not isinstance(mode, (_unicode, bytes)):
+        if not isinstance(mode, (_unicode, str)):
             raise TypeError("Invalid mode: {0!r}".format(mode))
         modes = set(mode)
         if modes.difference('xrwb+') or len(mode) > len(modes):
@@ -649,23 +649,23 @@ class SoundFile(object):
 
         old_fmt = format
         if format is None:
+            format = ''
             try:
-                extension = _os.path.splitext(getattr(file, 'name', file))[-1]
-                format = extension.lstrip('.').upper()
+                filename = getattr(file, 'name', file)
+                format = _os.path.splitext(filename)[-1][1:]
+                format = format.decode()  # raises on Python 3 str
             except Exception:
                 pass
-            if format not in _formats and 'r' not in modes:
+            if format.upper() not in _formats and 'r' not in modes:
                 raise TypeError(
                     "No format specified and unable to get format from "
                     "file extension: {0!r}".format(file))
         else:
-            try:
-                format = format.upper()
-            except AttributeError:
-                pass
+            if not isinstance(format, (_unicode, str)):
+                raise TypeError("Invalid format: {0!r}".format(format))
 
         self._info = _ffi.new("SF_INFO*")
-        if 'r' not in modes or format == 'RAW':
+        if 'r' not in modes or format.upper() == 'RAW':
             if samplerate is None:
                 raise TypeError("samplerate must be specified")
             self._info.samplerate = samplerate
@@ -1234,23 +1234,31 @@ class SoundFile(object):
 
 def _format_int(format, subtype, endian):
     """Return numeric ID for given format|subtype|endian combo."""
+    if not isinstance(format, (_unicode, str)):
+        raise TypeError("Invalid format: {0!r}".format(format))
     try:
         result = _formats[format.upper()]
-    except (AttributeError, KeyError):
-        raise ValueError("Invalid format string: {0!r}".format(format))
+    except KeyError:
+        raise ValueError("Unknown format: {0!r}".format(format))
     if subtype is None:
         subtype = default_subtype(format)
         if subtype is None:
             raise TypeError(
                 "No default subtype for major format {0!r}".format(format))
+    elif not isinstance(subtype, (_unicode, str)):
+        raise TypeError("Invalid subtype: {0!r}".format(subtype))
     try:
         result |= _subtypes[subtype.upper()]
-    except (AttributeError, KeyError):
-        raise ValueError("Invalid subtype string: {0!r}".format(subtype))
+    except KeyError:
+        raise ValueError("Unknown subtype: {0!r}".format(subtype))
+    if endian is None:
+        endian = 'FILE'
+    elif not isinstance(endian, (_unicode, str)):
+        raise TypeError("Invalid endian-ness: {0!r}".format(endian))
     try:
-        result |= _endians[endian.upper() if endian is not None else 'FILE']
-    except (AttributeError, KeyError):
-        raise ValueError("Invalid endian-ness: {0!r}".format(endian))
+        result |= _endians[endian.upper()]
+    except KeyError:
+        raise ValueError("Unknown endian-ness: {0!r}".format(endian))
 
     info = _ffi.new("SF_INFO*")
     info.format = result

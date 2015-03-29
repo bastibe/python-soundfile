@@ -363,13 +363,13 @@ def test_open_with_more_invalid_arguments():
     assert "integer" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
         sf.SoundFile(filename_new, 'w', 44100, 2, format='WAF')
-    assert "Invalid format string" in str(excinfo.value)
+    assert "Unknown format" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
         sf.SoundFile(filename_new, 'w', 44100, 2, 'PCM16', format='WAV')
-    assert "Invalid subtype string" in str(excinfo.value)
+    assert "Unknown subtype" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
         sf.SoundFile(filename_new, 'w', 44100, 2, endian='BOTH', format='WAV')
-    assert "Invalid endian-ness" in str(excinfo.value)
+    assert "Unknown endian-ness" in str(excinfo.value)
 
 
 def test_open_r_and_rplus_with_too_many_arguments():
