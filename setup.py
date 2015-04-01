@@ -5,14 +5,20 @@ from setuptools.command.test import test as TestCommand
 from sys import platform
 from platform import architecture
 
-if platform == 'win32' and architecture()[0] == '32bit':
-    sndfile = [('lib', ['win32/libsndfile.dll', 'win32/sndfile_license'])]
-elif platform == 'win32' and architecture()[0] == '64bit':
-    sndfile = [('lib', ['win64/libsndfile.dll', 'win64/sndfile_license'])]
-elif platform == 'darwin':
-    sndfile = [('lib', ['darwin/libsndfile.dylib', 'darwin/sndfile_license'])]
+if platform in ('darwin', 'win32'):
+    packages = ['pysoundfile_binaries']
+    package_data = {'pysoundfile_binaries':
+                    ['pysoundfile_binaries/libsndfile_license']}
+    if platform == 'darwin':
+        package_data['pysoundfile_binaries'] += \
+            ['pysoundfile_binaries/libsndfile_darwin.dylib']
+    elif platform == 'win32':
+        package_data['pysoundfile_binaries'] += \
+            ['pysoundfile_binaries/libsndfile_win_{}.dll'
+             .format(architecture()[0])]
 else:
-    sndfile = []
+    package_data = []
+    packages = []
 
 
 class PyTest(TestCommand):
@@ -47,8 +53,9 @@ setup(
     author_email='basti@bastibe.de',
     url='https://github.com/bastibe/PySoundFile',
     keywords=['audio', 'libsndfile'],
+    packages=packages,
+    package_data=package_data,
     py_modules=['soundfile'],
-    data_files=sndfile,
     license='BSD 3-Clause License',
     install_requires=['numpy',
                       'cffi>=0.6'],
