@@ -1012,13 +1012,6 @@ class SoundFile(object):
                     # truncate the file, because SFM_RDWR doesn't:
                     _os.close(_os.open(file, _os.O_WRONLY | _os.O_TRUNC))
             file_ptr = _snd.sf_open(file, mode_int, self._info)
-            if mode_int == _snd.SFM_WRITE:
-                # Due to a bug in libsndfile version <= 1.0.25, frames != 0
-                # when opening a named pipe in SFM_WRITE mode.
-                # See http://github.com/erikd/libsndfile/issues/77.
-                self._info.frames = 0
-                # This is not necessary for "normal" files (because
-                # frames == 0 in this case), but it doesn't hurt, either.
         elif isinstance(file, int):
             file_ptr = _snd.sf_open_fd(file, mode_int, self._info, closefd)
         elif all(hasattr(file, a) for a in ('seek', 'read', 'write', 'tell')):
@@ -1028,6 +1021,13 @@ class SoundFile(object):
             raise TypeError("Invalid file: {0!r}".format(self.name))
         self._handle_error_number(_snd.sf_error(file_ptr),
                                   "Error opening {0!r}: ".format(self.name))
+        if mode_int == _snd.SFM_WRITE:
+            # Due to a bug in libsndfile version <= 1.0.25, frames != 0
+            # when opening a named pipe in SFM_WRITE mode.
+            # See http://github.com/erikd/libsndfile/issues/77.
+            self._info.frames = 0
+            # This is not necessary for "normal" files (because
+            # frames == 0 in this case), but it doesn't hurt, either.
         return file_ptr
 
     def _init_virtual_io(self, file):
