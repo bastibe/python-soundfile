@@ -1,19 +1,24 @@
 #!/usr/bin/env python
 import sys
-from setuptools import setup
+from setuptools import setup, Distribution
 from setuptools.command.test import test as TestCommand
 from sys import platform
 from platform import architecture
-import shutil
 
-if platform == 'win32' and architecture()[0] == '32bit':
-    shutil.copy2('win/sndfile32.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
-elif platform == 'win32' and architecture()[0] == '64bit':
-    shutil.copy2('win/sndfile64.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
+if platform in ('darwin', 'win32'):
+    packages = ['pysoundfile_binaries']
+    package_data = {'pysoundfile_binaries':
+                    ['pysoundfile_binaries/libsndfile_license']}
+    if platform == 'darwin':
+        package_data['pysoundfile_binaries'] += \
+            ['pysoundfile_binaries/libsndfile_darwin.dylib']
+    elif platform == 'win32':
+        package_data['pysoundfile_binaries'] += \
+            ['pysoundfile_binaries/libsndfile_win_{}.dll'
+             .format(architecture()[0])]
 else:
-    sndfile = []
+    package_data = []
+    packages = []
 
 
 class PyTest(TestCommand):
@@ -35,6 +40,11 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
+class BinaryDistribution(Distribution):
+    def is_pure(self):
+        return False
+
+
 setup(
     name='PySoundFile',
     version='0.6.0',
@@ -43,8 +53,9 @@ setup(
     author_email='basti@bastibe.de',
     url='https://github.com/bastibe/PySoundFile',
     keywords=['audio', 'libsndfile'],
+    packages=packages,
+    package_data=package_data,
     py_modules=['soundfile'],
-    data_files=sndfile,
     license='BSD 3-Clause License',
     install_requires=['numpy',
                       'cffi>=0.6'],
@@ -66,4 +77,5 @@ setup(
     long_description=open('README.rst').read(),
     tests_require=['pytest'],
     cmdclass={'test': PyTest},
+    distclass=BinaryDistribution,
 )
