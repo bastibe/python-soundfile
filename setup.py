@@ -1,19 +1,27 @@
 #!/usr/bin/env python
-import sys
+import os
+from platform import architecture
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
-from sys import platform
-from platform import architecture
-import shutil
+import sys
 
-if platform == 'win32' and architecture()[0] == '32bit':
-    shutil.copy2('win/sndfile32.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
-elif platform == 'win32' and architecture()[0] == '64bit':
-    shutil.copy2('win/sndfile64.dll', 'win/sndfile.dll')
-    sndfile = [('', ['win/sndfile.dll', 'win/sndfile_license'])]
+# environment variables for cross-platform package creation
+platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
+architecture0 = os.environ.get('PYSOUNDFILE_ARCHITECTURE', architecture()[0])
+
+if platform == 'darwin':
+    libname = 'libsndfile.dylib'
+elif platform == 'win32':
+    libname = 'libsndfile' + architecture0 + '.dll'
 else:
-    sndfile = []
+    libname = None
+
+if libname:
+    packages = ['pysoundfile_data']
+    package_data = {'pysoundfile_data': [libname, 'COPYING']}
+else:
+    packages = None
+    package_data = None
 
 
 class PyTest(TestCommand):
@@ -44,7 +52,8 @@ setup(
     url='https://github.com/bastibe/PySoundFile',
     keywords=['audio', 'libsndfile'],
     py_modules=['soundfile'],
-    data_files=sndfile,
+    packages=packages,
+    package_data=package_data,
     license='BSD 3-Clause License',
     install_requires=['numpy',
                       'cffi>=0.6'],
