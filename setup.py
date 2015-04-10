@@ -45,7 +45,7 @@ class PyTest(TestCommand):
 
 setup(
     name='PySoundFile',
-    version='0.6.0',
+    version='0.7.0',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
