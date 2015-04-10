@@ -245,7 +245,19 @@ _ffi_types = {
     _np.dtype('int16'): 'short'
 }
 
-_snd = _ffi.dlopen('sndfile')
+try:
+    _snd = _ffi.dlopen('sndfile')
+except OSError as err:
+    if _sys.platform == 'darwin':
+        _libname = 'libsndfile.dylib'
+    elif _sys.platform == 'win32':
+        from platform import architecture as _architecture
+        _libname = 'libsndfile' + _architecture()[0] + '.dll'
+    else:
+        raise
+    _snd = _ffi.dlopen(_os.path.join(
+        _os.path.dirname(_os.path.abspath(__file__)),
+        'pysoundfile_data', _libname))
 
 
 def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
