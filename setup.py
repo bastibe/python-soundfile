@@ -43,6 +43,29 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
+try:
+    from wheel.bdist_wheel import bdist_wheel
+
+    class _bdist_wheel(bdist_wheel):
+        def get_tag(self):
+            tag = bdist_wheel.get_tag(self)
+            pythons = 'py2.py3.cp26.cp27.cp32.cp33.cp34.cp35.pp27.pp32'
+            if platform == 'darwin':
+                oses = 'macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_5_x86_64'
+            elif platform == 'win32':
+                if architecture0 == '32bit':
+                    oses = 'win32'
+                else:
+                    oses = 'win_amd64'
+            else:
+                oses = 'any'
+            tag = (pythons, 'none', oses)
+            return tag
+
+    cmdclass = {'bdist_wheel': _bdist_wheel}
+except ImportError:
+    cmdclass = {}
+
 setup(
     name='PySoundFile',
     version='0.6.0',
@@ -74,5 +97,5 @@ setup(
     ],
     long_description=open('README.rst').read(),
     tests_require=['pytest'],
-    cmdclass={'test': PyTest},
+    cmdclass=dict(cmdclass, test=PyTest)
 )
