@@ -728,46 +728,6 @@ class SoundFile(object):
     def __len__(self):
         return self._info.frames
 
-    def __getitem__(self, frame):
-        # access the file as if it where a Numpy array. The data is
-        # returned as numpy array.
-        from warnings import warn
-        warn('indexing has been deprecated and will be removed in the future',
-             Warning)
-        second_frame = None
-        if isinstance(frame, tuple):
-            if len(frame) > 2:
-                raise AttributeError(
-                    "SoundFile can only be accessed in one or two dimensions")
-            frame, second_frame = frame
-        start, stop = self._get_slice_bounds(frame)
-        curr = self.seek(0, SEEK_CUR)
-        self.seek(start, SEEK_SET)
-        data = self.read(stop - start)
-        self.seek(curr, SEEK_SET)
-        if second_frame:
-            return data[(slice(None), second_frame)]
-        else:
-            return data
-
-    def __setitem__(self, frame, data):
-        # access the file as if it where a one-dimensional Numpy
-        # array. Data must be in the form (frames x channels).
-        # Both open slice bounds and negative values are allowed.
-        from warnings import warn
-        warn('indexing has been deprecated and will be removed in the future',
-             Warning)
-        start, stop = self._get_slice_bounds(frame)
-        if stop - start != len(data):
-            raise IndexError(
-                "Could not fit data of length %i into slice of length %i" %
-                (len(data), stop - start))
-        curr = self.seek(0, SEEK_CUR)
-        self.seek(start, SEEK_SET)
-        self.write(data)
-        self.seek(curr, SEEK_SET)
-        return data
-
     def seekable(self):
         """Return True if the file supports seeking."""
         return self._info.seekable == _snd.SF_TRUE

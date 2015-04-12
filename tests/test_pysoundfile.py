@@ -470,7 +470,7 @@ def test_non_clipping_float_to_float(file_inmemory):
 
 
 def test_file_content(sf_stereo_r):
-    assert np.all(data_stereo == sf_stereo_r[:])
+    assert np.all(data_stereo == sf_stereo_r.read())
 
 
 def test_file_attributes_in_read_mode(sf_stereo_r):
@@ -577,11 +577,6 @@ def test_read_should_read_data_and_advance_read_pointer(sf_stereo_r):
     assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 2
 
 
-def test_read_by_indexing_should_read_but_not_advance_read_pointer(
-        sf_stereo_r):
-    assert np.all(sf_stereo_r[:2] == data_stereo[:2])
-    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 0
-
 
 def test_read_n_frames_should_return_n_frames(sf_stereo_r):
     assert len(sf_stereo_r.read(2)) == 2
@@ -659,18 +654,6 @@ def test_wplus_read_written_data(sf_stereo_wplus):
     sf_stereo_wplus.close()
     data, fs = sf.read(filename_new)
     assert np.all(data == data_stereo)
-
-
-def test_wplus_writing_using_indexing_should_write_but_not_advance_write_pointer(
-        sf_stereo_wplus):
-    data = np.ones((5, 2))
-    # grow file to make room for indexing
-    sf_stereo_wplus.write(np.zeros((5, 2)))
-    position = sf_stereo_wplus.seek(0, sf.SEEK_CUR)
-    sf_stereo_wplus[:len(data)] = data
-    written_data = sf_stereo_wplus[:len(data)]
-    assert np.all(data == written_data)
-    assert position == sf_stereo_wplus.seek(0, sf.SEEK_CUR)
 
 
 def test_rplus_append_data(sf_stereo_rplus):
