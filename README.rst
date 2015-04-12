@@ -21,20 +21,11 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 Breaking Changes
 ----------------
 
-The latest release of PySoundFile cleans up many small
+PySoundFile has evolved rapidly during the last few releases. Most
+notably, we changed the import name from ``import pysoundfile`` to
+``import soundfile`` in 0.7. In 0.6, we cleaned up many small
 inconsistencies, particularly in the the ordering and naming of
-function arguments. Therefore, old code will probably not work any
-more.
-
-It also adds a number of great new features, such as global ``read``
-and ``write`` functions that do not require you to open a
-``SoundFile``, or a ``blocks`` function that can read a sound file one
-block at a time. It has also grown a lot more flexible and powerful at
-opening things like streams, buffers, or file descriptors.
-
-With all these improvements, we feel that the indexing interface is
-not needed any more. It is now officially marked as deprecated and
-might be removed in the future.
+function arguments and the removal of the indexing interface.
 
 Installation
 ------------
@@ -171,15 +162,6 @@ Here is an example using an HTTP request:
     f.seek(0)
     data, samplerate = sf.read(f)
 
-Accessing File Metadata
------------------------
-
-In addition to audio data, there are a number of text fields in some
-sound files. In particular, you can set a title, a copyright notice, a
-software description, the artist name, a comment, a date, the album
-name, a license, a track number and a genre. Note however, that not
-all of these fields are supported for every file format.
-
 News
 ----
 
@@ -219,3 +201,13 @@ News
     - Added ``'x'`` open mode.
     - Added ``tell()`` method.
     - Added ``__repr__()`` method.
+
+2015-04-xx V0.7.0 Bastian Bechtold:
+    Again, thanks to Matthias Geier for all of his hard work, but also
+    Nils Werner and Whistler7 for their many suggestions and help.
+
+    - Renamed ``import pysoundfile`` to ``import soundfile``.
+    - Installation through pip wheels that contain the necessary
+      libraries for OS X and Windows.
+    - Removed ``exclusive_creation`` argument to ``write``.
+    - Added ``truncate()`` method.
