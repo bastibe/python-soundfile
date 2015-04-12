@@ -46,7 +46,9 @@ class PyTest(TestCommand):
 cmdclass = {'test': PyTest}
 try:
     from wheel.bdist_wheel import bdist_wheel
-
+except ImportError:
+    pass
+else:
     # This will create OS-dependent, but Python-independent wheels
     class bdist_wheel_half_pure(bdist_wheel):
         def get_tag(self):
@@ -65,8 +67,6 @@ try:
             return pythons, 'none', oses
 
     cmdclass['bdist_wheel'] = bdist_wheel_half_pure
-except ImportError:
-    pass
 
 setup(
     name='PySoundFile',
