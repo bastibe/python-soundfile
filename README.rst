@@ -190,7 +190,7 @@ News
     - Added ``tell()`` method.
     - Added ``__repr__()`` method.
 
-2015-04-xx V0.7.0 Bastian Bechtold:
+2015-04-12 V0.7.0 Bastian Bechtold:
     Again, thanks to Matthias Geier for all of his hard work, but also
     Nils Werner and Whistler7 for their many suggestions and help.
 
