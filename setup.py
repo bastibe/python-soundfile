@@ -43,28 +43,30 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
+cmdclass = {'test': PyTest}
 try:
     from wheel.bdist_wheel import bdist_wheel
 
-    class _bdist_wheel(bdist_wheel):
+    # This will create OS-dependent, but Python-independent wheels
+    class bdist_wheel_half_pure(bdist_wheel):
         def get_tag(self):
-            tag = bdist_wheel.get_tag(self)
             pythons = 'py2.py3.cp26.cp27.cp32.cp33.cp34.cp35.pp27.pp32'
             if platform == 'darwin':
-                oses = 'macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_5_x86_64'
+                oses = 'macosx_10_6_intel.macosx_10_9_intel.' \
+                       'macosx_10_9_x86_64.macosx_10_5_x86_64'
             elif platform == 'win32':
                 if architecture0 == '32bit':
                     oses = 'win32'
                 else:
                     oses = 'win_amd64'
             else:
+                pythons = 'py2.py3'
                 oses = 'any'
-            tag = (pythons, 'none', oses)
-            return tag
+            return pythons, 'none', oses
 
-    cmdclass = {'bdist_wheel': _bdist_wheel}
+    cmdclass['bdist_wheel'] = bdist_wheel_half_pure
 except ImportError:
-    cmdclass = {}
+    pass
 
 setup(
     name='PySoundFile',
@@ -97,5 +99,5 @@ setup(
     ],
     long_description=open('README.rst').read(),
     tests_require=['pytest'],
-    cmdclass=dict(cmdclass, test=PyTest)
+    cmdclass=cmdclass,
 )
