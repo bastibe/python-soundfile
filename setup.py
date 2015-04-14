@@ -5,6 +5,19 @@ from setuptools import setup
 from setuptools.command.test import test as TestCommand
 import sys
 
+PYTHON_INTERPRETERS = '.'.join([
+    'cp26', 'cp27',
+    'cp32', 'cp33', 'cp34', 'cp35',
+    'pp27',
+    'pp32',
+])
+MACOSX_VERSIONS = '.'.join([
+    'macosx_10_5_x86_64',
+    'macosx_10_6_intel',
+    'macosx_10_9_intel',
+    'macosx_10_9_x86_64',
+])
+
 # environment variables for cross-platform package creation
 platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
 architecture0 = os.environ.get('PYSOUNDFILE_ARCHITECTURE', architecture()[0])
@@ -42,20 +55,19 @@ class PyTest(TestCommand):
         errno = pytest.main(self.pytest_args)
         sys.exit(errno)
 
-
 cmdclass = {'test': PyTest}
+
 try:
     from wheel.bdist_wheel import bdist_wheel
 except ImportError:
     pass
 else:
-    # This will create OS-dependent, but Python-independent wheels
     class bdist_wheel_half_pure(bdist_wheel):
+        """Create OS-dependent, but Python-independent wheels."""
         def get_tag(self):
-            pythons = 'py2.py3.cp26.cp27.cp32.cp33.cp34.cp35.pp27.pp32'
+            pythons = 'py2.py3.' + PYTHON_INTERPRETERS
             if platform == 'darwin':
-                oses = 'macosx_10_6_intel.macosx_10_9_intel.' \
-                       'macosx_10_9_x86_64.macosx_10_5_x86_64'
+                oses = MACOSX_VERSIONS
             elif platform == 'win32':
                 if architecture0 == '32bit':
                     oses = 'win32'
@@ -80,8 +92,7 @@ setup(
     packages=packages,
     package_data=package_data,
     license='BSD 3-Clause License',
-    install_requires=['numpy',
-                      'cffi>=0.6'],
+    install_requires=['numpy', 'cffi>=0.6'],
     platforms='any',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -95,7 +106,7 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
-        'Topic :: Multimedia :: Sound/Audio'
+        'Topic :: Multimedia :: Sound/Audio',
     ],
     long_description=open('README.rst').read(),
     tests_require=['pytest'],
