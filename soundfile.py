@@ -832,16 +832,12 @@ class SoundFile(object):
                 frames = len(out)
             if not out.flags.c_contiguous:
                 raise ValueError("out must be C-contiguous")
-
-        self._check_array(out)
         frames = self._read_or_write('sf_readf_', out, frames)
-
         if len(out) > frames:
             if fill_value is None:
                 out = out[:frames]
             else:
                 out[frames:] = fill_value
-
         return out
 
     def write(self, data):
@@ -859,11 +855,8 @@ class SoundFile(object):
         """
         # no copy is made if data has already the correct memory layout:
         data = _np.ascontiguousarray(data)
-
-        self._check_array(data)
         written = self._read_or_write('sf_writef_', data, len(data))
         assert written == len(data)
-
         if self.seekable():
             curr = self.tell()
             self._info.frames = self.seek(0, SEEK_END)
@@ -1116,17 +1109,6 @@ class SoundFile(object):
             raise ValueError("frames must be specified for non-seekable files")
         return frames
 
-    def _check_array(self, array):
-        """Do some error checking."""
-        if (array.ndim not in (1, 2) or
-                array.ndim == 1 and self.channels != 1 or
-                array.ndim == 2 and array.shape[1] != self.channels):
-            raise ValueError("Invalid shape: {0!r}".format(array.shape))
-
-        if array.dtype not in _ffi_types:
-            raise ValueError("dtype must be one of {0!r}".format(
-                sorted(dt.name for dt in _ffi_types)))
-
     def _create_empty_array(self, frames, always_2d, dtype):
         """Create an empty array with appropriate shape."""
         if always_2d or self.channels > 1:
@@ -1136,10 +1118,18 @@ class SoundFile(object):
         return _np.empty(shape, dtype, order='C')
 
     def _read_or_write(self, funcname, array, frames):
-        """Call into libsndfile."""
+        """Do some error checking and call into libsndfile."""
         self._check_if_closed()
+        if (array.ndim not in (1, 2) or
+                array.ndim == 1 and self.channels != 1 or
+                array.ndim == 2 and array.shape[1] != self.channels):
+            raise ValueError("Invalid shape: {0!r}".format(array.shape))
+        try:
+            ffi_type = _ffi_types[array.dtype]
+        except KeyError:
+            raise ValueError("dtype must be one of {0!r}".format(
+                sorted(dt.name for dt in _ffi_types)))
 
-        ffi_type = _ffi_types[array.dtype]
         assert array.flags.c_contiguous
         assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
         assert array.size >= frames * self.channels
