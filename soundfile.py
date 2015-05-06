@@ -986,7 +986,9 @@ class SoundFile(object):
             file_ptr = _snd.sf_open(file, mode_int, self._info)
         elif isinstance(file, int):
             file_ptr = _snd.sf_open_fd(file, mode_int, self._info, closefd)
-        elif all(hasattr(file, a) for a in ('seek', 'read', 'write', 'tell')):
+        elif ( hasattr(file, 'seek') and hasattr(file, 'tell') and
+               (hasattr(file, 'read') or mode_int == _snd.SFM_WRITE) and
+               (hasattr(file, 'write') or mode_int == _snd.SFM_READ) ):
             file_ptr = _snd.sf_open_virtual(
                 self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
         else:
