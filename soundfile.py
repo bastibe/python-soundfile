@@ -135,6 +135,11 @@ typedef struct SF_FORMAT_INFO
 } SF_FORMAT_INFO ;
 """)
 
+if _sys.platform == 'win32':
+    _ffi.cdef("""
+    SNDFILE* sf_wchar_open (LPCWSTR wpath, int mode, SF_INFO *sfinfo) ;
+    """)
+
 _str_types = {
     'title':       0x01,
     'copyright':   0x02,
@@ -642,8 +647,6 @@ class SoundFile(object):
 
         """
         self._name = file
-        if isinstance(file, _unicode):
-            file = file.encode(_sys.getfilesystemencoding())
         if mode is None:
             mode = getattr(file, 'mode', None)
         mode_int = _check_mode(mode)
@@ -975,18 +978,23 @@ class SoundFile(object):
 
     def _open(self, file, mode_int, closefd):
         """Call the appropriate sf_open*() function from libsndfile."""
-        assert not isinstance(file, _unicode)
         readable = hasattr(file, 'read') or hasattr(file, 'readinto')
         writeable = hasattr(file, 'write')
         seekable = hasattr(file, 'seek') and hasattr(file, 'tell')
-        if isinstance(file, bytes):
+        if isinstance(file, (_unicode, bytes)):
             if _os.path.isfile(file):
                 if 'x' in self.mode:
                     raise OSError("File exists: {0!r}".format(self.name))
                 elif set(self.mode).issuperset('w+'):
                     # truncate the file, because SFM_RDWR doesn't:
                     _os.close(_os.open(file, _os.O_WRONLY | _os.O_TRUNC))
-            file_ptr = _snd.sf_open(file, mode_int, self._info)
+            openfunction = _snd.sf_open
+            if isinstance(file, _unicode):
+                if _sys.platform == 'win32':
+                    openfunction = _snd.sf_wchar_open
+                else:
+                    file = file.encode(_sys.getfilesystemencoding())
+            file_ptr = openfunction(file, mode_int, self._info)
         elif isinstance(file, int):
             file_ptr = _snd.sf_open_fd(file, mode_int, self._info, closefd)
         elif (seekable and
