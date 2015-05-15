@@ -686,6 +686,8 @@ class SoundFile(object):
     """The number of sections of the sound file."""
     closed = property(lambda self: self._file is None)
     """Whether the sound file is closed or not."""
+    _error = property(lambda self: _snd.sf_error(self._file))
+    """A pending sndfile error code."""
 
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
@@ -770,8 +772,8 @@ class SoundFile(object):
         """
         self._check_if_closed()
         position = _snd.sf_seek(self._file, frames, whence)
-        if _snd.sf_error(self._file):
-            self._handle_error(_snd.sf_error(self._file))
+        if self._error:
+            self._handle_error(self._error)
         return position
 
     def tell(self):
@@ -1136,8 +1138,8 @@ class SoundFile(object):
         func = getattr(_snd, funcname + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', array.__array_interface__['data'][0])
         frames = func(self._file, ptr, frames)
-        if _snd.sf_error(self._file):
-            self._handle_error(_snd.sf_error(self._file))
+        if self._error:
+            self._handle_error(self._error)
         if self.seekable():
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
