@@ -138,17 +138,19 @@ Here is an example using an HTTP request:
 
 .. code:: python
 
-    from io import BytesIO
+    import io
     import soundfile as sf
-    import requests
+    from urllib.request import urlopen
+    
+    url = "http://tinyurl.com/shepard-risset"
+    data, samplerate = sf.read(io.BytesIO(urlopen(url).read()))
 
-    f = BytesIO()
-    response = requests.get('http://www.example.com/my.flac', stream=True)
-    for data in response.iter_content(4096):
-        if data:
-            f.write(data)
-    f.seek(0)
-    data, samplerate = sf.read(f)
+Note that the above example only works with Python 3.x.
+For Python 2.x support, replace the third line with:
+
+.. code:: python
+
+    from urllib2 import urlopen
 
 News
 ----
