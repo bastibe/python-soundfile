@@ -1019,14 +1019,10 @@ class SoundFile(object):
         """Initialize callback functions for sf_open_virtual()."""
         @_ffi.callback("sf_vio_get_filelen")
         def vio_get_filelen(user_data):
-            # first try __len__(), if not available fall back to seek()/tell()
-            try:
-                size = len(file)
-            except TypeError:
-                curr = file.tell()
-                file.seek(0, SEEK_END)
-                size = file.tell()
-                file.seek(curr, SEEK_SET)
+            curr = file.tell()
+            file.seek(0, SEEK_END)
+            size = file.tell()
+            file.seek(curr, SEEK_SET)
             return size
 
         @_ffi.callback("sf_vio_seek")
