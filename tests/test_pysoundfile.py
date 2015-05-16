@@ -70,6 +70,11 @@ def file_stereo_rplus(request):
     return _file_copy(request, filename_stereo, os.O_RDWR, 'r+b')
 
 
+@pytest.fixture(params=['obj'])
+def file_obj_stereo_rplus(request):
+    return _file_copy(request, filename_stereo, os.O_RDWR, 'r+b')
+
+
 @pytest.fixture(params=open_variants)
 def file_wplus(request):
     return _file_new(request, os.O_CREAT | os.O_RDWR, 'w+b')
@@ -462,6 +467,45 @@ def test_non_clipping_float_to_float(file_inmemory):
     read, fs = sf.read(file_inmemory, always_2d=False)
     assert np.all(read == data)
     assert fs == 44100
+
+
+class LimitedFile(object):
+    def __init__(self, file, attrs):
+        for attr in attrs:
+            setattr(self, attr, getattr(file, attr))
+
+
+@pytest.mark.parametrize("readmethod", ['read', 'readinto'])
+def test_virtual_io_readonly(file_obj_stereo_rplus, readmethod):
+    limitedfile = LimitedFile(file_obj_stereo_rplus,
+                              ['seek', 'tell', readmethod])
+    data, fs = sf.read(limitedfile)
+    assert fs == 44100
+    assert np.all(data == data_stereo)
+
+
+def test_virtual_io_writeonly(file_obj_stereo_rplus):
+    limitedfile = LimitedFile(file_obj_stereo_rplus, ['seek', 'tell', 'write'])
+    sf.write([0.5], limitedfile, 48000, format='WAV')
+    data, fs = sf.read(filename_new)
+    assert fs == 48000
+    assert data == [0.5]
+
+
+VIRTUAL_IO_ATTRS = 'seek', 'tell', 'read', 'write'
+
+
+@pytest.mark.parametrize("missing", VIRTUAL_IO_ATTRS)
+def test_virtual_io_missing_attr(file_obj_stereo_rplus, missing):
+    attrs = list(VIRTUAL_IO_ATTRS)
+    goodfile = LimitedFile(file_obj_stereo_rplus, attrs)
+    success = sf.SoundFile(goodfile, 'r+')
+    attrs.remove(missing)
+    badfile = LimitedFile(file_obj_stereo_rplus, attrs)
+    with pytest.raises(TypeError) as excinfo:
+        sf.SoundFile(badfile, 'r+')
+    assert "Invalid file" in str(excinfo.value)
+    assert np.all(success.read() == data_stereo)
 
 
 # -----------------------------------------------------------------------------
