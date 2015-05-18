@@ -1060,8 +1060,8 @@ class SoundFile(object):
 
         return _ffi.new("SF_VIRTUAL_IO*", self._virtual_io)
 
-    def _handle_error(err, prefix=""):
-        """Pretty-print a numerical error code."""
+    def _handle_error(self, err, prefix=""):
+        """Pretty-print a numerical error code if there is an error."""
         if err != 0:
             err_str = _snd.sf_error_number(err)
             raise RuntimeError(prefix + _ffi.string(err_str).decode())
