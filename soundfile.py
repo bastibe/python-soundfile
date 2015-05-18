@@ -772,8 +772,7 @@ class SoundFile(object):
         """
         self._check_if_closed()
         position = _snd.sf_seek(self._file, frames, whence)
-        if self._error:
-            self._handle_error(self._error)
+        self._handle_error(self._error)
         return position
 
     def tell(self):
@@ -1138,8 +1137,7 @@ class SoundFile(object):
         func = getattr(_snd, funcname + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', array.__array_interface__['data'][0])
         frames = func(self._file, ptr, frames)
-        if self._error:
-            self._handle_error(self._error)
+        self._handle_error(self._error)
         if self.seekable():
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
