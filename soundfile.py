@@ -686,7 +686,7 @@ class SoundFile(object):
     """The number of sections of the sound file."""
     closed = property(lambda self: self._file is None)
     """Whether the sound file is closed or not."""
-    _error = property(lambda self: _snd.sf_error(self._file))
+    _errorcode = property(lambda self: _snd.sf_error(self._file))
     """A pending sndfile error code."""
 
     # avoid confusion if something goes wrong before assigning self._file:
@@ -713,7 +713,7 @@ class SoundFile(object):
             self._check_if_closed()
             err = _snd.sf_set_string(self._file, _str_types[name],
                                      value.encode())
-            _handle_error(err)
+            _error_check(err)
         else:
             object.__setattr__(self, name, value)
 
@@ -772,7 +772,7 @@ class SoundFile(object):
         """
         self._check_if_closed()
         position = _snd.sf_seek(self._file, frames, whence)
-        _handle_error(self._error)
+        _error_check(self._errorcode)
         return position
 
     def tell(self):
@@ -973,7 +973,7 @@ class SoundFile(object):
             self.flush()
             err = _snd.sf_close(self._file)
             self._file = None
-            _handle_error(err)
+            _error_check(err)
 
     def _open(self, file, mode_int, closefd):
         """Call the appropriate sf_open*() function from libsndfile."""
@@ -993,7 +993,7 @@ class SoundFile(object):
                 self._init_virtual_io(file), mode_int, self._info, _ffi.NULL)
         else:
             raise TypeError("Invalid file: {0!r}".format(self.name))
-        _handle_error(_snd.sf_error(file_ptr),
+        _error_check(_snd.sf_error(file_ptr),
                       "Error opening {0!r}: ".format(self.name))
         if mode_int == _snd.SFM_WRITE:
             # Due to a bug in libsndfile version <= 1.0.25, frames != 0
@@ -1131,7 +1131,7 @@ class SoundFile(object):
         func = getattr(_snd, funcname + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', array.__array_interface__['data'][0])
         frames = func(self._file, ptr, frames)
-        _handle_error(self._error)
+        _error_check(self._errorcode)
         if self.seekable():
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
@@ -1153,7 +1153,7 @@ class SoundFile(object):
         return frames
 
 
-def _handle_error(err, prefix=""):
+def _error_check(err, prefix=""):
     """Pretty-print a numerical error code if there is an error."""
     if err != 0:
         err_str = _snd.sf_error_number(err)
