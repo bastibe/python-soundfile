@@ -834,7 +834,7 @@ class SoundFile(object):
                 raise ValueError("out must be C-contiguous")
 
         self._check_array(out)
-        frames = self._read_or_write('sf_readf_', out, frames)
+        frames = self._readinto(out, frames)
 
         if len(out) > frames:
             if fill_value is None:
@@ -861,7 +861,7 @@ class SoundFile(object):
         data = _np.ascontiguousarray(data)
 
         self._check_array(data)
-        written = self._read_or_write('sf_writef_', data, len(data))
+        written = self._write(data)
         assert written == len(data)
 
         if self.seekable():
@@ -1135,7 +1135,15 @@ class SoundFile(object):
             shape = frames,
         return _np.empty(shape, dtype, order='C')
 
-    def _read_or_write(self, funcname, array, frames):
+    def _readinto(self, array, frames):
+        snd_write_func = getattr(_snd, 'sf_readf_' + _ffi_types[array.dtype])
+        return self._sndfile_io(snd_write_func, array, frames)
+
+    def _write(self, array):
+        snd_read_func = getattr(_snd, 'sf_writef_' + _ffi_types[array.dtype])
+        return self._sndfile_io(snd_read_func, array, len(array))
+
+    def _sndfile_io(self, snd_func, array, frames):
         """Call into libsndfile."""
         self._check_if_closed()
 
@@ -1146,9 +1154,8 @@ class SoundFile(object):
 
         if self.seekable():
             curr = self.tell()
-        func = getattr(_snd, funcname + ffi_type)
         ptr = _ffi.cast(ffi_type + '*', array.__array_interface__['data'][0])
-        frames = func(self._file, ptr, frames)
+        frames = snd_func(self._file, ptr, frames)
         self._handle_error()
         if self.seekable():
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
