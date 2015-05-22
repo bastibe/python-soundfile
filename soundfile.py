@@ -994,7 +994,7 @@ class SoundFile(object):
         else:
             raise TypeError("Invalid file: {0!r}".format(self.name))
         _error_check(_snd.sf_error(file_ptr),
-                      "Error opening {0!r}: ".format(self.name))
+                     "Error opening {0!r}: ".format(self.name))
         if mode_int == _snd.SFM_WRITE:
             # Due to a bug in libsndfile version <= 1.0.25, frames != 0
             # when opening a named pipe in SFM_WRITE mode.
