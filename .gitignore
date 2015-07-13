@@ -1,6 +1,6 @@
-.DS_Store
-__pycache__
-dist
-build
-PySoundFile.egg-info
-MANIFEST
+*.pyc
+__pycache__/
+dist/
+build/
+PySoundFile.egg-info/
+.eggs/
