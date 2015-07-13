@@ -30,8 +30,8 @@ else:
     libname = None
 
 if libname:
-    packages = ['pysoundfile_data']
-    package_data = {'pysoundfile_data': [libname, 'COPYING']}
+    packages = ['_soundfile_data']
+    package_data = {'_soundfile_data': [libname, 'COPYING']}
 else:
     packages = None
     package_data = None

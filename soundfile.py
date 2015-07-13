@@ -263,7 +263,7 @@ except OSError as err:
         raise
     _snd = _ffi.dlopen(_os.path.join(
         _os.path.dirname(_os.path.abspath(__file__)),
-        'pysoundfile_data', _libname))
+        '_soundfile_data', _libname))
 
 
 def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
