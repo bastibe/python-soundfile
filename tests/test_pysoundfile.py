@@ -75,6 +75,11 @@ def file_obj_stereo_rplus(request):
     return _file_copy(request, filename_stereo, os.O_RDWR, 'r+b')
 
 
+@pytest.fixture(params=['obj'])
+def file_obj_w(request):
+    return _file_new(request, os.O_CREAT | os.O_WRONLY, 'wb')
+
+
 @pytest.fixture(params=open_variants)
 def file_wplus(request):
     return _file_new(request, os.O_CREAT | os.O_RDWR, 'w+b')
@@ -484,8 +489,8 @@ def test_virtual_io_readonly(file_obj_stereo_rplus, readmethod):
     assert np.all(data == data_stereo)
 
 
-def test_virtual_io_writeonly(file_obj_stereo_rplus):
-    limitedfile = LimitedFile(file_obj_stereo_rplus, ['seek', 'tell', 'write'])
+def test_virtual_io_writeonly(file_obj_w):
+    limitedfile = LimitedFile(file_obj_w, ['seek', 'tell', 'write'])
     sf.write([0.5], limitedfile, 48000, format='WAV')
     data, fs = sf.read(filename_new)
     assert fs == 48000
