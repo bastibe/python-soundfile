@@ -626,7 +626,6 @@ def test_read_should_read_data_and_advance_read_pointer(sf_stereo_r):
     assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 2
 
 
-
 def test_read_n_frames_should_return_n_frames(sf_stereo_r):
     assert len(sf_stereo_r.read(2)) == 2
 
@@ -668,6 +667,39 @@ def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into
     assert np.all(data == out)
     assert np.all(data[2:] == 0)
     assert out.shape == (4, sf_stereo_r.channels)
+
+# -----------------------------------------------------------------------------
+# Test buffer read
+# -----------------------------------------------------------------------------
+
+
+def test_buffer_read(sf_stereo_r):
+    buf = sf_stereo_r.buffer_read(2)
+    assert len(buf) == 2 * 2 * 8
+    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 2
+    data = np.frombuffer(buf, dtype='float64').reshape(-1, 2)
+    assert np.all(data == data_stereo[:2])
+    buf = sf_stereo_r.buffer_read(ctype='float')
+    assert len(buf) == 2 * 2 * 4
+    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 4
+    data = np.frombuffer(buf, dtype='float32').reshape(-1, 2)
+    assert np.all(data == data_stereo[2:])
+    buf = sf_stereo_r.buffer_read()
+    assert len(buf) == 0
+    buf = sf_stereo_r.buffer_read(666)
+    assert len(buf) == 0
+
+
+def test_buffer_read_into(sf_stereo_r):
+    out = np.ones((3, 2))
+    frames = sf_stereo_r.buffer_read_into(out)
+    assert frames == 3
+    assert np.all(out == data_stereo[:3])
+    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 3
+    frames = sf_stereo_r.buffer_read_into(out)
+    assert frames == 1
+    assert np.all(out[:1] == data_stereo[3:])
+    assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 4
 
 
 # -----------------------------------------------------------------------------
@@ -712,6 +744,29 @@ def test_rplus_append_data(sf_stereo_rplus):
     data, fs = sf.read(filename_new)
     assert np.all(data[:len(data_stereo)] == data_stereo)
     assert np.all(data[len(data_stereo):] == data_stereo / 2)
+
+
+# -----------------------------------------------------------------------------
+# Test buffer write
+# -----------------------------------------------------------------------------
+
+
+def test_buffer_write(sf_stereo_w):
+    buf = np.array([[1, 2], [-1, -2]], dtype='int16')
+    sf_stereo_w.buffer_write(buf, 'short')
+    sf_stereo_w.close()
+    data, fs = sf.read(filename_new, dtype='int16')
+    assert np.all(data == buf)
+    assert fs == 44100
+
+
+def test_buffer_write_with_bytes(sf_stereo_w):
+    b = b"\x01\x00\xFF\xFF\xFF\x00\x00\xFF"
+    sf_stereo_w.buffer_write(b, 'short')
+    sf_stereo_w.close()
+    data, fs = sf.read(filename_new, dtype='int16')
+    assert np.all(data == [[1, -1], [255, -256]])
+    assert fs == 44100
 
 
 # -----------------------------------------------------------------------------

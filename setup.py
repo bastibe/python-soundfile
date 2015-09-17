@@ -92,7 +92,8 @@ setup(
     packages=packages,
     package_data=package_data,
     license='BSD 3-Clause License',
-    install_requires=['numpy', 'cffi>=0.6'],
+    install_requires=['cffi>=0.9'],
+    extras_require={'numpy': ['numpy']},
     platforms='any',
     classifiers=[
         'Development Status :: 3 - Alpha',
