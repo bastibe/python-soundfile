@@ -1085,17 +1085,6 @@ class SoundFile(object):
         if self.closed:
             raise ValueError("I/O operation on closed file")
 
-    def _get_slice_bounds(self, frame):
-        # get start and stop index from slice, asserting step==1
-        if not isinstance(frame, slice):
-            frame = slice(frame, frame + 1)
-        start, stop, step = frame.indices(len(self))
-        if step != 1:
-            raise RuntimeError("Step size must be 1")
-        if start > stop:
-            stop = start
-        return start, stop
-
     def _check_frames(self, frames, fill_value):
         # Check if frames is larger than the remaining frames in the file
         if self.seekable():
