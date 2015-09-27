@@ -1,0 +1,22 @@
+language: python
+python:
+  - "2.6"
+  - "2.7"
+  - "3.2"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "nightly"
+  - "pypy"
+  # TODO: Enable pypy3 once NumPy is working there:
+  #- "pypy3"
+addons:
+  apt:
+    packages:
+    - libsndfile1
+install:
+  # TODO: remove "@pypy-2.6.0" once
+  # https://github.com/travis-ci/travis-ci/issues/4756 is closed:
+  - "if [ $TRAVIS_PYTHON_VERSION = pypy -o $TRAVIS_PYTHON_VERSION = pypy3 ]; then pip install git+https://bitbucket.org/pypy/numpy.git@pypy-2.6.0 ; fi"
+script:
+  - python setup.py test
