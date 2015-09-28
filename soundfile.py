@@ -10,7 +10,6 @@ For further information, see http://pysoundfile.readthedocs.org/.
 """
 __version__ = "0.7.0"
 
-import numpy as _np
 import os as _os
 import sys as _sys
 from cffi import FFI as _FFI
@@ -99,10 +98,12 @@ sf_count_t  sf_write_int     (SNDFILE *sndfile, int *ptr, sf_count_t items) ;
 sf_count_t  sf_write_float   (SNDFILE *sndfile, float *ptr, sf_count_t items) ;
 sf_count_t  sf_write_double  (SNDFILE *sndfile, double *ptr, sf_count_t items) ;
 
-sf_count_t  sf_writef_short  (SNDFILE *sndfile, short *ptr, sf_count_t frames) ;
-sf_count_t  sf_writef_int    (SNDFILE *sndfile, int *ptr, sf_count_t frames) ;
-sf_count_t  sf_writef_float  (SNDFILE *sndfile, float *ptr, sf_count_t frames) ;
-sf_count_t  sf_writef_double (SNDFILE *sndfile, double *ptr, sf_count_t frames) ;
+/* Note: The argument types were changed to void* in order to allow
+         writing bytes in SoundFile.buffer_write() */
+sf_count_t  sf_writef_short  (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
+sf_count_t  sf_writef_int    (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
+sf_count_t  sf_writef_float  (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
+sf_count_t  sf_writef_double (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
 
 sf_count_t  sf_read_raw      (SNDFILE *sndfile, void *ptr, sf_count_t bytes) ;
 sf_count_t  sf_write_raw     (SNDFILE *sndfile, void *ptr, sf_count_t bytes) ;
@@ -244,10 +245,10 @@ _default_subtypes = {
 }
 
 _ffi_types = {
-    _np.dtype('float64'): 'double',
-    _np.dtype('float32'): 'float',
-    _np.dtype('int32'): 'int',
-    _np.dtype('int16'): 'short'
+    'float64': 'double',
+    'float32': 'float',
+    'int32': 'int',
+    'int16': 'short'
 }
 
 try:
@@ -395,7 +396,8 @@ def write(data, file, samplerate, subtype=None, endian=None, format=None,
     >>> sf.write(np.random.randn(10, 2), 'stereo_file.wav', 44100, 'PCM_24')
 
     """
-    data = _np.asarray(data)
+    import numpy as np
+    data = np.asarray(data)
     if data.ndim == 1:
         channels = 1
     else:
@@ -825,6 +827,10 @@ class SoundFile(object):
                [ 0.67398441, -0.11516333]])
         >>> myfile.close()
 
+        See Also
+        --------
+        buffer_read, .write
+
         """
         if out is None:
             frames = self._check_frames(frames, fill_value)
@@ -832,22 +838,82 @@ class SoundFile(object):
         else:
             if frames < 0 or frames > len(out):
                 frames = len(out)
-            if not out.flags.c_contiguous:
-                raise ValueError("out must be C-contiguous")
-
-        self._check_array(out)
-        frames = self._read_or_write('sf_readf_', out, frames)
-
+        frames = self._array_io('read', out, frames)
         if len(out) > frames:
             if fill_value is None:
                 out = out[:frames]
             else:
                 out[frames:] = fill_value
-
         return out
 
+    def buffer_read(self, frames=-1, ctype='double'):
+        """Read from the file and return data as buffer object.
+
+        Reads the given number of frames in the given data format
+        starting at the current read/write position.  This advances the
+        read/write position by the same number of frames.
+        By default, all frames from the current read/write position to
+        the end of the file are returned.
+        Use :meth:`.seek` to move the current read/write position.
+
+        Parameters
+        ----------
+        frames : int, optional
+            The number of frames to read. If `frames < 0`, the whole
+            rest of the file is read.
+        ctype : {'double', 'float', 'int', 'short'}, optional
+            Audio data will be converted to the given C data type.
+
+        Returns
+        -------
+        buffer
+            A buffer containing the read data.
+
+        See Also
+        --------
+        buffer_read_into, .read, buffer_write
+
+        """
+        frames = self._check_frames(frames, fill_value=None)
+        cdata = _ffi.new(ctype + '[]', frames * self.channels)
+        read_frames = self._cdata_io('read', cdata, ctype, frames)
+        assert read_frames == frames
+        return _ffi.buffer(cdata)
+
+    def buffer_read_into(self, buffer, ctype='double'):
+        """Read from the file into a buffer object.
+
+        Reads the given number of frames in the given data format
+        starting at the current read/write position.  This advances the
+        read/write position by the same number of frames.
+        By default, all frames from the current read/write position to
+        the end of the file are returned.
+        Use :meth:`.seek` to move the current read/write position.
+
+        Parameters
+        ----------
+        out : writable buffer, optional
+            If specified, audio data from the file is written to this
+            buffer instead of a newly created buffer.
+
+        Returns
+        -------
+        int
+            The number of frames that were read from the file.
+            This can be less than the size of `buffer`.
+            The rest of the buffer is not filled with meaningful data.
+
+        See Also
+        --------
+        buffer_read, .read
+
+        """
+        cdata, frames = self._check_buffer(buffer, ctype)
+        frames = self._cdata_io('read', cdata, ctype, frames)
+        return frames
+
     def write(self, data):
-        """Write audio data to the file.
+        """Write audio data from a NumPy array to the file.
 
         Writes a number of frames at the read/write position to the
         file. This also advances the read/write position by the same
@@ -858,20 +924,42 @@ class SoundFile(object):
         data : array_like
             See :func:`write`.
 
+        See Also
+        --------
+        buffer_write, .read
+
         """
+        import numpy as np
         # no copy is made if data has already the correct memory layout:
-        data = _np.ascontiguousarray(data)
-
-        self._check_array(data)
-        written = self._read_or_write('sf_writef_', data, len(data))
+        data = np.ascontiguousarray(data)
+        written = self._array_io('write', data, len(data))
         assert written == len(data)
+        self._update_len(written)
 
-        if self.seekable():
-            curr = self.tell()
-            self._info.frames = self.seek(0, SEEK_END)
-            self.seek(curr, SEEK_SET)
-        else:
-            self._info.frames += written
+    def buffer_write(self, data, ctype):
+        """Write audio data from a buffer/bytes object to the file.
+
+        Writes a number of frames at the read/write position to the
+        file. This also advances the read/write position by the same
+        number of frames and enlarges the file if necessary.
+
+        Parameters
+        ----------
+        data : buffer or bytes
+            A buffer object or bytes containing the audio data to be
+            written.
+        ctype : {'double', 'float', 'int', 'short'}, optional
+            The data type of the audio data stored in `buffer`.
+
+        See Also
+        --------
+        .write, buffer_read
+
+        """
+        cdata, frames = self._check_buffer(data, ctype)
+        written = self._cdata_io('write', cdata, ctype, frames)
+        assert written == frames
+        self._update_len(written)
 
     def blocks(self, blocksize=None, overlap=0, frames=-1, dtype='float64',
                always_2d=True, fill_value=None, out=None):
@@ -1085,68 +1173,80 @@ class SoundFile(object):
         if self.closed:
             raise ValueError("I/O operation on closed file")
 
-    def _get_slice_bounds(self, frame):
-        # get start and stop index from slice, asserting step==1
-        if not isinstance(frame, slice):
-            frame = slice(frame, frame + 1)
-        start, stop, step = frame.indices(len(self))
-        if step != 1:
-            raise RuntimeError("Step size must be 1")
-        if start > stop:
-            stop = start
-        return start, stop
-
     def _check_frames(self, frames, fill_value):
-        # Check if frames is larger than the remaining frames in the file
+        """Reduce frames to no more than are available in the file."""
         if self.seekable():
             remaining_frames = len(self) - self.tell()
-            if frames < 0 or (frames > remaining_frames
-                              and fill_value is None):
+            if frames < 0 or (frames > remaining_frames and
+                              fill_value is None):
                 frames = remaining_frames
         elif frames < 0:
             raise ValueError("frames must be specified for non-seekable files")
         return frames
 
-    def _check_array(self, array):
-        """Do some error checking."""
-        if (array.ndim not in (1, 2) or
-                array.ndim == 1 and self.channels != 1 or
-                array.ndim == 2 and array.shape[1] != self.channels):
-            raise ValueError("Invalid shape: {0!r}".format(array.shape))
-
-        if array.dtype not in _ffi_types:
-            raise ValueError("dtype must be one of {0!r}".format(
-                sorted(dt.name for dt in _ffi_types)))
+    def _check_buffer(self, data, ctype):
+        """Convert buffer to cdata and check for valid size."""
+        if isinstance(data, bytes):
+            size = len(data)
+        else:
+            data = _ffi.from_buffer(data)
+            size = _ffi.sizeof(data)
+        frames, remainder = divmod(size, self.channels * _ffi.sizeof(ctype))
+        if remainder:
+            raise ValueError("Data size must be a multiple of frame size")
+        return data, frames
 
     def _create_empty_array(self, frames, always_2d, dtype):
         """Create an empty array with appropriate shape."""
+        import numpy as np
         if always_2d or self.channels > 1:
             shape = frames, self.channels
         else:
             shape = frames,
-        return _np.empty(shape, dtype, order='C')
+        return np.empty(shape, dtype, order='C')
 
-    def _read_or_write(self, funcname, array, frames):
-        """Call into libsndfile."""
+    def _array_io(self, action, array, frames):
+        """Check array and call low-level IO function."""
+        if (array.ndim not in (1, 2) or
+                array.ndim == 1 and self.channels != 1 or
+                array.ndim == 2 and array.shape[1] != self.channels):
+            raise ValueError("Invalid shape: {0!r}".format(array.shape))
+        if not array.flags.c_contiguous:
+            raise ValueError("Data must be C-contiguous")
+        try:
+            ctype = _ffi_types[array.dtype.name]
+        except KeyError:
+            raise ValueError("dtype must be one of {0!r}".format(
+                sorted(_ffi_types.keys())))
+        assert array.dtype.itemsize == _ffi.sizeof(ctype)
+        cdata = _ffi.cast(ctype + '*', array.__array_interface__['data'][0])
+        return self._cdata_io(action, cdata, ctype, frames)
+
+    def _cdata_io(self, action, data, ctype, frames):
+        """Call one of libsndfile's read/write functions."""
+        if ctype not in _ffi_types.values():
+            raise ValueError("Unsupported data type: {0!r}".format(ctype))
         self._check_if_closed()
-
-        ffi_type = _ffi_types[array.dtype]
-        assert array.flags.c_contiguous
-        assert array.dtype.itemsize == _ffi.sizeof(ffi_type)
-        assert array.size >= frames * self.channels
-
         if self.seekable():
             curr = self.tell()
-        func = getattr(_snd, funcname + ffi_type)
-        ptr = _ffi.cast(ffi_type + '*', array.__array_interface__['data'][0])
-        frames = func(self._file, ptr, frames)
+        func = getattr(_snd, 'sf_' + action + 'f_' + ctype)
+        frames = func(self._file, data, frames)
         _error_check(self._errorcode)
         if self.seekable():
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
 
+    def _update_len(self, written):
+        """Update len(self) after writing."""
+        if self.seekable():
+            curr = self.tell()
+            self._info.frames = self.seek(0, SEEK_END)
+            self.seek(curr, SEEK_SET)
+        else:
+            self._info.frames += written
+
     def _prepare_read(self, start, stop, frames):
-        # Seek to start frame and calculate length
+        """Seek to start frame and calculate length."""
         if start != 0 and not self.seekable():
             raise ValueError("start is only allowed for seekable files")
         if frames >= 0 and stop is not None:
