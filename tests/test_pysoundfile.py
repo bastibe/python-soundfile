@@ -9,7 +9,7 @@ data_stereo = np.array([[1.0,  -1.0],
                         [0.75, -0.75],
                         [0.5,  -0.5],
                         [0.25, -0.25]])
-data_mono = np.array([[0], [1], [2], [-2], [-1]], dtype='int16')
+data_mono = np.array([0, 1, 2, -2, -1], dtype='int16')
 
 filename_stereo = 'tests/stereo.wav'
 filename_mono = 'tests/mono.wav'
@@ -172,30 +172,30 @@ def test_if_read_into_zero_len_out_works(file_stereo_r):
     assert len(out) == 0
 
 
-def test_read_mono_without_always2d(file_mono_r):
-    data, fs = sf.read(file_mono_r, dtype='int16', always_2d=False)
-    assert data.ndim == 1
-    assert np.all(data == data_mono.squeeze())
-
-
-def test_if_read_mono_returns_2d_array(file_mono_r):
+def test_read_mono(file_mono_r):
     data, fs = sf.read(file_mono_r, dtype='int16')
-    assert data.ndim == 2
+    assert data.ndim == 1
     assert np.all(data == data_mono)
+
+
+def test_if_read_mono_with_always2d_returns_2d_array(file_mono_r):
+    data, fs = sf.read(file_mono_r, dtype='int16', always_2d=True)
+    assert data.ndim == 2
+    assert np.all(data == data_mono.reshape(-1, 1))
 
 
 def test_read_mono_into_1d_out(file_mono_r):
     out = np.empty(len(data_mono), dtype='int16')
     data, fs = sf.read(file_mono_r, out=out)
     assert data is out
-    assert np.all(data == data_mono.squeeze())
+    assert np.all(data == data_mono)
 
 
 def test_read_mono_into_2d_out(file_mono_r):
     out = np.empty((len(data_mono), 1), dtype='int16')
     data, fs = sf.read(file_mono_r, out=out)
     assert data is out
-    assert np.all(data == data_mono)
+    assert np.all(data == data_mono.reshape(-1, 1))
 
 
 def test_read_non_existing_file():
@@ -321,7 +321,7 @@ def test_blocks_with_out():
 
 def test_blocks_mono():
     blocks = list(sf.blocks(filename_mono, blocksize=3, dtype='int16',
-                            always_2d=False, fill_value=0))
+                            fill_value=0))
     assert_equal_list_of_arrays(blocks, [[0, 1, 2], [-2, -1, 0]])
 
 
@@ -460,7 +460,7 @@ def test_clipping_float_to_int(file_inmemory):
     written, expected = zip(*float_to_clipped_int16)
     sf.write(written, file_inmemory, 44100, format='WAV', subtype='PCM_16')
     file_inmemory.seek(0)
-    read, fs = sf.read(file_inmemory, always_2d=False, dtype='int16')
+    read, fs = sf.read(file_inmemory, dtype='int16')
     assert np.all(read == expected)
     assert fs == 44100
 
@@ -469,7 +469,7 @@ def test_non_clipping_float_to_float(file_inmemory):
     data = -2.0, -1.0, 0.0, 1.0, 2.0
     sf.write(data, file_inmemory, 44100, format='WAV', subtype='FLOAT')
     file_inmemory.seek(0)
-    read, fs = sf.read(file_inmemory, always_2d=False)
+    read, fs = sf.read(file_inmemory)
     assert np.all(read == data)
     assert fs == 44100
 

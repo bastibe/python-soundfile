@@ -266,7 +266,7 @@ except OSError as err:
         '_soundfile_data', _libname))
 
 
-def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
+def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
          fill_value=None, out=None, samplerate=None, channels=None,
          format=None, subtype=None, endian=None, closefd=True):
     """Provide audio data from a sound file as NumPy array.
@@ -304,9 +304,9 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
     audiodata : numpy.ndarray or type(out)
         A two-dimensional NumPy array is returned, where the channels
         are stored along the first dimension, i.e. as columns.
-        A two-dimensional array is returned even if the sound file has
-        only one channel. Use ``always_2d=False`` to return a
-        one-dimensional array in this case.
+        If the sound file has only one channel, a one-dimensional array
+        is returned.  Use ``always_2d=True`` to return a two-dimensional
+        array anyway.
 
         If `out` was specified, it is returned.  If `out` has more
         frames than available in the file (or if `frames` is smaller
@@ -319,10 +319,10 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=True,
     Other Parameters
     ----------------
     always_2d : bool, optional
-        By default, audio data is always returned as a two-dimensional
-        array, even if the audio file has only one channel.
-        With ``always_2d=False``, reading a mono sound file will return
-        a one-dimensional array.
+        By default, reading a mono sound file will return a
+        one-dimensional array.  With ``always_2d=True``, audio data is
+        always returned as a two-dimensional array, even if the audio
+        file has only one channel.
     fill_value : float, optional
         If more frames are requested than available in the file, the
         rest of the output is be filled with `fill_value`.  If
@@ -408,7 +408,7 @@ def write(data, file, samplerate, subtype=None, endian=None, format=None,
 
 
 def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
-           dtype='float64', always_2d=True, fill_value=None, out=None,
+           dtype='float64', always_2d=False, fill_value=None, out=None,
            samplerate=None, channels=None,
            format=None, subtype=None, endian=None, closefd=True):
     """Return a generator for block-wise reading.
@@ -784,7 +784,7 @@ class SoundFile(object):
         """Return the current read/write position."""
         return self.seek(0, SEEK_CUR)
 
-    def read(self, frames=-1, dtype='float64', always_2d=True,
+    def read(self, frames=-1, dtype='float64', always_2d=False,
              fill_value=None, out=None):
         """Read from the file and return data as NumPy array.
 
@@ -962,7 +962,7 @@ class SoundFile(object):
         self._update_len(written)
 
     def blocks(self, blocksize=None, overlap=0, frames=-1, dtype='float64',
-               always_2d=True, fill_value=None, out=None):
+               always_2d=False, fill_value=None, out=None):
         """Return a generator for block-wise reading.
 
         By default, the generator yields blocks of the given
