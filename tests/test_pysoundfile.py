@@ -4,6 +4,7 @@ import os
 import io
 import shutil
 import pytest
+import cffi
 
 data_stereo = np.array([[1.0,  -1.0],
                         [0.75, -0.75],
@@ -18,6 +19,10 @@ filename_new = 'tests/delme.please'
 
 
 open_variants = 'name', 'fd', 'obj'
+
+
+xfail_from_buffer = pytest.mark.xfail(cffi.__version_info__ < (0, 9),
+                                      reason="from_buffer() since CFFI 0.9")
 
 
 def _file_existing(request, filename, fdarg, objarg=None):
@@ -690,6 +695,7 @@ def test_buffer_read(sf_stereo_r):
     assert len(buf) == 0
 
 
+@xfail_from_buffer
 def test_buffer_read_into(sf_stereo_r):
     out = np.ones((3, 2))
     frames = sf_stereo_r.buffer_read_into(out)
@@ -751,6 +757,7 @@ def test_rplus_append_data(sf_stereo_rplus):
 # -----------------------------------------------------------------------------
 
 
+@xfail_from_buffer
 def test_buffer_write(sf_stereo_w):
     buf = np.array([[1, 2], [-1, -2]], dtype='int16')
     sf_stereo_w.buffer_write(buf, 'short')
