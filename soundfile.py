@@ -1186,12 +1186,10 @@ class SoundFile(object):
 
     def _check_buffer(self, data, ctype):
         """Convert buffer to cdata and check for valid size."""
-        if isinstance(data, bytes):
-            size = len(data)
-        else:
+        if not isinstance(data, bytes):
             data = _ffi.from_buffer(data)
-            size = _ffi.sizeof(data)
-        frames, remainder = divmod(size, self.channels * _ffi.sizeof(ctype))
+        frames, remainder = divmod(len(data),
+                                   self.channels * _ffi.sizeof(ctype))
         if remainder:
             raise ValueError("Data size must be a multiple of frame size")
         return data, frames
