@@ -1,4 +1,3 @@
-jinja2
-pygments
-sphinx
-sphinxcontrib-napoleon
+Jinja2
+Pygments
+Sphinx>=1.3
