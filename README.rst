@@ -50,10 +50,11 @@ for example ``sudo apt-get install libsndfile1``.
 Read/Write Functions
 --------------------
 
-Data can be written to the file using ``write()``, or read from the file
-using ``read()``. PySoundFile can open all file formats that `libsndfile
-supports <http://www.mega-nerd.com/libsndfile/#Features>`__, for example
-WAV, FLAC, OGG and MAT files.
+Data can be written to the file using `soundfile.write()`, or read from
+the file using `soundfile.read()`. PySoundFile can open all file formats
+that `libsndfile supports
+<http://www.mega-nerd.com/libsndfile/#Features>`__, for example WAV,
+FLAC, OGG and MAT files.
 
 Here is an example for a program that reads a wave file and copies it
 into an ogg-vorbis file:
@@ -68,7 +69,8 @@ into an ogg-vorbis file:
 Block Processing
 ----------------
 
-Sound files can also be read in short, optionally overlapping blocks.
+Sound files can also be read in short, optionally overlapping blocks
+with `soundfile.blocks()`.
 For example, this calculates the signal level for each block of a long
 file:
 
@@ -83,13 +85,14 @@ file:
 SoundFile Objects
 -----------------
 
-Sound files can also be opened as SoundFile objects. Every SoundFile
-has a specific sample rate, data format and a set number of channels.
+Sound files can also be opened as `soundfile.SoundFile` objects. Every
+SoundFile has a specific sample rate, data format and a set number of
+channels.
 
 If a file is opened, it is kept open for as long as the SoundFile
 object exists. The file closes when the object is garbage collected,
-but you should use the ``close()`` method or the context manager to
-close the file explicitly:
+but you should use the `soundfile.SoundFile.close()` method or the
+context manager to close the file explicitly:
 
 .. code:: python
 
