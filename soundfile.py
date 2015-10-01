@@ -355,7 +355,7 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
     return data, f.samplerate
 
 
-def write(data, file, samplerate, subtype=None, endian=None, format=None,
+def write(file, data, samplerate, subtype=None, endian=None, format=None,
           closefd=True):
     """Write data to a sound file.
 
@@ -363,6 +363,8 @@ def write(data, file, samplerate, subtype=None, endian=None, format=None,
 
     Parameters
     ----------
+    file : str or int or file-like object
+        The file to write to.  See :class:`SoundFile` for details.
     data : array_like
         The data to write.  Usually two-dimensional (channels x frames),
         but one-dimensional `data` can be used for mono files.
@@ -373,8 +375,6 @@ def write(data, file, samplerate, subtype=None, endian=None, format=None,
                   type of the written file.
                   Audio data will be converted to the given `subtype`.
 
-    file : str or int or file-like object
-        The file to write to.  See :class:`SoundFile` for details.
     samplerate : int
         The sample rate of the audio data.
     subtype : str, optional
@@ -393,7 +393,7 @@ def write(data, file, samplerate, subtype=None, endian=None, format=None,
 
     >>> import numpy as np
     >>> import soundfile as sf
-    >>> sf.write(np.random.randn(10, 2), 'stereo_file.wav', 44100, 'PCM_24')
+    >>> sf.write('stereo_file.wav', np.random.randn(10, 2), 44100, 'PCM_24')
 
     """
     import numpy as np

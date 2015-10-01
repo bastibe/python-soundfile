@@ -63,7 +63,7 @@ into an ogg-vorbis file:
     import soundfile as sf
 
     data, samplerate = sf.read('existing_file.wav')
-    sf.write(data, 'new_file.ogg', samplerate=samplerate)
+    sf.write('new_file.ogg', data, samplerate)
 
 Block Processing
 ----------------
@@ -120,7 +120,7 @@ file:
 
    format = {'format':'RAW', 'subtype':'FLOAT', 'endian':'FILE'}
    data = sf.read('myfile.raw', dtype='float32', **format)
-   sf.write(data, 'otherfile.raw', **format)
+   sf.write('otherfile.raw', data, **format)
 
 Virtual IO
 ----------

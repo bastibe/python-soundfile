@@ -216,7 +216,7 @@ def test_read_non_existing_file():
 # The read() function is tested above, we assume here that it is working.
 
 def test_write_function(file_w):
-    sf.write(data_mono, file_w, 44100, format='WAV')
+    sf.write(file_w, data_mono, 44100, format='WAV')
     data, fs = sf.read(filename_new, dtype='int16')
     assert fs == 44100
     assert np.all(data == data_mono)
@@ -225,7 +225,7 @@ def test_write_function(file_w):
 @pytest.mark.parametrize("filename", ["wav", ".wav", "wav.py"])
 def test_write_with_unknown_extension(filename):
     with pytest.raises(TypeError) as excinfo:
-        sf.write([0.0], filename, 44100)
+        sf.write(filename, [0.0], 44100)
     assert "file extension" in str(excinfo.value)
 
 
@@ -463,7 +463,7 @@ def test_clipping_float_to_int(file_inmemory):
         ( 1.0         ,  2**15 - 1),
     ]
     written, expected = zip(*float_to_clipped_int16)
-    sf.write(written, file_inmemory, 44100, format='WAV', subtype='PCM_16')
+    sf.write(file_inmemory, written, 44100, format='WAV', subtype='PCM_16')
     file_inmemory.seek(0)
     read, fs = sf.read(file_inmemory, dtype='int16')
     assert np.all(read == expected)
@@ -472,7 +472,7 @@ def test_clipping_float_to_int(file_inmemory):
 
 def test_non_clipping_float_to_float(file_inmemory):
     data = -2.0, -1.0, 0.0, 1.0, 2.0
-    sf.write(data, file_inmemory, 44100, format='WAV', subtype='FLOAT')
+    sf.write(file_inmemory, data, 44100, format='WAV', subtype='FLOAT')
     file_inmemory.seek(0)
     read, fs = sf.read(file_inmemory)
     assert np.all(read == data)
@@ -496,7 +496,7 @@ def test_virtual_io_readonly(file_obj_stereo_rplus, readmethod):
 
 def test_virtual_io_writeonly(file_obj_w):
     limitedfile = LimitedFile(file_obj_w, ['seek', 'tell', 'write'])
-    sf.write([0.5], limitedfile, 48000, format='WAV')
+    sf.write(limitedfile, [0.5], 48000, format='WAV')
     data, fs = sf.read(filename_new)
     assert fs == 48000
     assert data == [0.5]
