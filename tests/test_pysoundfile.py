@@ -5,6 +5,7 @@ import io
 import shutil
 import pytest
 import cffi
+import sys
 
 data_stereo = np.array([[1.0,  -1.0],
                         [0.75, -0.75],
@@ -161,13 +162,13 @@ def test_read_into_out(file_stereo_r):
 def test_if_read_into_malformed_out_fails(file_stereo_r):
     out = np.empty((2, 3), dtype='float64')
     with pytest.raises(ValueError):
-        data, fs = sf.read(file_stereo_r, out=out)
+        sf.read(file_stereo_r, out=out)
 
 
 def test_if_read_into_out_with_too_many_dimensions_fails(file_stereo_r):
     out = np.empty((3, 2, 1), dtype='float64')
     with pytest.raises(ValueError):
-        data, fs = sf.read(file_stereo_r, out=out)
+        sf.read(file_stereo_r, out=out)
 
 
 def test_if_read_into_zero_len_out_works(file_stereo_r):
@@ -175,6 +176,24 @@ def test_if_read_into_zero_len_out_works(file_stereo_r):
     data, fs = sf.read(file_stereo_r, out=out)
     assert data is out
     assert len(out) == 0
+
+
+def test_read_into_non_contiguous_out(file_stereo_r):
+    out = np.empty(data_stereo.shape[::-1], dtype='float64')
+    if getattr(sys, 'pypy_version_info', (999,)) < (2, 6):
+        # The test for C-contiguous doesn't work with PyPy 2.5.0
+        sf.read(file_stereo_r, out=out.T)
+    else:
+        with pytest.raises(ValueError) as excinfo:
+            sf.read(file_stereo_r, out=out.T)
+        assert "C-contiguous" in str(excinfo.value)
+
+
+def test_read_into_out_with_invalid_dtype(file_stereo_r):
+    out = np.empty((3, 2), dtype='int64')
+    with pytest.raises(TypeError) as excinfo:
+        sf.read(file_stereo_r, out=out)
+    assert "dtype must be one of" in str(excinfo.value)
 
 
 def test_read_mono(file_mono_r):
@@ -215,11 +234,12 @@ def test_read_non_existing_file():
 
 # The read() function is tested above, we assume here that it is working.
 
-def test_write_function(file_w):
-    sf.write(file_w, data_mono, 44100, format='WAV')
+@pytest.mark.parametrize("data", [data_mono, data_stereo])
+def test_write_function(data, file_w):
+    sf.write(file_w, data, 44100, format='WAV')
     data, fs = sf.read(filename_new, dtype='int16')
     assert fs == 44100
-    assert np.all(data == data_mono)
+    assert np.all(data == data)
 
 
 @pytest.mark.parametrize("filename", ["wav", ".wav", "wav.py"])
@@ -245,75 +265,75 @@ def test_blocks_without_blocksize():
         list(sf.blocks(filename_stereo))
 
 
-def test_blocks_full_last_block():
-    blocks = list(sf.blocks(filename_stereo, blocksize=2))
+def test_blocks_full_last_block(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=2))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])
 
 
-def test_blocks_partial_last_block():
-    blocks = list(sf.blocks(filename_stereo, blocksize=3))
+def test_blocks_partial_last_block(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=3))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:3], data_stereo[3:4]])
 
 
-def test_blocks_fill_last_block():
-    blocks = list(sf.blocks(filename_stereo, blocksize=3, fill_value=0))
+def test_blocks_fill_last_block(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=3, fill_value=0))
     last_block = np.row_stack((data_stereo[3:4], np.zeros((2, 2))))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:3], last_block])
 
 
-def test_blocks_with_overlap():
-    blocks = list(sf.blocks(filename_stereo, blocksize=3, overlap=2))
+def test_blocks_with_overlap(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=3, overlap=2))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:3], data_stereo[1:4]])
 
 
-def test_blocks_with_start():
-    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=2))
+def test_blocks_with_start(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=2, start=2))
     assert_equal_list_of_arrays(blocks, [data_stereo[2:4]])
 
 
-def test_blocks_with_stop():
-    blocks = list(sf.blocks(filename_stereo, blocksize=2, stop=2))
+def test_blocks_with_stop(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=2, stop=2))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2]])
 
     with pytest.raises(TypeError):
         list(sf.blocks(filename_stereo, blocksize=2, frames=2, stop=2))
 
 
-def test_blocks_with_too_large_start():
-    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=666))
+def test_blocks_with_too_large_start(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=2, start=666))
     assert_equal_list_of_arrays(blocks, [[]])
 
 
-def test_blocks_with_too_large_stop():
-    blocks = list(sf.blocks(filename_stereo, blocksize=3, stop=666))
+def test_blocks_with_too_large_stop(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=3, stop=666))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:3], data_stereo[3:4]])
 
 
-def test_blocks_with_negative_start_and_stop():
-    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=-2, stop=-1))
+def test_blocks_with_negative_start_and_stop(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=2, start=-2, stop=-1))
     assert_equal_list_of_arrays(blocks, [data_stereo[-2:-1]])
 
 
-def test_blocks_with_stop_smaller_than_start():
-    blocks = list(sf.blocks(filename_stereo, blocksize=2, start=2, stop=1))
+def test_blocks_with_stop_smaller_than_start(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=2, start=2, stop=1))
     assert blocks == []
 
 
-def test_blocks_with_frames():
-    blocks = list(sf.blocks(filename_stereo, blocksize=2, frames=3))
+def test_blocks_with_frames(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=2, frames=3))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:3]])
 
 
-def test_blocks_with_frames_and_fill_value():
+def test_blocks_with_frames_and_fill_value(file_stereo_r):
     blocks = list(
-        sf.blocks(filename_stereo, blocksize=2, frames=3, fill_value=0))
+        sf.blocks(file_stereo_r, blocksize=2, frames=3, fill_value=0))
     last_block = np.row_stack((data_stereo[2:3], np.zeros((1, 2))))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], last_block])
 
 
-def test_blocks_with_out():
+def test_blocks_with_out(file_stereo_r):
     out = np.empty((3, 2))
-    blocks = list(sf.blocks(filename_stereo, out=out))
+    blocks = list(sf.blocks(file_stereo_r, out=out))
     assert blocks[0] is out
     # First frame was overwritten by second block:
     assert np.all(blocks[0] == [[0.25, -0.25], [0.75, -0.75], [0.5, -0.5]])
@@ -351,6 +371,11 @@ def test_blocks_write(sf_stereo_w):
 # -----------------------------------------------------------------------------
 
 
+def test_open_bytes_filename():
+    with sf.SoundFile(filename_stereo.encode()) as f:
+        assert np.all(f.read() == data_stereo)
+
+
 def test_open_with_invalid_file():
     with pytest.raises(TypeError) as excinfo:
         sf.SoundFile(3.1415)
@@ -382,9 +407,15 @@ def test_open_with_more_invalid_arguments():
     with pytest.raises(ValueError) as excinfo:
         sf.SoundFile(filename_new, 'w', 44100, 2, 'PCM16', format='WAV')
     assert "Unknown subtype" in str(excinfo.value)
+    with pytest.raises(TypeError) as excinfo:
+        sf.SoundFile(filename_new, 'w', 44100, 2, 666, format='WAV')
+    assert "Invalid subtype" in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
         sf.SoundFile(filename_new, 'w', 44100, 2, endian='BOTH', format='WAV')
     assert "Unknown endian-ness" in str(excinfo.value)
+    with pytest.raises(TypeError) as excinfo:
+        sf.SoundFile(filename_new, 'w', 44100, 2, endian=True, format='WAV')
+    assert "Invalid endian-ness" in str(excinfo.value)
 
 
 def test_open_r_and_rplus_with_too_many_arguments():
@@ -597,22 +628,26 @@ def test_seek_in_rplus_mode(sf_stereo_rplus):
 
 @pytest.mark.parametrize("use_default", [True, False])
 def test_truncate(file_stereo_rplus, use_default):
-    if not isinstance(file_stereo_rplus, (str, int)):
+    if isinstance(file_stereo_rplus, (str, int)):
+        with sf.SoundFile(file_stereo_rplus, 'r+', closefd=False) as f:
+            if use_default:
+                f.seek(2)
+                f.truncate()
+            else:
+                f.truncate(2)
+            assert f.tell() == 2
+            assert len(f) == 2
+        if isinstance(file_stereo_rplus, int):
+            os.lseek(file_stereo_rplus, 0, os.SEEK_SET)
+        data, fs = sf.read(file_stereo_rplus)
+        assert np.all(data == data_stereo[:2])
+        assert fs == 44100
+    else:
         # file objects don't support truncate()
-        return
-    with sf.SoundFile(file_stereo_rplus, 'r+', closefd=False) as f:
-        if use_default:
-            f.seek(2)
-            f.truncate()
-        else:
-            f.truncate(2)
-        assert f.tell() == 2
-        assert len(f) == 2
-    if isinstance(file_stereo_rplus, int):
-        os.lseek(file_stereo_rplus, 0, os.SEEK_SET)
-    data, fs = sf.read(file_stereo_rplus)
-    assert np.all(data == data_stereo[:2])
-    assert fs == 44100
+        with sf.SoundFile(file_stereo_rplus, 'r+', closefd=False) as f:
+            with pytest.raises(RuntimeError) as excinfo:
+                f.truncate()
+            assert "Error truncating" in str(excinfo.value)
 
 
 # -----------------------------------------------------------------------------
@@ -673,6 +708,7 @@ def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into
     assert np.all(data[2:] == 0)
     assert out.shape == (4, sf_stereo_r.channels)
 
+
 # -----------------------------------------------------------------------------
 # Test buffer read
 # -----------------------------------------------------------------------------
@@ -693,6 +729,9 @@ def test_buffer_read(sf_stereo_r):
     assert len(buf) == 0
     buf = sf_stereo_r.buffer_read(666)
     assert len(buf) == 0
+    with pytest.raises(ValueError) as excinfo:
+        sf_stereo_r.buffer_read(ctype='char')
+    assert "Unsupported data type" in str(excinfo.value)
 
 
 @xfail_from_buffer
@@ -776,22 +815,38 @@ def test_buffer_write_with_bytes(sf_stereo_w):
     assert fs == 44100
 
 
+@xfail_from_buffer
+def test_buffer_write_with_wrong_size(sf_stereo_w):
+    buf = np.array([1, 2, 3], dtype='int16')
+    with pytest.raises(ValueError) as excinfo:
+        sf_stereo_w.buffer_write(buf, 'short')
+    assert "multiple of frame size" in str(excinfo.value)
+
+
 # -----------------------------------------------------------------------------
 # Other tests
 # -----------------------------------------------------------------------------
 
 
-def test_context_manager_should_open_and_close_file():
-    with sf.SoundFile(filename_stereo) as f:
+def test_context_manager_should_open_and_close_file(file_stereo_r):
+    with sf.SoundFile(file_stereo_r) as f:
         assert not f.closed
     assert f.closed
 
 
-def test_closing_should_close_file():
-    f = sf.SoundFile(filename_stereo)
+def test_closing_should_close_file(file_stereo_r):
+    f = sf.SoundFile(file_stereo_r)
     assert not f.closed
     f.close()
     assert f.closed
+
+
+def test_anything_on_closed_file(file_stereo_r):
+    with sf.SoundFile(file_stereo_r) as f:
+        pass
+    with pytest.raises(RuntimeError) as excinfo:
+        f.seek(0)
+    assert "closed" in str(excinfo.value)
 
 
 def test_file_attributes_should_save_to_disk(file_w):
@@ -807,6 +862,12 @@ def test_non_file_attributes_should_not_save_to_disk(file_w):
     with sf.SoundFile(filename_new) as f:
         with pytest.raises(AttributeError):
             f.foobar
+
+
+def test_getAttributeNames(sf_stereo_r):
+    names = sf_stereo_r._getAttributeNames()
+    assert 'artist' in names
+    assert 'genre' in names
 
 
 # -----------------------------------------------------------------------------
@@ -828,6 +889,37 @@ def test_read_raw_files_with_too_few_arguments_should_fail():
         sf.SoundFile(filename_raw, samplerate=44100, subtype='PCM_16')
     with pytest.raises(TypeError):  # missing samplerate
         sf.SoundFile(filename_raw, channels=2, subtype='PCM_16')
+
+
+def test_available_formats():
+    formats = sf.available_formats()
+    assert 'WAV' in formats
+    assert 'OGG' in formats
+    assert 'FLAC' in formats
+
+
+def test_available_subtypes():
+    subtypes = sf.available_subtypes()
+    assert 'PCM_24' in subtypes
+    assert 'FLOAT' in subtypes
+    assert 'VORBIS' in subtypes
+    subtypes = sf.available_subtypes('WAV')
+    assert 'PCM_24' in subtypes
+    assert 'FLOAT' in subtypes
+    assert 'VORBIS' not in subtypes
+    subtypes = sf.available_subtypes('nonsense')
+    assert subtypes == {}
+
+
+def test_default_subtype():
+    assert sf.default_subtype('FLAC') == 'PCM_16'
+    assert sf.default_subtype('RAW') is None
+    with pytest.raises(ValueError) as excinfo:
+        sf.default_subtype('nonsense')
+    assert str(excinfo.value) == "Unknown format: 'nonsense'"
+    with pytest.raises(TypeError) as excinfo:
+        sf.default_subtype(666)
+    assert str(excinfo.value) == "Invalid format: 666"
 
 
 # -----------------------------------------------------------------------------

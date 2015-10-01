@@ -1372,7 +1372,6 @@ def _format_str(format_int):
         for k, v in dictionary.items():
             if v == format_int:
                 return k
-    return hex(format_int)
 
 
 def _format_info(format_int, format_flag=_snd.SFC_GET_FORMAT_INFO):
