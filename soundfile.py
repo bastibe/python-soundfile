@@ -1168,7 +1168,7 @@ class SoundFile(object):
 
         """
         if self.closed:
-            raise ValueError("I/O operation on closed file")
+            raise RuntimeError("I/O operation on closed file")
 
     def _check_frames(self, frames, fill_value):
         """Reduce frames to no more than are available in the file."""
@@ -1211,7 +1211,7 @@ class SoundFile(object):
         try:
             ctype = _ffi_types[array.dtype.name]
         except KeyError:
-            raise ValueError("dtype must be one of {0!r}".format(
+            raise TypeError("dtype must be one of {0!r}".format(
                 sorted(_ffi_types.keys())))
         assert array.dtype.itemsize == _ffi.sizeof(ctype)
         cdata = _ffi.cast(ctype + '*', array.__array_interface__['data'][0])
