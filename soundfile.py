@@ -540,11 +540,8 @@ def default_subtype(format):
     'DOUBLE'
 
     """
-    try:
-        format = format.upper()
-    except AttributeError:
-        pass
-    return _default_subtypes.get(format)
+    _check_format(format)
+    return _default_subtypes.get(format.upper())
 
 
 class SoundFile(object):
@@ -1269,12 +1266,7 @@ def _error_check(err, prefix=""):
 
 def _format_int(format, subtype, endian):
     """Return numeric ID for given format|subtype|endian combo."""
-    if not isinstance(format, (_unicode, str)):
-        raise TypeError("Invalid format: {0!r}".format(format))
-    try:
-        result = _formats[format.upper()]
-    except KeyError:
-        raise ValueError("Unknown format: {0!r}".format(format))
+    result = _check_format(format)
     if subtype is None:
         subtype = default_subtype(format)
         if subtype is None:
@@ -1331,8 +1323,7 @@ def _create_info_struct(file, mode, samplerate, channels,
         format = _get_format_from_filename(file, mode)
         assert isinstance(format, (_unicode, str))
     else:
-        if not isinstance(format, (_unicode, str)):
-            raise TypeError("Invalid format: {0!r}".format(format))
+        _check_format(format)
 
     info = _ffi.new("SF_INFO*")
     if 'r' not in mode or format.upper() == 'RAW':
@@ -1401,3 +1392,14 @@ def _available_formats_helper(count_flag, format_flag):
     _snd.sf_command(_ffi.NULL, count_flag, count, _ffi.sizeof("int"))
     for format_int in range(count[0]):
         yield _format_info(format_int, format_flag)
+
+
+def _check_format(format_str):
+    """Check if `format_str` is valid and return format ID."""
+    if not isinstance(format_str, (_unicode, str)):
+        raise TypeError("Invalid format: {0!r}".format(format_str))
+    try:
+        format_int = _formats[format_str.upper()]
+    except KeyError:
+        raise ValueError("Unknown format: {0!r}".format(format_str))
+    return format_int
