@@ -7,8 +7,10 @@ import pytest
 import cffi
 import sys
 
-data_stereo = np.array([[1.0,  -1.0],
-                        [0.75, -0.75],
+# floating point data is typically limited to the interval [-1.0, 1.0],
+# but smaller/larger values are supported as well
+data_stereo = np.array([[1.75, -1.75],
+                        [1.0,  -1.0],
                         [0.5,  -0.5],
                         [0.25, -0.25]])
 data_mono = np.array([0, 1, 2, -2, -1], dtype='int16')
@@ -336,9 +338,10 @@ def test_blocks_with_out(file_stereo_r):
     blocks = list(sf.blocks(file_stereo_r, out=out))
     assert blocks[0] is out
     # First frame was overwritten by second block:
-    assert np.all(blocks[0] == [[0.25, -0.25], [0.75, -0.75], [0.5, -0.5]])
+    assert np.all(blocks[0] == data_stereo[[3, 1, 2]])
+
     assert blocks[1].base is out
-    assert np.all(blocks[1] == [[0.25, -0.25]])
+    assert np.all(blocks[1] == data_stereo[[3]])
 
     with pytest.raises(TypeError):
         list(sf.blocks(filename_stereo, blocksize=3, out=out))
