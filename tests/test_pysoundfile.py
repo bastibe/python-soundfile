@@ -236,12 +236,47 @@ def test_read_non_existing_file():
 
 # The read() function is tested above, we assume here that it is working.
 
-@pytest.mark.parametrize("data", [data_mono, data_stereo])
-def test_write_function(data, file_w):
-    sf.write(file_w, data, 44100, format='WAV')
-    data, fs = sf.read(filename_new, dtype='int16')
+def test_write_float_data_to_float_file(file_inmemory):
+    sf.write(file_inmemory, data_stereo, 44100, format='WAV', subtype='FLOAT')
+    file_inmemory.seek(0)
+    read, fs = sf.read(file_inmemory)
+    assert np.all(read == data_stereo)
     assert fs == 44100
-    assert np.all(data == data)
+
+
+def test_write_float_data_to_pcm_file(file_inmemory):
+    float_to_clipped_int16 = [
+        (-1.0 - 2**-15, -2**15    ),
+        (-1.0         , -2**15    ),
+        (-1.0 + 2**-15, -2**15 + 1),
+        ( 0.0         ,  0        ),
+        ( 1.0 - 2**-14,  2**15 - 2),
+        ( 1.0 - 2**-15,  2**15 - 1),
+        ( 1.0         ,  2**15 - 1),
+    ]
+    written, expected = zip(*float_to_clipped_int16)
+    sf.write(file_inmemory, written, 44100, format='WAV', subtype='PCM_16')
+    file_inmemory.seek(0)
+    read, fs = sf.read(file_inmemory, dtype='int16')
+    assert np.all(read == expected)
+    assert fs == 44100
+
+
+def test_write_int_data_to_pcm_file(file_inmemory):
+    sf.write(file_inmemory, data_mono, 44100, format='WAV')
+    file_inmemory.seek(0)
+    read, fs = sf.read(file_inmemory, dtype='int16')
+    assert fs == 44100
+    assert np.all(read == data_mono)
+
+
+def test_write_int_data_to_float_file(file_inmemory):
+    """This is a very uncommon use case."""
+    sf.write(file_inmemory, data_mono, 44100, format='WAV', subtype='FLOAT')
+    file_inmemory.seek(0)
+    read, fs = sf.read(file_inmemory, always_2d=False, dtype='float32')
+    assert np.all(read == data_mono)
+    assert fs == 44100
 
 
 @pytest.mark.parametrize("filename", ["wav", ".wav", "wav.py"])
@@ -484,33 +519,6 @@ def test_if_open_with_mode_w_truncates(file_stereo_rplus, mode):
         else:
             # This doesn't really work for file descriptors and file objects
             pass
-
-
-def test_clipping_float_to_int(file_inmemory):
-    float_to_clipped_int16 = [
-        (-1.0 - 2**-15, -2**15    ),
-        (-1.0         , -2**15    ),
-        (-1.0 + 2**-15, -2**15 + 1),
-        ( 0.0         ,  0        ),
-        ( 1.0 - 2**-14,  2**15 - 2),
-        ( 1.0 - 2**-15,  2**15 - 1),
-        ( 1.0         ,  2**15 - 1),
-    ]
-    written, expected = zip(*float_to_clipped_int16)
-    sf.write(file_inmemory, written, 44100, format='WAV', subtype='PCM_16')
-    file_inmemory.seek(0)
-    read, fs = sf.read(file_inmemory, dtype='int16')
-    assert np.all(read == expected)
-    assert fs == 44100
-
-
-def test_non_clipping_float_to_float(file_inmemory):
-    data = -2.0, -1.0, 0.0, 1.0, 2.0
-    sf.write(file_inmemory, data, 44100, format='WAV', subtype='FLOAT')
-    file_inmemory.seek(0)
-    read, fs = sf.read(file_inmemory)
-    assert np.all(read == data)
-    assert fs == 44100
 
 
 class LimitedFile(object):
@@ -871,6 +879,31 @@ def test_getAttributeNames(sf_stereo_r):
     names = sf_stereo_r._getAttributeNames()
     assert 'artist' in names
     assert 'genre' in names
+
+
+def test_read_int_data_from_float_file(file_inmemory):
+    """This is a very uncommon use case."""
+    unnormalized_float_to_clipped_int16 = [
+        (-2.0**15 - 1 , -2**15),
+        (-2.0**15     , -2**15),
+        (-2.0**15 + 1 , -2**15 + 1),
+        (-1.0         , -1),
+        (-0.51        , -1),
+        (-0.5         ,  0),
+        ( 0.0         ,  0),
+        ( 0.5         ,  0),
+        ( 0.51        ,  1),
+        ( 1.0         ,  1),
+        ( 2.0**15 - 2 , 2**15 - 2),
+        ( 2.0**15 - 1 , 2**15 - 1),
+        ( 2.0**15     , 2**15 - 1),
+    ]
+    file_data, expected = zip(*unnormalized_float_to_clipped_int16)
+    sf.write(file_inmemory, file_data, 44100, format='WAV', subtype='FLOAT')
+    file_inmemory.seek(0)
+    read, fs = sf.read(file_inmemory, always_2d=False, dtype='int16')
+    assert np.all(read == expected)
+    assert fs == 44100
 
 
 # -----------------------------------------------------------------------------
