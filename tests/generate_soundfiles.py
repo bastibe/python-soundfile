@@ -13,9 +13,11 @@ def uint16(number):
 
 mono_raw = struct.pack('<5h', 0, 1, 2, -2, -1)
 
+# floating point data is typically limited to the interval [-1.0, 1.0],
+# but smaller/larger values are supported as well
 stereo_raw = struct.pack('<8f',
+                         1.75, -1.75,
                          1.0,  -1.0,
-                         0.75, -0.75,
                          0.5,  -0.5,
                          0.25, -0.25)
 
