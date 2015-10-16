@@ -121,8 +121,8 @@ file:
 
    import soundfile as sf
 
-   format = {'format':'RAW', 'subtype':'FLOAT', 'endian':'FILE'}
-   data = sf.read('myfile.raw', dtype='float32', **format)
+   format = dict(format='RAW', subtype='FLOAT', endian='FILE', samplerate=44100)
+   data, samplerate = sf.read('myfile.raw', channels=1, dtype='float32', **format)
    sf.write('otherfile.raw', data, **format)
 
 Virtual IO
@@ -144,7 +144,7 @@ Here is an example using an HTTP request:
     import io
     import soundfile as sf
     from urllib.request import urlopen
-    
+
     url = "http://tinyurl.com/shepard-risset"
     data, samplerate = sf.read(io.BytesIO(urlopen(url).read()))
 
