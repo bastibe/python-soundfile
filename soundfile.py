@@ -801,6 +801,11 @@ class SoundFile(object):
         the end of the file are returned.
         Use :meth:`.seek` to move the current read/write position.
 
+        Note that reading int values from a float file will *not*
+        scale the data to [-1.0, 1.0). If the file contains
+        ``float(42.6)``, you will read ``np.array([43],
+        dtype='int')``.
+
         Parameters
         ----------
         frames : int, optional
@@ -924,6 +929,11 @@ class SoundFile(object):
         Writes a number of frames at the read/write position to the
         file. This also advances the read/write position by the same
         number of frames and enlarges the file if necessary.
+
+        Note that writing int values to a float file will *not* scale
+        the values to [-1.0, 1.0). If you write the value
+        ``np.array([42], dtype='int')``, the file will then contain
+        ``float(42)``.
 
         Parameters
         ----------
