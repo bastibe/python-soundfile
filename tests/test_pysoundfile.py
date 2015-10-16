@@ -584,6 +584,10 @@ def test__repr__(sf_stereo_r):
                                  "endian='FILE')").format(sf_stereo_r)
 
 
+def test_extra_info(sf_stereo_r):
+    assert 'WAVE_FORMAT_IEEE_FLOAT' in sf_stereo_r.extra_info
+
+
 def test_mode_should_be_in_write_mode(sf_stereo_w):
     assert sf_stereo_w.mode == 'w'
     assert len(sf_stereo_w) == 0
