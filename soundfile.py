@@ -467,6 +467,52 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
             yield block
 
 
+class _SoundFileInfo(object):
+    """Information about a SoundFile"""
+    def __init__(self, file, verbose):
+        self.verbose = verbose
+        with SoundFile(file, 'r') as f:
+            self.name = f.name
+            self.samplerate = f.samplerate
+            self.channels = f.channels
+            self.length = len(f)/f.samplerate
+            self.format = f.format
+            self.subtype = f.subtype
+            self.endian = f.endian
+            self.format_info = f.format_info
+            self.subtype_info = f.subtype_info
+            self.sections = f.sections
+            self.extra_info = f.extra_info
+
+    def __repr__(self):
+        info = """SoundFile({0.name!r}) with
+    samplerate={0.samplerate} Hz,
+    channels={0.channels},
+    length={0.length:0.2f} s,
+    format={0.format} ({0.format_info}),
+    subtype={0.subtype} ({0.subtype_info})""".format(self)
+        if self.verbose:
+            info += ''',
+    endian={0.endian},
+    sections={0.sections},
+    extra_info="""
+        {1}"""'''.format(self,
+                         # indent extra_info:
+                         ("\n"+" "*8).join(self.extra_info.split("\n")))
+        return info
+
+
+def info(file, verbose=False):
+    """Returns an object with information about a SoundFile.
+
+    Parameters
+    ----------
+    verbose: bool
+        whether to print additional information.
+    """
+    return _SoundFileInfo(file, verbose)
+
+
 def available_formats():
     """Return a dictionary of available major formats.
 
