@@ -520,8 +520,8 @@ def info(file, verbose=False):
 
     Parameters
     ----------
-    verbose: bool
-        whether to print additional information.
+    verbose : bool
+        Whether to print additional information.
     """
     return _SoundFileInfo(file, verbose)
 
