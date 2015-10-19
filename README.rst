@@ -113,17 +113,21 @@ RAW Files
 ---------
 
 Pysoundfile can usually auto-detect the file type of sound files. This
-is not possible for RAW files, though. This is a useful idiom for
-opening RAW files without having to provide all the format for every
-file:
+is not possible for RAW files, though:
 
 .. code:: python
 
    import soundfile as sf
 
-   format = dict(format='RAW', subtype='FLOAT', endian='FILE', samplerate=44100)
-   data, samplerate = sf.read('myfile.raw', channels=1, dtype='float32', **format)
-   sf.write('otherfile.raw', data, **format)
+   data, samplerate = sf.read('myfile.raw', channels=1, samplerate=44100,
+                              subtype='FLOAT')
+
+Note that on x86, this defaults to ``endian='LITTLE'``. If you are
+reading big endian data (mostly old PowerPC/6800-based files), you
+have to set ``endian`` accordingly.
+
+You can write RAW files in a similar way, but be advised that in most
+cases, a more expressive format is better and should be used instead.
 
 Virtual IO
 ----------
