@@ -471,11 +471,11 @@ class _SoundFileInfo(object):
     """Information about a SoundFile"""
     def __init__(self, file, verbose):
         self.verbose = verbose
-        with SoundFile(file, 'r') as f:
+        with SoundFile(file) as f:
             self.name = f.name
             self.samplerate = f.samplerate
             self.channels = f.channels
-            self.length = len(f)/f.samplerate
+            self.duration = len(f)/f.samplerate
             self.format = f.format
             self.subtype = f.subtype
             self.endian = f.endian
@@ -484,22 +484,35 @@ class _SoundFileInfo(object):
             self.sections = f.sections
             self.extra_info = f.extra_info
 
+    @property
+    def _duration_str(self):
+        hours = int(self.duration // 3600)
+        minutes = int((self.duration % 3600) // 60)
+        seconds = (self.duration % 60)
+        if hours >= 1:
+            duration = "{0}:{1:02}:{2:05.2f} h".format(hours, minutes, seconds)
+        elif minutes >= 1:
+            duration = "{0:02}:{1:05.2f} min".format(minutes, seconds)
+        else:
+            duration = "{0:.2f} s".format(seconds)
+        return duration
+
     def __repr__(self):
-        info = """SoundFile({0.name!r}) with
-    samplerate={0.samplerate} Hz,
-    channels={0.channels},
-    length={0.length:0.2f} s,
-    format={0.format} ({0.format_info}),
-    subtype={0.subtype} ({0.subtype_info})""".format(self)
+        info = "\n".join(
+            ["{0.name}",
+             "samplerate: {0.samplerate} Hz",
+             "channels: {0.channels}",
+             "duration: {0._duration_str}",
+             "format: {0.format_info} [{0.format}]",
+             "subtype: {0.subtype_info} [{0.subtype}]"])
         if self.verbose:
-            info += ''',
-    endian={0.endian},
-    sections={0.sections},
-    extra_info="""
-        {1}"""'''.format(self,
-                         # indent extra_info:
-                         ("\n"+" "*8).join(self.extra_info.split("\n")))
-        return info
+            info += "\n".join(
+                ["endian: {0.endian}",
+                 "sections: {0.sections}",
+                 'extra_info: """',
+                 '{1}"""'])
+        indented_extra_info = ("\n"+" "*4).join(self.extra_info.split("\n"))
+        return info.format(self, indented_extra_info)
 
 
 def info(file, verbose=False):
