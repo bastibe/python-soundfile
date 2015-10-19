@@ -510,7 +510,7 @@ class _SoundFileInfo(object):
                 ["endian: {0.endian}",
                  "sections: {0.sections}",
                  'extra_info: """',
-                 '{1}"""'])
+                 '    {1}"""'])
         indented_extra_info = ("\n"+" "*4).join(self.extra_info.split("\n"))
         return info.format(self, indented_extra_info)
 
