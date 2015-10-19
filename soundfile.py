@@ -40,6 +40,9 @@ enum
     SFC_GET_FORMAT_SUBTYPE          = 0x1033,
     SFC_FILE_TRUNCATE               = 0x1080,
     SFC_SET_CLIPPING                = 0x10C0,
+
+    SFC_SET_SCALE_FLOAT_INT_READ    = 0x1014,
+    SFC_SET_SCALE_INT_FLOAT_WRITE   = 0x1015,
 } ;
 
 enum
