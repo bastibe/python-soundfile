@@ -803,8 +803,8 @@ class SoundFile(object):
 
         Note that reading int values from a float file will *not*
         scale the data to [-1.0, 1.0). If the file contains
-        ``float(42.6)``, you will read ``np.array([43],
-        dtype='int')``.
+        ``np.array([42.6], dtype='float32')``, you will read
+        ``np.array([43], dtype='int32')`` for ``dtype='int32'``.
 
         Parameters
         ----------
@@ -932,8 +932,9 @@ class SoundFile(object):
 
         Note that writing int values to a float file will *not* scale
         the values to [-1.0, 1.0). If you write the value
-        ``np.array([42], dtype='int')``, the file will then contain
-        ``float(42)``.
+        ``np.array([42], dtype='int32')``, to a ``subtype='FLOAT'``
+        file, the file will then contain ``np.array([42.],
+        dtype='float32')``.
 
         Parameters
         ----------
