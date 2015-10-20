@@ -124,7 +124,7 @@ is not possible for RAW files, though:
 
 Note that on x86, this defaults to ``endian='LITTLE'``. If you are
 reading big endian data (mostly old PowerPC/6800-based files), you
-have to set ``endian`` accordingly.
+have to set ``endian='BIG'`` accordingly.
 
 You can write RAW files in a similar way, but be advised that in most
 cases, a more expressive format is better and should be used instead.
