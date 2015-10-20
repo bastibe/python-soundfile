@@ -1074,9 +1074,6 @@ class SoundFile(object):
 
     def _open(self, file, mode_int, closefd):
         """Call the appropriate sf_open*() function from libsndfile."""
-        readable = hasattr(file, 'read') or hasattr(file, 'readinto')
-        writeable = hasattr(file, 'write')
-        seekable = hasattr(file, 'seek') and hasattr(file, 'tell')
         if isinstance(file, (_unicode, bytes)):
             if _os.path.isfile(file):
                 if 'x' in self.mode:
@@ -1093,9 +1090,7 @@ class SoundFile(object):
             file_ptr = openfunction(file, mode_int, self._info)
         elif isinstance(file, int):
             file_ptr = _snd.sf_open_fd(file, mode_int, self._info, closefd)
-        elif (seekable and
-              (readable or mode_int == _snd.SFM_WRITE) and
-              (writeable or mode_int == _snd.SFM_READ)):
+        elif _has_virtual_io_attrs(file, mode_int):
             file_ptr = _snd.sf_open_virtual(self._init_virtual_io(file),
                                             mode_int, self._info, _ffi.NULL)
         else:
@@ -1411,3 +1406,15 @@ def _check_format(format_str):
     except KeyError:
         raise ValueError("Unknown format: {0!r}".format(format_str))
     return format_int
+
+
+def _has_virtual_io_attrs(file, mode_int):
+    """Check if file has all the necessary attributes for virtual IO."""
+    readonly = mode_int == _snd.SFM_READ
+    writeonly = mode_int == _snd.SFM_WRITE
+    return all([
+        hasattr(file, 'seek'),
+        hasattr(file, 'tell'),
+        hasattr(file, 'write') or readonly,
+        hasattr(file, 'read') or hasattr(file, 'readinto') or writeonly,
+    ])
