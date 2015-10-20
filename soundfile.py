@@ -40,6 +40,9 @@ enum
     SFC_GET_FORMAT_SUBTYPE          = 0x1033,
     SFC_FILE_TRUNCATE               = 0x1080,
     SFC_SET_CLIPPING                = 0x10C0,
+
+    SFC_SET_SCALE_FLOAT_INT_READ    = 0x1014,
+    SFC_SET_SCALE_INT_FLOAT_WRITE   = 0x1015,
 } ;
 
 enum
@@ -300,6 +303,11 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
         ``-2**15`` to ``2**15-1`` for ``'int16'`` and from ``-2**31`` to
         ``2**31-1`` for ``'int32'``.
 
+        .. note:: Reading int values from a float file will *not*
+            scale the data to [-1.0, 1.0). If the file contains
+            ``np.array([42.6], dtype='float32')``, you will read
+            ``np.array([43], dtype='int32')`` for ``dtype='int32'``.
+
     Returns
     -------
     audiodata : numpy.ndarray or type(out)
@@ -373,8 +381,13 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
         and ``'int16'`` are supported.
 
         .. note:: The data type of `data` does **not** select the data
-                  type of the written file.
-                  Audio data will be converted to the given `subtype`.
+                  type of the written file. Audio data will be
+                  converted to the given `subtype`. Writing int values
+                  to a float file will *not* scale the values to
+                  [-1.0, 1.0). If you write the value ``np.array([42],
+                  dtype='int32')``, to a ``subtype='FLOAT'`` file, the
+                  file will then contain ``np.array([42.],
+                  dtype='float32')``.
 
     samplerate : int
         The sample rate of the audio data.
@@ -389,8 +402,7 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
 
     Examples
     --------
-
-    Write 10 frames of random data to a file:
+    Write 10 frames of random data to a new file:
 
     >>> import numpy as np
     >>> import soundfile as sf
@@ -865,18 +877,52 @@ class SoundFile(object):
             The number of frames to read. If ``frames < 0``, the whole
             rest of the file is read.
         dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-            See :func:`read`.
+            Data type of the returned array, by default ``'float64'``.
+            Floating point audio data is typically in the range from
+            ``-1.0`` to ``1.0``. Integer data is in the range from
+            ``-2**15`` to ``2**15-1`` for ``'int16'`` and from
+            ``-2**31`` to ``2**31-1`` for ``'int32'``.
+
+            .. note:: Reading int values from a float file will *not*
+                scale the data to [-1.0, 1.0). If the file contains
+                ``np.array([42.6], dtype='float32')``, you will read
+                ``np.array([43], dtype='int32')`` for
+                ``dtype='int32'``.
 
         Returns
         -------
-        numpy.ndarray or type(out)
-            The read data; either a new array or `out` or a view into
-            `out`.  See :func:`read` for details.
+        audiodata : numpy.ndarray or type(out)
+            A two-dimensional NumPy array is returned, where the
+            channels are stored along the first dimension, i.e. as
+            columns. If the sound file has only one channel, a
+            one-dimensional array is returned. Use ``always_2d=True``
+            to return a two-dimensional array anyway.
+
+            If `out` was specified, it is returned. If `out` has more
+            frames than available in the file (or if `frames` is
+            smaller than the length of `out`) and no `fill_value` is
+            given, then only a part of `out` is overwritten and a view
+            containing all valid frames is returned. numpy.ndarray or
+            type(out)
 
         Other Parameters
         ----------------
-        always_2d, fill_value, out
-            See :func:`read`.
+        always_2d : bool, optional
+            By default, reading a mono sound file will return a
+            one-dimensional array. With ``always_2d=True``, audio data
+            is always returned as a two-dimensional array, even if the
+            audio file has only one channel.
+        fill_value : float, optional
+            If more frames are requested than available in the file,
+            the rest of the output is be filled with `fill_value`. If
+            `fill_value` is not specified, a smaller array is
+            returned.
+        out : numpy.ndarray or subclass, optional
+            If `out` is specified, the data is written into the given
+            array instead of creating a new array. In this case, the
+            arguments `dtype` and `always_2d` are silently ignored! If
+            `frames` is not given, it is obtained from the length of
+            `out`.
 
         Examples
         --------
@@ -962,7 +1008,7 @@ class SoundFile(object):
 
         Returns
         -------
-        int
+        num_read : int
             The number of frames that were read from the file.
             This can be less than the size of `buffer`.
             The rest of the buffer is not filled with meaningful data.
@@ -983,10 +1029,39 @@ class SoundFile(object):
         file. This also advances the read/write position by the same
         number of frames and enlarges the file if necessary.
 
+        Note that writing int values to a float file will *not* scale
+        the values to [-1.0, 1.0). If you write the value
+        ``np.array([42], dtype='int32')``, to a ``subtype='FLOAT'``
+        file, the file will then contain ``np.array([42.],
+        dtype='float32')``.
+
         Parameters
         ----------
         data : array_like
-            See :func:`write`.
+            The data to write. Usually two-dimensional (channels x
+            frames), but one-dimensional `data` can be used for mono
+            files. Only the data types ``'float64'``, ``'float32'``,
+            ``'int32'`` and ``'int16'`` are supported.
+
+            .. note:: The data type of `data` does **not** select the
+                  data type of the written file. Audio data will be
+                  converted to the given `subtype`. Writing int values
+                  to a float file will *not* scale the values to
+                  [-1.0, 1.0). If you write the value ``np.array([42],
+                  dtype='int32')``, to a ``subtype='FLOAT'`` file, the
+                  file will then contain ``np.array([42.],
+                  dtype='float32')``.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from soundfile import SoundFile
+        >>> myfile = SoundFile('stereo_file.wav')
+
+        Write 10 frames of random data to a new file:
+
+        >>> with SoundFile('stereo_file.wav', 'w', 44100, 2, 'PCM_24') as f:
+        >>>     f.write(np.random.randn(10, 2))
 
         See Also
         --------
@@ -1044,17 +1119,29 @@ class SoundFile(object):
             The number of frames to read.
             If ``frames < 1``, the file is read until the end.
         dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-            See :func:`read`.
+            See :meth:`.read`.
 
         Yields
         ------
         numpy.ndarray or type(out)
-            Blocks of audio data. See :func:`blocks` for details.
+            Blocks of audio data.
+            If `out` was given, and the requested frames are not an
+            integer multiple of the length of `out`, and no
+            `fill_value` was given, the last block will be a smaller
+            view into `out`.
+
 
         Other Parameters
         ----------------
         always_2d, fill_value, out
-            See :func:`read`.
+            See :meth:`.read`.
+
+        Examples
+        --------
+        >>> from soundfile import SoundFile
+        >>> with SoundFile('stereo_file.wav') as f:
+        >>>     for block in f.blocks(blocksize=1024):
+        >>>         pass  # do something with 'block'
 
         """
         if 'r' not in self.mode and '+' not in self.mode:
