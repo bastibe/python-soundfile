@@ -486,15 +486,14 @@ class _SoundFileInfo(object):
 
     @property
     def _duration_str(self):
-        hours = int(self.duration // 3600)
-        minutes = int((self.duration % 3600) // 60)
-        seconds = (self.duration % 60)
+        hours, rest = divmod(self.duration, 3600)
+        minutes, seconds = divmod(rest, 60)
         if hours >= 1:
-            duration = "{0}:{1:02}:{2:05.2f} h".format(hours, minutes, seconds)
+            duration = "{0:.0g}:{1:02.0g}:{2:05.3f} h".format(hours, minutes, seconds)
         elif minutes >= 1:
-            duration = "{0:02}:{1:05.2f} min".format(minutes, seconds)
+            duration = "{0:02.0g}:{1:05.3f} min".format(minutes, seconds)
         else:
-            duration = "{0:.2f} s".format(seconds)
+            duration = "{0:.3f} s".format(seconds)
         return duration
 
     def __repr__(self):
