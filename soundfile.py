@@ -506,7 +506,7 @@ class _SoundFileInfo(object):
              "subtype: {0.subtype_info} [{0.subtype}]"])
         if self.verbose:
             info += "\n".join(
-                ["endian: {0.endian}",
+                ["\nendian: {0.endian}",
                  "sections: {0.sections}",
                  'extra_info: """',
                  '    {1}"""'])
