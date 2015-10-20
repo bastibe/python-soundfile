@@ -27,6 +27,10 @@ notably, we changed the import name from ``import pysoundfile`` to
 inconsistencies, particularly in the the ordering and naming of
 function arguments and the removal of the indexing interface.
 
+In 0.8.0, we changed the default value of ``always_2d`` from ``True``
+to ``False``. Also, the order of arguments of the ``write`` function
+changed from ``write(data, file, ...)`` to ``write(file, data, ...)``.
+
 Installation
 ------------
 
@@ -141,7 +145,7 @@ Here is an example using an HTTP request:
     import io
     import soundfile as sf
     from urllib.request import urlopen
-    
+
     url = "http://tinyurl.com/shepard-risset"
     data, samplerate = sf.read(io.BytesIO(urlopen(url).read()))
 
@@ -201,3 +205,20 @@ News
       libraries for OS X and Windows.
     - Removed ``exclusive_creation`` argument to ``write``.
     - Added ``truncate()`` method.
+
+2015-10-20 V0.8.0 Bastian Bechtold:
+    Again, Matthias Geier contributed a whole lot of hard work to this
+    release.
+
+    - Changed the default value of ``always_2d`` from ``True`` to
+      ``False``.
+    - Numpy is now optional, and only loaded for ``read`` and
+      ``write``.
+    - Added ``SoundFile.buffer_read`` and
+      ``SoundFile.buffer_read_into`` and ``SoundFile.buffer_write``,
+      which read/write raw data without involving Numpy.
+    - Added ``info`` function that returns metadata of a sound file.
+    - Changed the argument order of the ``write`` function from
+      ``write(data, file, ...)`` to ``write(file, data, ...)``
+
+    And many more minor bug fixes.
