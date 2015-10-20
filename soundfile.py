@@ -467,6 +467,64 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
             yield block
 
 
+class _SoundFileInfo(object):
+    """Information about a SoundFile"""
+    def __init__(self, file, verbose):
+        self.verbose = verbose
+        with SoundFile(file) as f:
+            self.name = f.name
+            self.samplerate = f.samplerate
+            self.channels = f.channels
+            self.duration = len(f)/f.samplerate
+            self.format = f.format
+            self.subtype = f.subtype
+            self.endian = f.endian
+            self.format_info = f.format_info
+            self.subtype_info = f.subtype_info
+            self.sections = f.sections
+            self.extra_info = f.extra_info
+
+    @property
+    def _duration_str(self):
+        hours, rest = divmod(self.duration, 3600)
+        minutes, seconds = divmod(rest, 60)
+        if hours >= 1:
+            duration = "{0:.0g}:{1:02.0g}:{2:05.3f} h".format(hours, minutes, seconds)
+        elif minutes >= 1:
+            duration = "{0:02.0g}:{1:05.3f} min".format(minutes, seconds)
+        else:
+            duration = "{0:.3f} s".format(seconds)
+        return duration
+
+    def __repr__(self):
+        info = "\n".join(
+            ["{0.name}",
+             "samplerate: {0.samplerate} Hz",
+             "channels: {0.channels}",
+             "duration: {0._duration_str}",
+             "format: {0.format_info} [{0.format}]",
+             "subtype: {0.subtype_info} [{0.subtype}]"])
+        if self.verbose:
+            info += "\n".join(
+                ["\nendian: {0.endian}",
+                 "sections: {0.sections}",
+                 'extra_info: """',
+                 '    {1}"""'])
+        indented_extra_info = ("\n"+" "*4).join(self.extra_info.split("\n"))
+        return info.format(self, indented_extra_info)
+
+
+def info(file, verbose=False):
+    """Returns an object with information about a SoundFile.
+
+    Parameters
+    ----------
+    verbose : bool
+        Whether to print additional information.
+    """
+    return _SoundFileInfo(file, verbose)
+
+
 def available_formats():
     """Return a dictionary of available major formats.
 
