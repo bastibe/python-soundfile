@@ -81,8 +81,8 @@ else:
     cmdclass['bdist_wheel'] = bdist_wheel_half_pure
 
 setup(
-    name='PySoundFile',
-    version='0.8.0',
+    name='SoundFile',
+    version='0.8.1',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
