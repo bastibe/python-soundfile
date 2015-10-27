@@ -210,6 +210,10 @@ _subtypes = {
     'DPCM_8':    0x0050,  # 8 bit differential PCM (XI only)
     'DPCM_16':   0x0051,  # 16 bit differential PCM (XI only)
     'VORBIS':    0x0060,  # Xiph Vorbis encoding.
+    'ALAC_16':   0x0070,  # Apple Lossless Audio Codec (16 bit).
+    'ALAC_20':   0x0071,  # Apple Lossless Audio Codec (20 bit).
+    'ALAC_24':   0x0072,  # Apple Lossless Audio Codec (24 bit).
+    'ALAC_32':   0x0073,  # Apple Lossless Audio Codec (32 bit).
 }
 
 _endians = {
@@ -1521,6 +1525,8 @@ def _format_str(format_int):
         for k, v in dictionary.items():
             if v == format_int:
                 return k
+    else:
+        return 'n/a'
 
 
 def _format_info(format_int, format_flag=_snd.SFC_GET_FORMAT_INFO):
