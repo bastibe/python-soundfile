@@ -522,6 +522,7 @@ def test_if_open_with_mode_w_truncates(file_stereo_rplus, mode):
 
 
 class LimitedFile(object):
+
     def __init__(self, file, attrs):
         for attr in attrs:
             setattr(self, attr, getattr(file, attr))

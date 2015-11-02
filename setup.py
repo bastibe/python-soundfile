@@ -38,6 +38,7 @@ else:
 
 
 class PyTest(TestCommand):
+
     user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
 
     def initialize_options(self):
@@ -62,8 +63,10 @@ try:
 except ImportError:
     pass
 else:
+
     class bdist_wheel_half_pure(bdist_wheel):
         """Create OS-dependent, but Python-independent wheels."""
+
         def get_tag(self):
             pythons = 'py2.py3.' + PYTHON_INTERPRETERS
             if platform == 'darwin':

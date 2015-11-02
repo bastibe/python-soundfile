@@ -2,6 +2,7 @@
 
 
 class FFI(object):
+
     def cdef(self, _):
         pass
 
