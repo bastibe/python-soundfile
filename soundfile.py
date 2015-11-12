@@ -485,6 +485,7 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
 
 class _SoundFileInfo(object):
     """Information about a SoundFile"""
+
     def __init__(self, file, verbose):
         self.verbose = verbose
         with SoundFile(file) as f:
@@ -620,7 +621,6 @@ def default_subtype(format):
 
 
 class SoundFile(object):
-
     """A sound file.
 
     For more documentation see the __init__() docstring (which is also
