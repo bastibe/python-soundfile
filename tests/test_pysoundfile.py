@@ -911,6 +911,10 @@ def test_read_int_data_from_float_file(file_inmemory):
     assert fs == 44100
 
 
+def test_libsndfile_version():
+    assert '.' in sf.__libsndfile_version__
+
+
 # -----------------------------------------------------------------------------
 # RAW tests
 # -----------------------------------------------------------------------------

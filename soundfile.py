@@ -31,6 +31,7 @@ enum
 
 enum
 {
+    SFC_GET_LIB_VERSION             = 0x1000,
     SFC_GET_LOG_INFO                = 0x1001,
     SFC_GET_FORMAT_INFO             = 0x1028,
 
@@ -114,6 +115,7 @@ sf_count_t  sf_write_raw     (SNDFILE *sndfile, void *ptr, sf_count_t bytes) ;
 
 const char* sf_get_string    (SNDFILE *sndfile, int str_type) ;
 int         sf_set_string    (SNDFILE *sndfile, int str_type, const char* str) ;
+const char * sf_version_string (void) ;
 
 typedef sf_count_t  (*sf_vio_get_filelen) (void *user_data) ;
 typedef sf_count_t  (*sf_vio_seek)        (sf_count_t offset, int whence, void *user_data) ;
@@ -272,6 +274,10 @@ except OSError as err:
     _snd = _ffi.dlopen(_os.path.join(
         _os.path.dirname(_os.path.abspath(__file__)),
         '_soundfile_data', _libname))
+
+__libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode()
+if __libsndfile_version__.startswith('libsndfile-'):
+    __libsndfile_version__ = __libsndfile_version__[len('libsndfile-'):]
 
 
 def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
