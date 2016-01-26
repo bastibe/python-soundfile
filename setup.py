@@ -29,7 +29,7 @@ elif platform == 'win32':
 else:
     libname = None
 
-if libname:
+if libname and os.path.isdir('_soundfile_data'):
     packages = ['_soundfile_data']
     package_data = {'_soundfile_data': [libname, 'COPYING']}
 else:
