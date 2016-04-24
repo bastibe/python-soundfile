@@ -32,9 +32,11 @@ else:
 if libname and os.path.isdir('_soundfile_data'):
     packages = ['_soundfile_data']
     package_data = {'_soundfile_data': [libname, 'COPYING']}
+    zip_safe = False
 else:
     packages = None
     package_data = None
+    zip_safe = True
 
 
 class PyTest(TestCommand):
@@ -94,6 +96,7 @@ setup(
     py_modules=['soundfile'],
     packages=packages,
     package_data=package_data,
+    zip_safe=zip_safe,
     license='BSD 3-Clause License',
     install_requires=['cffi>=0.6'],
     extras_require={'numpy': ['numpy']},
