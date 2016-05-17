@@ -1488,7 +1488,9 @@ def _create_info_struct(file, mode, samplerate, channels,
     if 'r' not in mode or format.upper() == 'RAW':
         if samplerate is None:
             raise TypeError("samplerate must be specified")
-        info.samplerate = samplerate
+        info.samplerate = int(samplerate)
+        if info.samplerate != samplerate:
+            raise ValueError("Invalid samplerate: {0!r}".format(samplerate))
         if channels is None:
             raise TypeError("channels must be specified")
         info.channels = channels
