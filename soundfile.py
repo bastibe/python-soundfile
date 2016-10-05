@@ -1229,7 +1229,7 @@ class SoundFile(object):
 
     def _open(self, file, mode_int, closefd):
         """Call the appropriate sf_open*() function from libsndfile."""
-        if isinstance(file, (_unicode, bytes)):
+        if isinstance(file, basestring):
             if _os.path.isfile(file):
                 if 'x' in self.mode:
                     raise OSError("File exists: {0!r}".format(self.name))
@@ -1431,7 +1431,7 @@ def _format_int(format, subtype, endian):
         if subtype is None:
             raise TypeError(
                 "No default subtype for major format {0!r}".format(format))
-    elif not isinstance(subtype, (_unicode, str)):
+    elif not isinstance(subtype, basestring):
         raise TypeError("Invalid subtype: {0!r}".format(subtype))
     try:
         result |= _subtypes[subtype.upper()]
@@ -1439,7 +1439,7 @@ def _format_int(format, subtype, endian):
         raise ValueError("Unknown subtype: {0!r}".format(subtype))
     if endian is None:
         endian = 'FILE'
-    elif not isinstance(endian, (_unicode, str)):
+    elif not isinstance(endian, basestring):
         raise TypeError("Invalid endian-ness: {0!r}".format(endian))
     try:
         result |= _endians[endian.upper()]
@@ -1457,7 +1457,7 @@ def _format_int(format, subtype, endian):
 
 def _check_mode(mode):
     """Check if mode is valid and return its integer representation."""
-    if not isinstance(mode, (_unicode, str)):
+    if not isinstance(mode, basestring):
         raise TypeError("Invalid mode: {0!r}".format(mode))
     mode_set = set(mode)
     if mode_set.difference('xrwb+') or len(mode) > len(mode_set):
@@ -1480,7 +1480,7 @@ def _create_info_struct(file, mode, samplerate, channels,
     original_format = format
     if format is None:
         format = _get_format_from_filename(file, mode)
-        assert isinstance(format, (_unicode, str))
+        assert isinstance(format, basestring)
     else:
         _check_format(format)
 
@@ -1556,7 +1556,7 @@ def _available_formats_helper(count_flag, format_flag):
 
 def _check_format(format_str):
     """Check if `format_str` is valid and return format ID."""
-    if not isinstance(format_str, (_unicode, str)):
+    if not isinstance(format_str, basestring):
         raise TypeError("Invalid format: {0!r}".format(format_str))
     try:
         format_int = _formats[format_str.upper()]
