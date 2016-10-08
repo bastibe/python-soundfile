@@ -498,8 +498,8 @@ class _SoundFileInfo(object):
             self.name = f.name
             self.samplerate = f.samplerate
             self.channels = f.channels
-            self.nsamples = len(f)
-            self.duration = self.nsamples/f.samplerate
+            self.frames = len(f)
+            self.duration = self.frames/f.samplerate
             self.format = f.format
             self.subtype = f.subtype
             self.endian = f.endian
@@ -532,7 +532,7 @@ class _SoundFileInfo(object):
             info += "\n".join(
                 ["\nendian: {0.endian}",
                  "sections: {0.sections}",
-                 "nsamples: {0.nsamples}",
+                 "frames: {0.frames}",
                  'extra_info: """',
                  '    {1}"""'])
         indented_extra_info = ("\n"+" "*4).join(self.extra_info.split("\n"))
