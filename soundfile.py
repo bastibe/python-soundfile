@@ -263,7 +263,7 @@ _ffi_types = {
 
 try:
     _snd = _ffi.dlopen('sndfile')
-except OSError as err:
+except OSError:
     if _sys.platform == 'darwin':
         _libname = 'libsndfile.dylib'
     elif _sys.platform == 'win32':
