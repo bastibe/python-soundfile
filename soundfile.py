@@ -971,7 +971,7 @@ class SoundFile(object):
     def buffer_read(self, frames=-1, ctype='double'):
         """Read from the file and return data as buffer object.
 
-        Reads the given number of frames in the given data format
+        Reads the given number of `frames` in the given data format
         starting at the current read/write position.  This advances the
         read/write position by the same number of frames.
         By default, all frames from the current read/write position to
@@ -1003,24 +1003,24 @@ class SoundFile(object):
         return _ffi.buffer(cdata)
 
     def buffer_read_into(self, buffer, ctype='double'):
-        """Read from the file into a buffer object.
+        """Read from the file into a given buffer object.
 
-        Reads the given number of frames in the given data format
-        starting at the current read/write position.  This advances the
-        read/write position by the same number of frames.
-        By default, all frames from the current read/write position to
-        the end of the file are returned.
-        Use :meth:`.seek` to move the current read/write position.
+        Fills the given `buffer` with frames in the given data format
+        starting at the current read/write position (which can be
+        changed with :meth:`.seek`) until the buffer is full or the end
+        of the file is reached.  This advances the read/write position
+        by the number of frames that were read.
 
         Parameters
         ----------
-        out : writable buffer, optional
-            If specified, audio data from the file is written to this
-            buffer instead of a newly created buffer.
+        buffer : writable buffer
+            Audio frames from the file are written to this buffer.
+        ctype : {'double', 'float', 'int', 'short'}, optional
+            The data type of `buffer`.
 
         Returns
         -------
-        num_read : int
+        int
             The number of frames that were read from the file.
             This can be less than the size of `buffer`.
             The rest of the buffer is not filled with meaningful data.
@@ -1090,17 +1090,18 @@ class SoundFile(object):
     def buffer_write(self, data, ctype):
         """Write audio data from a buffer/bytes object to the file.
 
-        Writes a number of frames at the read/write position to the
-        file. This also advances the read/write position by the same
-        number of frames and enlarges the file if necessary.
+        Writes the contents of `data` to the file at the current
+        read/write position.
+        This also advances the read/write position by the number of
+        frames that were written and enlarges the file if necessary.
 
         Parameters
         ----------
         data : buffer or bytes
-            A buffer object or bytes containing the audio data to be
+            A buffer or bytes object containing the audio data to be
             written.
         ctype : {'double', 'float', 'int', 'short'}, optional
-            The data type of the audio data stored in `buffer`.
+            The data type of the audio data stored in `data`.
 
         See Also
         --------
