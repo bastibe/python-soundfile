@@ -968,7 +968,7 @@ class SoundFile(object):
                 out[frames:] = fill_value
         return out
 
-    def buffer_read(self, frames=-1, ctype='double'):
+    def buffer_read(self, frames=-1, ctype=None, dtype=None):
         """Read from the file and return data as buffer object.
 
         Reads the given number of `frames` in the given data format
@@ -983,8 +983,8 @@ class SoundFile(object):
         frames : int, optional
             The number of frames to read. If `frames < 0`, the whole
             rest of the file is read.
-        ctype : {'double', 'float', 'int', 'short'}, optional
-            Audio data will be converted to the given C data type.
+        dtype : {'float64', 'float32', 'int32', 'int16'}
+            Audio data will be converted to the given data type.
 
         Returns
         -------
@@ -997,12 +997,14 @@ class SoundFile(object):
 
         """
         frames = self._check_frames(frames, fill_value=None)
+        dtype = self._ctype_is_deprecated(ctype, dtype)
+        ctype = self._check_dtype(dtype)
         cdata = _ffi.new(ctype + '[]', frames * self.channels)
         read_frames = self._cdata_io('read', cdata, ctype, frames)
         assert read_frames == frames
         return _ffi.buffer(cdata)
 
-    def buffer_read_into(self, buffer, ctype='double'):
+    def buffer_read_into(self, buffer, ctype=None, dtype=None):
         """Read from the file into a given buffer object.
 
         Fills the given `buffer` with frames in the given data format
@@ -1015,7 +1017,7 @@ class SoundFile(object):
         ----------
         buffer : writable buffer
             Audio frames from the file are written to this buffer.
-        ctype : {'double', 'float', 'int', 'short'}, optional
+        dtype : {'float64', 'float32', 'int32', 'int16'}
             The data type of `buffer`.
 
         Returns
@@ -1030,6 +1032,8 @@ class SoundFile(object):
         buffer_read, .read
 
         """
+        dtype = self._ctype_is_deprecated(ctype, dtype)
+        ctype = self._check_dtype(dtype)
         cdata, frames = self._check_buffer(buffer, ctype)
         frames = self._cdata_io('read', cdata, ctype, frames)
         return frames
@@ -1087,7 +1091,7 @@ class SoundFile(object):
         assert written == len(data)
         self._update_len(written)
 
-    def buffer_write(self, data, ctype):
+    def buffer_write(self, data, ctype=None, dtype=None):
         """Write audio data from a buffer/bytes object to the file.
 
         Writes the contents of `data` to the file at the current
@@ -1100,7 +1104,7 @@ class SoundFile(object):
         data : buffer or bytes
             A buffer or bytes object containing the audio data to be
             written.
-        ctype : {'double', 'float', 'int', 'short'}, optional
+        dtype : {'float64', 'float32', 'int32', 'int16'}
             The data type of the audio data stored in `data`.
 
         See Also
@@ -1108,6 +1112,8 @@ class SoundFile(object):
         .write, buffer_read
 
         """
+        dtype = self._ctype_is_deprecated(ctype, dtype)
+        ctype = self._check_dtype(dtype)
         cdata, frames = self._check_buffer(data, ctype)
         written = self._cdata_io('write', cdata, ctype, frames)
         assert written == frames
@@ -1345,6 +1351,7 @@ class SoundFile(object):
 
     def _check_buffer(self, data, ctype):
         """Convert buffer to cdata and check for valid size."""
+        assert ctype in _ffi_types.values()
         if not isinstance(data, bytes):
             data = _ffi.from_buffer(data)
         frames, remainder = divmod(len(data),
@@ -1362,6 +1369,31 @@ class SoundFile(object):
             shape = frames,
         return np.empty(shape, dtype, order='C')
 
+    def _check_dtype(self, dtype):
+        """Check if dtype string is valid and return ctype string."""
+        try:
+            return _ffi_types[dtype]
+        except KeyError:
+            raise ValueError("dtype must be one of {0!r}".format(
+                sorted(_ffi_types.keys())))
+
+    def _ctype_is_deprecated(self, ctype, dtype):
+        """Show warning if ctype is used instead of dtype.
+
+        At some point, ctype arguments shall be removed and the
+        corresponding dtype arguments shall lose their default value.
+
+        """
+        if ctype is not None:
+            from warnings import warn
+            warn('ctype is deprecated; use dtype instead', Warning)
+            if dtype is not None:
+                raise TypeError('Use dtype instead of ctype')
+            for k, v in _ffi_types.items():
+                if v == ctype:
+                    return k
+        return dtype
+
     def _array_io(self, action, array, frames):
         """Check array and call low-level IO function."""
         if (array.ndim not in (1, 2) or
@@ -1370,19 +1402,14 @@ class SoundFile(object):
             raise ValueError("Invalid shape: {0!r}".format(array.shape))
         if not array.flags.c_contiguous:
             raise ValueError("Data must be C-contiguous")
-        try:
-            ctype = _ffi_types[array.dtype.name]
-        except KeyError:
-            raise TypeError("dtype must be one of {0!r}".format(
-                sorted(_ffi_types.keys())))
+        ctype = self._check_dtype(array.dtype.name)
         assert array.dtype.itemsize == _ffi.sizeof(ctype)
         cdata = _ffi.cast(ctype + '*', array.__array_interface__['data'][0])
         return self._cdata_io(action, cdata, ctype, frames)
 
     def _cdata_io(self, action, data, ctype, frames):
         """Call one of libsndfile's read/write functions."""
-        if ctype not in _ffi_types.values():
-            raise ValueError("Unsupported data type: {0!r}".format(ctype))
+        assert ctype in _ffi_types.values()
         self._check_if_closed()
         if self.seekable():
             curr = self.tell()
