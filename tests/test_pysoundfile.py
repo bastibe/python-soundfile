@@ -193,7 +193,7 @@ def test_read_into_non_contiguous_out(file_stereo_r):
 
 def test_read_into_out_with_invalid_dtype(file_stereo_r):
     out = np.empty((3, 2), dtype='int64')
-    with pytest.raises(TypeError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         sf.read(file_stereo_r, out=out)
     assert "dtype must be one of" in str(excinfo.value)
 
@@ -731,33 +731,33 @@ def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into
 
 
 def test_buffer_read(sf_stereo_r):
-    buf = sf_stereo_r.buffer_read(2)
+    buf = sf_stereo_r.buffer_read(2, dtype='float64')
     assert len(buf) == 2 * 2 * 8
     assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 2
     data = np.frombuffer(buf, dtype='float64').reshape(-1, 2)
     assert np.all(data == data_stereo[:2])
-    buf = sf_stereo_r.buffer_read(ctype='float')
+    buf = sf_stereo_r.buffer_read(dtype='float32')
     assert len(buf) == 2 * 2 * 4
     assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 4
     data = np.frombuffer(buf, dtype='float32').reshape(-1, 2)
     assert np.all(data == data_stereo[2:])
-    buf = sf_stereo_r.buffer_read()
+    buf = sf_stereo_r.buffer_read(dtype='float32')
     assert len(buf) == 0
-    buf = sf_stereo_r.buffer_read(666)
+    buf = sf_stereo_r.buffer_read(666, dtype='float32')
     assert len(buf) == 0
     with pytest.raises(ValueError) as excinfo:
-        sf_stereo_r.buffer_read(ctype='char')
-    assert "Unsupported data type" in str(excinfo.value)
+        sf_stereo_r.buffer_read(dtype='int8')
+    assert "dtype must be one of" in str(excinfo.value)
 
 
 @xfail_from_buffer
 def test_buffer_read_into(sf_stereo_r):
     out = np.ones((3, 2))
-    frames = sf_stereo_r.buffer_read_into(out)
+    frames = sf_stereo_r.buffer_read_into(out, dtype='float64')
     assert frames == 3
     assert np.all(out == data_stereo[:3])
     assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 3
-    frames = sf_stereo_r.buffer_read_into(out)
+    frames = sf_stereo_r.buffer_read_into(out, dtype='float64')
     assert frames == 1
     assert np.all(out[:1] == data_stereo[3:])
     assert sf_stereo_r.seek(0, sf.SEEK_CUR) == 4
@@ -815,7 +815,7 @@ def test_rplus_append_data(sf_stereo_rplus):
 @xfail_from_buffer
 def test_buffer_write(sf_stereo_w):
     buf = np.array([[1, 2], [-1, -2]], dtype='int16')
-    sf_stereo_w.buffer_write(buf, 'short')
+    sf_stereo_w.buffer_write(buf, dtype='int16')
     sf_stereo_w.close()
     data, fs = sf.read(filename_new, dtype='int16')
     assert np.all(data == buf)
@@ -824,7 +824,7 @@ def test_buffer_write(sf_stereo_w):
 
 def test_buffer_write_with_bytes(sf_stereo_w):
     b = b"\x01\x00\xFF\xFF\xFF\x00\x00\xFF"
-    sf_stereo_w.buffer_write(b, 'short')
+    sf_stereo_w.buffer_write(b, dtype='int16')
     sf_stereo_w.close()
     data, fs = sf.read(filename_new, dtype='int16')
     assert np.all(data == [[1, -1], [255, -256]])
@@ -835,7 +835,7 @@ def test_buffer_write_with_bytes(sf_stereo_w):
 def test_buffer_write_with_wrong_size(sf_stereo_w):
     buf = np.array([1, 2, 3], dtype='int16')
     with pytest.raises(ValueError) as excinfo:
-        sf_stereo_w.buffer_write(buf, 'short')
+        sf_stereo_w.buffer_write(buf, dtype='int16')
     assert "multiple of frame size" in str(excinfo.value)
 
 
