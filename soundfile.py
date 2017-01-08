@@ -796,6 +796,16 @@ class SoundFile(object):
                         info, _ffi.sizeof(info))
         return _ffi.string(info).decode()
 
+    @property
+    def needs_endswap(self):
+        """\
+        Determine if raw data read using
+        :meth:`.read_raw`/:meth:`.read_raw_into` needs to be end swapped on the
+        host CPU.
+        """
+        return _snd.sf_command(self._file, _snd.SFC_RAW_DATA_NEEDS_ENDSWAP,
+                                  _ffi.NULL, 0)
+
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
 
@@ -984,24 +994,20 @@ class SoundFile(object):
 
     def read_raw(self, frames=-1, dtype=None):
         """\ 
-        The raw read and write functions read raw audio data from the audio file
-        (not to be confused with reading RAW header-less PCM files). The number
-        of bytes read or written must always be an integer multiple of the
-        number of channels multiplied by the number of bytes required to
-        represent one sample from one channel.
-
-        The raw read and write functions return the number of bytes read or
-        written (which should be the same as the bytes parameter).
+        Read raw audio data from the audio file (not to be confused with reading
+        RAW header-less PCM files).
 
         Note : The result of using of both regular reads/writes and raw
-        reads/writes on compressed file formats other than SF_FORMAT_ALAW and
-        SF_FORMAT_ULAW is undefined.
+        reads/writes on compressed file formats other than ALAW and ULAW is
+        undefined.
 
         Parameters
         ----------
         frames : int, optional
             The number of frames to read. If `frames < 0`, the whole
             rest of the file is read.
+        dtype : {'float64', 'float32', 'int32', 'int24', 'int16', 'int8', 'uint8'}
+            Audio data sample format.
 
         Returns
         -------
@@ -1010,7 +1016,7 @@ class SoundFile(object):
 
         See Also
         --------
-        read_raw_into, .read, buffer_read
+        read_raw_into, write_raw
 
         """
         #_check_dtype
@@ -1043,33 +1049,35 @@ class SoundFile(object):
 
     def read_raw_into(self, buffer, dtype=None):
         """\ 
-        The raw read and write functions read raw audio data from the audio file
-        (not to be confused with reading RAW header-less PCM files). The number
-        of bytes read or written must always be an integer multiple of the
-        number of channels multiplied by the number of bytes required to
-        represent one sample from one channel.
+        Read from the file into a given buffer object.
 
-        The raw read and write functions return the number of bytes read or
-        written (which should be the same as the bytes parameter).
+        Fills the given `buffer` with frames in the given data format
+        starting at the current read/write position (which can be
+        changed with :meth:`.seek`) until the buffer is full or the end
+        of the file is reached.  This advances the read/write position
+        by the number of frames that were read.
 
         Note : The result of using of both regular reads/writes and raw
-        reads/writes on compressed file formats other than SF_FORMAT_ALAW and
-        SF_FORMAT_ULAW is undefined.
+        reads/writes on compressed file formats other than ALAW and ULAW is
+        undefined.
 
         Parameters
         ----------
-        frames : int, optional
-            The number of frames to read. If `frames < 0`, the whole
-            rest of the file is read.
+        buffer : writable buffer
+            Audio frames from the file are written to this buffer.
+        dtype : {'float64', 'float32', 'int32', 'int24', 'int16', 'int8', 'uint8'}
+            Audio data sample format.
 
         Returns
         -------
-        buffer
-            A buffer containing the read data.
+        int
+            The number of frames that were read from the file.
+            This can be less than the size of `buffer`.
+            The rest of the buffer is not filled with meaningful data.
 
         See Also
         --------
-        buffer_read_into, .read, buffer_write
+        read_raw, write_raw
 
         """
         #_check_dtype
@@ -1100,11 +1108,8 @@ class SoundFile(object):
         if self.seekable():
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
         
-        endswap = _snd.sf_command(self._file, _snd.SFC_RAW_DATA_NEEDS_ENDSWAP,
-                                  _ffi.NULL, 0)
-        assert not endswap
-
-        return read_bytes
+        assert not self.endian_swapped
+        return frames
 
     def buffer_read(self, frames=-1, ctype=None, dtype=None):
         """Read from the file and return data as buffer object.
@@ -1231,33 +1236,24 @@ class SoundFile(object):
 
     def write_raw(self, data, dtype=None):
         """\ 
-        The raw read and write functions read raw audio data from the audio file
-        (not to be confused with reading RAW header-less PCM files). The number
-        of bytes read or written must always be an integer multiple of the
-        number of channels multiplied by the number of bytes required to
-        represent one sample from one channel.
-
-        The raw read and write functions return the number of bytes read or
-        written (which should be the same as the bytes parameter).
+        Write raw audio data to the audio file (not to be confused with writing
+        RAW header-less PCM files).
 
         Note : The result of using of both regular reads/writes and raw
-        reads/writes on compressed file formats other than SF_FORMAT_ALAW and
-        SF_FORMAT_ULAW is undefined.
+        reads/writes on compressed file formats other than ALAW and ULAW is
+        undefined.
 
         Parameters
         ----------
-        frames : int, optional
-            The number of frames to read. If `frames < 0`, the whole
-            rest of the file is read.
-
-        Returns
-        -------
-        buffer
-            A buffer containing the read data.
+        data : buffer or bytes
+            A buffer or bytes object containing the audio data to be
+            written.
+        dtype : {'float64', 'float32', 'int32', 'int24', 'int16', 'int8', 'uint8'}
+            Audio data sample format.
 
         See Also
         --------
-        buffer_read_into, .read, buffer_write
+        read_raw
 
         """
         #_check_dtype
