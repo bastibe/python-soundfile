@@ -42,6 +42,8 @@ enum
     SFC_FILE_TRUNCATE               = 0x1080,
     SFC_SET_CLIPPING                = 0x10C0,
 
+    SFC_RAW_DATA_NEEDS_ENDSWAP      = 0x1110,
+
     SFC_SET_SCALE_FLOAT_INT_READ    = 0x1014,
     SFC_SET_SCALE_INT_FLOAT_WRITE   = 0x1015,
 } ;
@@ -258,7 +260,19 @@ _ffi_types = {
     'float64': 'double',
     'float32': 'float',
     'int32': 'int',
-    'int16': 'short'
+    'int16': 'short',
+    'int8': 'char',
+    'uint8': 'unsigned char',
+}
+
+_samplesize = {
+    'float64': 8,
+    'float32': 4,
+    'int32': 4,
+    'int24': 3,
+    'int16': 2,
+    'int8': 1,
+    'uint8': 1,
 }
 
 try:
@@ -968,6 +982,130 @@ class SoundFile(object):
                 out[frames:] = fill_value
         return out
 
+    def read_raw(self, frames=-1, dtype=None):
+        """\ 
+        The raw read and write functions read raw audio data from the audio file
+        (not to be confused with reading RAW header-less PCM files). The number
+        of bytes read or written must always be an integer multiple of the
+        number of channels multiplied by the number of bytes required to
+        represent one sample from one channel.
+
+        The raw read and write functions return the number of bytes read or
+        written (which should be the same as the bytes parameter).
+
+        Note : The result of using of both regular reads/writes and raw
+        reads/writes on compressed file formats other than SF_FORMAT_ALAW and
+        SF_FORMAT_ULAW is undefined.
+
+        Parameters
+        ----------
+        frames : int, optional
+            The number of frames to read. If `frames < 0`, the whole
+            rest of the file is read.
+
+        Returns
+        -------
+        buffer
+            A buffer containing the read data.
+
+        See Also
+        --------
+        read_raw_into, .read, buffer_read
+
+        """
+        #_check_dtype
+        try:
+            _samplesize[dtype]
+        except KeyError:
+            raise ValueError("dtype must be one of {0!r}".format(
+                sorted(_samplesize.keys())))
+
+        frames = self._check_frames(frames, fill_value=None)
+        nbytes = frames * self.channels * _samplesize[dtype]
+        cdata = _ffi.new('unsigned char[]', nbytes)
+
+        # _cdata_io
+        self._check_if_closed()
+        if self.seekable():
+            curr = self.tell()
+        read_bytes = _snd.sf_read_raw(self._file, cdata, nbytes)
+        _error_check(self._errorcode)
+        if self.seekable():
+            self.seek(curr + frames, SEEK_SET)  # Update read & write position
+        
+        assert read_bytes == nbytes
+
+        endswap = _snd.sf_command(self._file, _snd.SFC_RAW_DATA_NEEDS_ENDSWAP,
+                                  _ffi.NULL, 0)
+        assert not endswap
+
+        return _ffi.buffer(cdata)
+
+    def read_raw_into(self, buffer, dtype=None):
+        """\ 
+        The raw read and write functions read raw audio data from the audio file
+        (not to be confused with reading RAW header-less PCM files). The number
+        of bytes read or written must always be an integer multiple of the
+        number of channels multiplied by the number of bytes required to
+        represent one sample from one channel.
+
+        The raw read and write functions return the number of bytes read or
+        written (which should be the same as the bytes parameter).
+
+        Note : The result of using of both regular reads/writes and raw
+        reads/writes on compressed file formats other than SF_FORMAT_ALAW and
+        SF_FORMAT_ULAW is undefined.
+
+        Parameters
+        ----------
+        frames : int, optional
+            The number of frames to read. If `frames < 0`, the whole
+            rest of the file is read.
+
+        Returns
+        -------
+        buffer
+            A buffer containing the read data.
+
+        See Also
+        --------
+        buffer_read_into, .read, buffer_write
+
+        """
+        #_check_dtype
+        try:
+            _samplesize[dtype]
+        except KeyError:
+            raise ValueError("dtype must be one of {0!r}".format(
+                sorted(_samplesize.keys())))
+
+        #_check_buffer
+        if not isinstance(buffer, bytes):
+            buffer = _ffi.from_buffer(buffer)
+        else:
+            cdata = buffer
+        frames, remainder = divmod(len(cdata),
+                                   self.channels * _samplesize[dtype])
+        if remainder:
+            raise ValueError("Data size must be a multiple of frame size")
+
+        nbytes = frames * self.channels * _samplesize[dtype]
+
+        # _cdata_io
+        self._check_if_closed()
+        if self.seekable():
+            curr = self.tell()
+        read_bytes = _snd.sf_read_raw(self._file, cdata, nbytes)
+        _error_check(self._errorcode)
+        if self.seekable():
+            self.seek(curr + frames, SEEK_SET)  # Update read & write position
+        
+        endswap = _snd.sf_command(self._file, _snd.SFC_RAW_DATA_NEEDS_ENDSWAP,
+                                  _ffi.NULL, 0)
+        assert not endswap
+
+        return read_bytes
+
     def buffer_read(self, frames=-1, ctype=None, dtype=None):
         """Read from the file and return data as buffer object.
 
@@ -1090,6 +1228,68 @@ class SoundFile(object):
         written = self._array_io('write', data, len(data))
         assert written == len(data)
         self._update_len(written)
+
+    def write_raw(self, data, dtype=None):
+        """\ 
+        The raw read and write functions read raw audio data from the audio file
+        (not to be confused with reading RAW header-less PCM files). The number
+        of bytes read or written must always be an integer multiple of the
+        number of channels multiplied by the number of bytes required to
+        represent one sample from one channel.
+
+        The raw read and write functions return the number of bytes read or
+        written (which should be the same as the bytes parameter).
+
+        Note : The result of using of both regular reads/writes and raw
+        reads/writes on compressed file formats other than SF_FORMAT_ALAW and
+        SF_FORMAT_ULAW is undefined.
+
+        Parameters
+        ----------
+        frames : int, optional
+            The number of frames to read. If `frames < 0`, the whole
+            rest of the file is read.
+
+        Returns
+        -------
+        buffer
+            A buffer containing the read data.
+
+        See Also
+        --------
+        buffer_read_into, .read, buffer_write
+
+        """
+        #_check_dtype
+        try:
+            _samplesize[dtype]
+        except KeyError:
+            raise ValueError("dtype must be one of {0!r}".format(
+                sorted(_samplesize.keys())))
+
+        #_check_buffer
+        if not isinstance(data, bytes):
+            cdata = _ffi.from_buffer(data)
+        else:
+            cdata = data
+        frames, remainder = divmod(len(cdata),
+                                   self.channels * _samplesize[dtype])
+        if remainder:
+            raise ValueError("Data size must be a multiple of frame size")
+
+        nbytes = frames * self.channels * _samplesize[dtype]
+
+        # implements _cdata_io
+        self._check_if_closed()
+        if self.seekable():
+            curr = self.tell()
+        written = _snd.sf_write_raw(self._file, cdata, nbytes)
+        _error_check(self._errorcode)
+        if self.seekable():
+            self.seek(curr + frames, SEEK_SET)  # Update read & write position
+
+        assert written == nbytes
+        self._update_len(frames)
 
     def buffer_write(self, data, ctype=None, dtype=None):
         """Write audio data from a buffer/bytes object to the file.
