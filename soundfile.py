@@ -1083,7 +1083,7 @@ class SoundFile(object):
 
         #_check_buffer
         if not isinstance(buffer, bytes):
-            buffer = _ffi.from_buffer(buffer)
+            cdata = _ffi.from_buffer(buffer)
         else:
             cdata = buffer
         frames, remainder = divmod(len(cdata),
