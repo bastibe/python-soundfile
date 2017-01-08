@@ -1041,10 +1041,6 @@ class SoundFile(object):
         
         assert read_bytes == nbytes
 
-        endswap = _snd.sf_command(self._file, _snd.SFC_RAW_DATA_NEEDS_ENDSWAP,
-                                  _ffi.NULL, 0)
-        assert not endswap
-
         return _ffi.buffer(cdata)
 
     def read_raw_into(self, buffer, dtype=None):
@@ -1108,7 +1104,6 @@ class SoundFile(object):
         if self.seekable():
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
         
-        assert not self.endian_swapped
         return frames
 
     def buffer_read(self, frames=-1, ctype=None, dtype=None):
