@@ -261,8 +261,6 @@ _ffi_types = {
     'float32': 'float',
     'int32': 'int',
     'int16': 'short',
-    'int8': 'char',
-    'uint8': 'unsigned char',
 }
 
 _samplesize = {
