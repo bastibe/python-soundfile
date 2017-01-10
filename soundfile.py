@@ -93,10 +93,12 @@ sf_count_t  sf_read_int      (SNDFILE *sndfile, int *ptr, sf_count_t items) ;
 sf_count_t  sf_read_float    (SNDFILE *sndfile, float *ptr, sf_count_t items) ;
 sf_count_t  sf_read_double   (SNDFILE *sndfile, double *ptr, sf_count_t items) ;
 
-sf_count_t  sf_readf_short   (SNDFILE *sndfile, short *ptr, sf_count_t frames) ;
-sf_count_t  sf_readf_int     (SNDFILE *sndfile, int *ptr, sf_count_t frames) ;
-sf_count_t  sf_readf_float   (SNDFILE *sndfile, float *ptr, sf_count_t frames) ;
-sf_count_t  sf_readf_double  (SNDFILE *sndfile, double *ptr, sf_count_t frames) ;
+/* Note: The argument types were changed to void* in order to allow
+         writing bytes in SoundFile.buffer_read() */
+sf_count_t  sf_readf_short   (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
+sf_count_t  sf_readf_int     (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
+sf_count_t  sf_readf_float   (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
+sf_count_t  sf_readf_double  (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
 
 sf_count_t  sf_write_short   (SNDFILE *sndfile, short *ptr, sf_count_t items) ;
 sf_count_t  sf_write_int     (SNDFILE *sndfile, int *ptr, sf_count_t items) ;
