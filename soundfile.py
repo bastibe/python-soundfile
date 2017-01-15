@@ -93,8 +93,8 @@ sf_count_t  sf_read_int      (SNDFILE *sndfile, int *ptr, sf_count_t items) ;
 sf_count_t  sf_read_float    (SNDFILE *sndfile, float *ptr, sf_count_t items) ;
 sf_count_t  sf_read_double   (SNDFILE *sndfile, double *ptr, sf_count_t items) ;
 
-/* Note: The argument types were changed to void* in order to allow
-         writing bytes in SoundFile.buffer_read() */
+/* Note: Data ptr argument types are declared as void* here in order to
+         avoid an implicit cast warning. (gh183). */
 sf_count_t  sf_readf_short   (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
 sf_count_t  sf_readf_int     (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
 sf_count_t  sf_readf_float   (SNDFILE *sndfile, void *ptr, sf_count_t frames) ;
