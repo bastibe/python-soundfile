@@ -277,7 +277,7 @@ except OSError:
         _os.path.dirname(_os.path.abspath(__file__)),
         '_soundfile_data', _libname))
 
-__libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode()
+__libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode('utf-8', 'replace')
 if __libsndfile_version__.startswith('libsndfile-'):
     __libsndfile_version__ = __libsndfile_version__[len('libsndfile-'):]
 
@@ -782,7 +782,7 @@ class SoundFile(object):
         info = _ffi.new("char[]", 2**14)
         _snd.sf_command(self._file, _snd.SFC_GET_LOG_INFO,
                         info, _ffi.sizeof(info))
-        return _ffi.string(info).decode()
+        return _ffi.string(info).decode('utf-8', 'replace')
 
     # avoid confusion if something goes wrong before assigning self._file:
     _file = None
@@ -817,7 +817,7 @@ class SoundFile(object):
         if name in _str_types:
             self._check_if_closed()
             data = _snd.sf_get_string(self._file, _str_types[name])
-            return _ffi.string(data).decode() if data else ""
+            return _ffi.string(data).decode('utf-8', 'replace') if data else ""
         else:
             raise AttributeError(
                 "'SoundFile' object has no attribute {0!r}".format(name))
@@ -1452,7 +1452,7 @@ def _error_check(err, prefix=""):
     """Pretty-print a numerical error code if there is an error."""
     if err != 0:
         err_str = _snd.sf_error_number(err)
-        raise RuntimeError(prefix + _ffi.string(err_str).decode())
+        raise RuntimeError(prefix + _ffi.string(err_str).decode('utf-8', 'replace'))
 
 
 def _format_int(format, subtype, endian):
@@ -1548,7 +1548,7 @@ def _get_format_from_filename(file, mode):
         # This raises an exception if file is not a (Unicode/byte) string:
         format = _os.path.splitext(file)[-1][1:]
         # Convert bytes to unicode (raises AttributeError on Python 3 str):
-        format = format.decode()
+        format = format.decode('utf-8', 'replace')
     except Exception:
         pass
     if format.upper() not in _formats and 'r' not in mode:
@@ -1575,7 +1575,7 @@ def _format_info(format_int, format_flag=_snd.SFC_GET_FORMAT_INFO):
                     _ffi.sizeof("SF_FORMAT_INFO"))
     name = format_info.name
     return (_format_str(format_info.format),
-            _ffi.string(name).decode() if name else "")
+            _ffi.string(name).decode('utf-8', 'replace') if name else "")
 
 
 def _available_formats_helper(count_flag, format_flag):
