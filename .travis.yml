@@ -8,16 +8,16 @@ python:
   - "3.5"
   - "3.6"
   - "nightly"
-  - "pypy"
-  # TODO: Enable pypy3 once NumPy is working there:
+  - "pypy-5.3.1"
+  - "pypy-5.4.1"
+  # TODO: Enable pypy3 once NumPy is working there, see
+  # https://bitbucket.org/pypy/pypy/issues/1567/
   #- "pypy3"
 addons:
   apt:
     packages:
     - libsndfile1
 install:
-  # TODO: remove "@pypy-2.6.0" once
-  # https://github.com/travis-ci/travis-ci/issues/4756 is closed:
-  - "if [ $TRAVIS_PYTHON_VERSION = pypy -o $TRAVIS_PYTHON_VERSION = pypy3 ]; then pip install git+https://bitbucket.org/pypy/numpy.git@pypy-2.6.0 ; fi"
+  - "if [[ $TRAVIS_PYTHON_VERSION == pypy* ]]; then pip install git+https://bitbucket.org/pypy/numpy.git ; fi"
 script:
   - python setup.py test
