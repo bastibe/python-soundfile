@@ -31,6 +31,10 @@ In 0.8.0, we changed the default value of ``always_2d`` from ``True``
 to ``False``. Also, the order of arguments of the ``write`` function
 changed from ``write(data, file, ...)`` to ``write(file, data, ...)``.
 
+In 0.9.0, we changed the ``ctype`` arguments of the ``buffer_*``
+methods to ``dtype``, using the Numpy ``dtype`` notation. The old
+``ctype`` arguments still work, but are now officially deprecated.
+
 Installation
 ------------
 
@@ -229,3 +233,16 @@ News
       ``write(data, file, ...)`` to ``write(file, data, ...)``
 
     And many more minor bug fixes.
+
+2017-02-02 V0.9.0 Bastian Bechtold:
+    Thank you, Matthias Geier, Tomas Garcia, and Todd, for contributions
+    for this release.
+
+    - Adds support for ALAC files.
+    - Adds new member ``__libsndfile_version__``
+    - Adds number of frames to ``info`` class
+    - Adds ``dtype`` argument to ``buffer_*`` methods
+    - Deprecates ``ctype`` argument to ``buffer_*`` methods
+    - Adds official support for Python 3.6
+
+    And some minor bug fixes.
