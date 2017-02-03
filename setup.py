@@ -87,7 +87,7 @@ else:
 
 setup(
     name='SoundFile',
-    version='0.9.0',
+    version='0.9.0.post1',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
@@ -102,7 +102,7 @@ setup(
     extras_require={'numpy': ['numpy']},
     platforms='any',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
