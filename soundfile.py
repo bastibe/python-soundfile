@@ -273,9 +273,18 @@ except OSError:
         _libname = 'libsndfile' + _architecture()[0] + '.dll'
     else:
         raise
+
+    # hack for packaging tools like cx_Freeze, which
+    # compress all scripts into a zip file
+    # which causes __file__ to be inside this zip file
+
+    path = _os.path.dirname(_os.path.abspath(__file__))
+
+    while not _os.path.isdir(path):
+        path = _os.path.abspath(_os.path.join(path, '..'))
+
     _snd = _ffi.dlopen(_os.path.join(
-        _os.path.dirname(_os.path.abspath(__file__)),
-        '_soundfile_data', _libname))
+        path, '_soundfile_data', _libname))
 
 __libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode('utf-8', 'replace')
 if __libsndfile_version__.startswith('libsndfile-'):
