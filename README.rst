@@ -41,7 +41,7 @@ Installation
 PySoundFile depends on the Python packages CFFI and NumPy, and the
 system library libsndfile.
 
-In a modern Python, you can use `pip install soundfile` to download 
+In a modern Python, you can use ``pip install soundfile`` to download 
 and install the latest release of PySoundFile and its dependencies. 
 On Windows and OS X, this will also install the library libsndfile. 
 On Linux, you need to install libsndfile using your distribution's 
