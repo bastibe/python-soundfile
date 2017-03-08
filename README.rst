@@ -49,7 +49,7 @@ install all dependencies using ``conda install cffi numpy`` (conda is
 also available independently of Anaconda with ``pip install conda;
 conda init``).
 
-With CFFI and NumPy installed, you can use ``pip install pysoundfile``
+With CFFI and NumPy installed, you can use ``pip install soundfile``
 to download and install the latest release of PySoundFile. On Windows
 and OS X, this will also install the library libsndfile. On Linux, you
 need to install libsndfile using your distribution's package manager,
