@@ -41,19 +41,17 @@ Installation
 PySoundFile depends on the Python packages CFFI and NumPy, and the
 system library libsndfile.
 
-To install the Python dependencies, I recommend using the `Anaconda
-<http://continuum.io/downloads>`__ distribution of Python 3. This will
-come with all dependencies pre-installed. To install the dependencies
-manually, you can use the ``conda`` package manager, which will
-install all dependencies using ``conda install cffi numpy`` (conda is
-also available independently of Anaconda with ``pip install conda;
-conda init``).
+In a modern Python, you can use `pip install soundfile` to download 
+and install the latest release of PySoundFile and its dependencies. 
+On Windows and OS X, this will also install the library libsndfile. 
+On Linux, you need to install libsndfile using your distribution's 
+package manager, for example ``sudo apt-get install libsndfile1``.
 
-With CFFI and NumPy installed, you can use ``pip install soundfile``
-to download and install the latest release of PySoundFile. On Windows
-and OS X, this will also install the library libsndfile. On Linux, you
-need to install libsndfile using your distribution's package manager,
-for example ``sudo apt-get install libsndfile1``.
+If you are running on an unusual platform or if you are using an older
+version of Python, you might need to install NumPy and CFFI separately,
+for example using the [`conda`](https://www.continuum.io/downloads) 
+package manager or the [Unofficial Windows Binaries for Python Extension 
+Packages](http://www.lfd.uci.edu/~gohlke/pythonlibs/).
 
 Read/Write Functions
 --------------------
