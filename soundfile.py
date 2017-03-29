@@ -510,7 +510,7 @@ class _SoundFileInfo(object):
             self.samplerate = f.samplerate
             self.channels = f.channels
             self.frames = len(f)
-            self.duration = self.frames/f.samplerate
+            self.duration = float(self.frames)/f.samplerate
             self.format = f.format
             self.subtype = f.subtype
             self.endian = f.endian
