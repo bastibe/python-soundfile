@@ -405,6 +405,48 @@ def test_blocks_write(sf_stereo_w):
 
 
 # -----------------------------------------------------------------------------
+# Test append() function
+# -----------------------------------------------------------------------------
+
+# The read() and write() function is tested above, we assume here that
+# it is working.
+
+def test_append_function(file_stereo_rplus):
+    sf.append(data_stereo, file_stereo_rplus)
+    data, fs = sf.read(filename_new)
+    assert np.all(data[-len(data_stereo):] == data_stereo)
+    assert len(data) == 2*len(data_stereo)
+
+
+# -----------------------------------------------------------------------------
+# Test overwrite() function
+# -----------------------------------------------------------------------------
+
+# The read() and write() function is tested above, we assume here that
+# it is working.
+
+def test_overwrite_function(file_stereo_rplus):
+    sf.overwrite(data_stereo, file_stereo_rplus, 2)
+    data, fs = sf.read(filename_new)
+    assert np.all(data[:2] == data_stereo[:2])
+    assert np.all(data[-len(data_stereo):] == data_stereo)
+    assert len(data) == 2+len(data_stereo)
+
+
+# -----------------------------------------------------------------------------
+# Test accumulate() function
+# -----------------------------------------------------------------------------
+
+# The read() and write() function is tested above, we assume here that
+# it is working.
+
+def test_accumulate_function(file_stereo_rplus):
+    sf.accumulate(data_stereo, file_stereo_rplus, 0)
+    data, fs = sf.read(filename_new)
+    assert np.all(data == data_stereo*2)
+
+
+# -----------------------------------------------------------------------------
 # Test SoundFile.__init__()
 # -----------------------------------------------------------------------------
 
