@@ -748,6 +748,9 @@ def test_buffer_read(sf_stereo_r):
     with pytest.raises(ValueError) as excinfo:
         sf_stereo_r.buffer_read(dtype='int8')
     assert "dtype must be one of" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        sf_stereo_r.buffer_read()
+    assert "dtype must be one of" in str(excinfo.value)
 
 
 @xfail_from_buffer
