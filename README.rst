@@ -61,17 +61,17 @@ Data can be written to the file using `soundfile.write()`, or read from
 the file using `soundfile.read()`. PySoundFile can open all file formats
 that `libsndfile supports
 <http://www.mega-nerd.com/libsndfile/#Features>`__, for example WAV,
-FLAC, OGG and MAT files.
+FLAC, OGG and MAT files (see `Known Issues <https://github.com/bastibe/PySoundFile#known-issues>`__ below about writing OGG files).
 
 Here is an example for a program that reads a wave file and copies it
-into an ogg-vorbis file:
+into an FLAC file:
 
 .. code:: python
 
     import soundfile as sf
 
     data, samplerate = sf.read('existing_file.wav')
-    sf.write('new_file.ogg', data, samplerate)
+    sf.write('new_file.flac', data, samplerate)
 
 Block Processing
 ----------------
@@ -165,6 +165,11 @@ For Python 2.x support, replace the third line with:
 .. code:: python
 
     from urllib2 import urlopen
+
+Known Issues
+------------
+
+Writing to OGG files can result in empty files with certain versions of libsndfile. See `#130 <https://github.com/bastibe/PySoundFile/issues/130>`__ for news on this issue.
 
 News
 ----
