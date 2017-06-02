@@ -286,6 +286,19 @@ def test_write_with_unknown_extension(filename):
     assert "file extension" in str(excinfo.value)
 
 
+def test_write_with_float_samplerate(file_inmemory):
+    sf.write(file_inmemory, data_mono, 44100.0, format='WAV')
+    file_inmemory.seek(0)
+    read, fs = sf.read(file_inmemory, always_2d=False, dtype='int16')
+    assert np.all(read == data_mono)
+    assert fs == 44100
+    assert type(fs) == int
+
+    with pytest.raises(ValueError) as excinfo:
+        sf.write(file_inmemory, data_mono, 44099.9, format='WAV')
+    assert 'samplerate' in str(excinfo.value)
+
+
 # -----------------------------------------------------------------------------
 # Test blocks() function
 # -----------------------------------------------------------------------------
@@ -433,9 +446,9 @@ def test_open_with_invalid_mode():
 
 
 def test_open_with_more_invalid_arguments():
-    with pytest.raises(TypeError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         sf.SoundFile(filename_new, 'w', 3.1415, 2, format='WAV')
-    assert "integer" in str(excinfo.value)
+    assert "samplerate" in str(excinfo.value)
     with pytest.raises(TypeError) as excinfo:
         sf.SoundFile(filename_new, 'w', 44100, 3.1415, format='WAV')
     assert "integer" in str(excinfo.value)
