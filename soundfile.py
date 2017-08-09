@@ -396,7 +396,7 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
     file : str or int or file-like object
         The file to write to.  See :class:`SoundFile` for details.
     data : array_like
-        The data to write.  Usually two-dimensional (channels x frames),
+        The data to write.  Usually two-dimensional (frames x channels),
         but one-dimensional `data` can be used for mono files.
         Only the data types ``'float64'``, ``'float32'``, ``'int32'``
         and ``'int16'`` are supported.
@@ -1063,8 +1063,8 @@ class SoundFile(object):
         Parameters
         ----------
         data : array_like
-            The data to write. Usually two-dimensional (channels x
-            frames), but one-dimensional `data` can be used for mono
+            The data to write. Usually two-dimensional (frames x
+            channels), but one-dimensional `data` can be used for mono
             files. Only the data types ``'float64'``, ``'float32'``,
             ``'int32'`` and ``'int16'`` are supported.
 
