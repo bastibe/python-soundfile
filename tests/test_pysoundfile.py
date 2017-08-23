@@ -515,7 +515,7 @@ def test_if_open_with_mode_w_truncates(file_stereo_rplus, mode):
             assert f.samplerate == 48000
             assert f.channels == 6
             assert f.format == 'AIFF'
-            assert len(f) == 0
+            assert f.frames == 0
         else:
             # This doesn't really work for file descriptors and file objects
             pass
@@ -586,7 +586,7 @@ def test_file_attributes_in_read_mode(sf_stereo_r):
     assert sf_stereo_r.sections == 1
     assert sf_stereo_r.closed is False
     assert sf_stereo_r.seekable() is True
-    assert len(sf_stereo_r) == len(data_stereo)
+    assert sf_stereo_r.frames == len(data_stereo)
 
 
 def test__repr__(sf_stereo_r):
@@ -602,11 +602,16 @@ def test_extra_info(sf_stereo_r):
 
 def test_mode_should_be_in_write_mode(sf_stereo_w):
     assert sf_stereo_w.mode == 'w'
-    assert len(sf_stereo_w) == 0
+    assert sf_stereo_w.frames == 0
 
 
 def test_mode_should_be_in_readwrite_mode(sf_stereo_rplus):
     assert sf_stereo_rplus.mode == 'r+'
+
+
+def test_file_truthiness(file_w):
+    with sf.SoundFile(file_w, 'w', 44100, 2, format='WAV') as f:
+        assert f
 
 
 # -----------------------------------------------------------------------------
@@ -652,7 +657,7 @@ def test_truncate(file_stereo_rplus, use_default):
             else:
                 f.truncate(2)
             assert f.tell() == 2
-            assert len(f) == 2
+            assert f.frames == 2
         if isinstance(file_stereo_rplus, int):
             os.lseek(file_stereo_rplus, 0, os.SEEK_SET)
         data, fs = sf.read(file_stereo_rplus)
@@ -978,9 +983,9 @@ def test_default_subtype():
 def test_write_non_seekable_file(file_w):
     with sf.SoundFile(file_w, 'w', 44100, 1, format='XI') as f:
         assert not f.seekable()
-        assert len(f) == 0
+        assert f.frames == 0
         f.write(data_mono)
-        assert len(f) == len(data_mono)
+        assert f.frames == len(data_mono)
 
         with pytest.raises(RuntimeError) as excinfo:
             f.seek(2)
@@ -988,7 +993,7 @@ def test_write_non_seekable_file(file_w):
 
     with sf.SoundFile(filename_new) as f:
         assert not f.seekable()
-        assert len(f) == len(data_mono)
+        assert f.frames == len(data_mono)
         data = f.read(3, dtype='int16')
         assert np.all(data == data_mono[:3])
         data = f.read(666, dtype='int16')
