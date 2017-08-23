@@ -1144,7 +1144,7 @@ class SoundFile(object):
             The number of frames to rewind between each block.
         frames : int, optional
             The number of frames to read.
-            If ``frames < 1``, the file is read until the end.
+            If ``frames < 0``, the file is read until the end.
         dtype : {'float64', 'float32', 'int32', 'int16'}, optional
             See :meth:`.read`.
 
