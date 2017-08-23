@@ -106,7 +106,7 @@ context manager to close the file explicitly:
    import soundfile as sf
 
    with sf.SoundFile('myfile.wav', 'r+') as f:
-       while f.tell() < len(f):
+       while f.tell() < f.frames:
            pos = f.tell()
            data = f.read(1024)
            f.seek(pos)

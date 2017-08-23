@@ -509,7 +509,7 @@ class _SoundFileInfo(object):
             self.name = f.name
             self.samplerate = f.samplerate
             self.channels = f.channels
-            self.frames = len(f)
+            self.frames = f.frames
             self.duration = float(self.frames)/f.samplerate
             self.format = f.format
             self.subtype = f.subtype
@@ -759,6 +759,8 @@ class SoundFile(object):
     """The open mode the sound file was opened with."""
     samplerate = property(lambda self: self._info.samplerate)
     """The sample rate of the sound file."""
+    frames = property(lambda self: self._info.frames)
+    """The number of frames in the sound file."""
     channels = property(lambda self: self._info.channels)
     """The number of channels in the sound file."""
     format = property(
@@ -832,7 +834,19 @@ class SoundFile(object):
                 "'SoundFile' object has no attribute {0!r}".format(name))
 
     def __len__(self):
+        # Note: This is deprecated and will be removed at some point,
+        # see https://github.com/bastibe/PySoundFile/issues/199
         return self._info.frames
+
+    def __bool__(self):
+        # Note: This is temporary until __len__ is removed, afterwards it
+        # can (and should) be removed without change of behavior
+        return True
+
+    def __nonzero__(self):
+        # Note: This is only for compatibility with Python 2 and it shall be
+        # removed at the same time as __bool__().
+        return self.__bool__()
 
     def seekable(self):
         """Return True if the file supports seeking."""
@@ -1098,7 +1112,7 @@ class SoundFile(object):
         data = np.ascontiguousarray(data)
         written = self._array_io('write', data, len(data))
         assert written == len(data)
-        self._update_len(written)
+        self._update_frames(written)
 
     def buffer_write(self, data, dtype):
         """Write audio data from a buffer/bytes object to the file.
@@ -1125,7 +1139,7 @@ class SoundFile(object):
         cdata, frames = self._check_buffer(data, ctype)
         written = self._cdata_io('write', cdata, ctype, frames)
         assert written == frames
-        self._update_len(written)
+        self._update_frames(written)
 
     def blocks(self, blocksize=None, overlap=0, frames=-1, dtype='float64',
                always_2d=False, fill_value=None, out=None):
@@ -1349,7 +1363,7 @@ class SoundFile(object):
     def _check_frames(self, frames, fill_value):
         """Reduce frames to no more than are available in the file."""
         if self.seekable():
-            remaining_frames = len(self) - self.tell()
+            remaining_frames = self.frames - self.tell()
             if frames < 0 or (frames > remaining_frames and
                               fill_value is None):
                 frames = remaining_frames
@@ -1411,8 +1425,8 @@ class SoundFile(object):
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
 
-    def _update_len(self, written):
-        """Update len(self) after writing."""
+    def _update_frames(self, written):
+        """Update self.frames after writing."""
         if self.seekable():
             curr = self.tell()
             self._info.frames = self.seek(0, SEEK_END)
@@ -1427,7 +1441,7 @@ class SoundFile(object):
         if frames >= 0 and stop is not None:
             raise TypeError("Only one of {frames, stop} may be used")
 
-        start, stop, _ = slice(start, stop).indices(len(self))
+        start, stop, _ = slice(start, stop).indices(self.frames)
         if stop < start:
             stop = start
         if frames < 0:
