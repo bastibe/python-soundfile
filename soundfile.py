@@ -1188,30 +1188,37 @@ class SoundFile(object):
         if 'r' not in self.mode and '+' not in self.mode:
             raise RuntimeError("blocks() is not allowed in write-only mode")
 
-        if overlap != 0 and not self.seekable():
-            raise ValueError("overlap is only allowed for seekable files")
-
         if out is None:
             if blocksize is None:
                 raise TypeError("One of {blocksize, out} must be specified")
+            # Allocate memory
+            out = self._create_empty_array(blocksize, always_2d, dtype)
+            copy_out = True
         else:
             if blocksize is not None:
                 raise TypeError(
                     "Only one of {blocksize, out} may be specified")
             blocksize = len(out)
+            copy_out = False
 
+        # Specify an offset for the output array
+        offset = 0
+        # Get the number of remaining frames
         frames = self._check_frames(frames, fill_value)
         while frames > 0:
-            if frames < blocksize:
-                if fill_value is not None and out is None:
-                    out = self._create_empty_array(blocksize, always_2d, dtype)
-                blocksize = frames
-            block = self.read(blocksize, dtype, always_2d, fill_value, out)
-            frames -= blocksize
-            if frames > 0 and self.seekable():
-                self.seek(-overlap, SEEK_CUR)
-                frames += overlap
-            yield block
+            n = min(blocksize - offset, frames)
+            self.read(n, dtype, always_2d, fill_value, out[offset:])
+            block = out[:min(blocksize, frames + overlap)] if fill_value is None else out
+            if copy_out:
+                import numpy as np
+                yield np.copy(block)
+            else:
+                yield block
+            frames -= n
+            # Copy the end of the block to the beginning of the next
+            if overlap:
+                offset = overlap
+                out[:overlap] = out[-overlap:]
 
     def truncate(self, frames=None):
         """Truncate the file to a given number of frames.
