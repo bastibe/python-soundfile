@@ -371,7 +371,7 @@ def test_blocks_with_frames_and_fill_value(file_stereo_r):
 def test_blocks_with_out(file_stereo_r):
     out = np.empty((3, 2))
     blocks = list(sf.blocks(file_stereo_r, out=out))
-    assert blocks[0].base is out
+    assert blocks[0] is out
     # First frame was overwritten by second block:
     assert np.all(blocks[0] == data_stereo[[3, 1, 2]])
 

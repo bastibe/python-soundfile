@@ -1185,6 +1185,8 @@ class SoundFile(object):
         >>>         pass  # do something with 'block'
 
         """
+        import numpy as np
+
         if 'r' not in self.mode and '+' not in self.mode:
             raise RuntimeError("blocks() is not allowed in write-only mode")
 
@@ -1206,15 +1208,12 @@ class SoundFile(object):
         # Get the number of remaining frames
         frames = self._check_frames(frames, fill_value)
         while frames > 0:
-            n = min(blocksize - offset, frames)
-            self.read(n, dtype, always_2d, fill_value, out[offset:])
-            block = out[:min(blocksize, frames + overlap)] if fill_value is None else out
-            if copy_out:
-                import numpy as np
-                yield np.copy(block)
-            else:
-                yield block
-            frames -= n
+            toread = min(blocksize - offset, frames)
+            self.read(toread, dtype, always_2d, fill_value, out[offset:])
+            block = out[:frames + overlap] if blocksize > frames + overlap and fill_value is None \
+                else out
+            yield np.copy(block) if copy_out else block
+            frames -= toread
             # Copy the end of the block to the beginning of the next
             if overlap:
                 offset = overlap
