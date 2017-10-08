@@ -1176,6 +1176,15 @@ class SoundFile(object):
         ----------------
         always_2d, fill_value, out
             See :meth:`.read`.
+        fill_value : float, optional
+            See :meth:`.read`.
+        out : numpy.ndarray or subclass, optional
+            If `out` is specified, the data is written into the given
+            array instead of creating a new array. In this case, the
+            arguments `dtype` and `always_2d` are silently ignored! If
+            `frames` is not given, it is obtained from the length of
+            `out`. If `overlap` is not 0, `out` should not be modified
+            in-place.
 
         Examples
         --------
@@ -1193,7 +1202,6 @@ class SoundFile(object):
         if out is None:
             if blocksize is None:
                 raise TypeError("One of {blocksize, out} must be specified")
-            # Allocate memory
             out = self._create_empty_array(blocksize, always_2d, dtype)
             copy_out = True
         else:
@@ -1203,20 +1211,20 @@ class SoundFile(object):
             blocksize = len(out)
             copy_out = False
 
-        # Specify an offset for the output array
-        offset = 0
-        # Get the number of remaining frames
+        output_offset = 0
         frames = self._check_frames(frames, fill_value)
         while frames > 0:
-            toread = min(blocksize - offset, frames)
-            self.read(toread, dtype, always_2d, fill_value, out[offset:])
-            block = out[:frames + overlap] if blocksize > frames + overlap and fill_value is None \
-                else out
+            toread = min(blocksize - output_offset, frames)
+            self.read(toread, dtype, always_2d, fill_value, out[output_offset:])
+            if blocksize > frames + overlap and fill_value is None:
+                block = out[:frames + overlap]
+            else:
+                block = out
             yield np.copy(block) if copy_out else block
             frames -= toread
             # Copy the end of the block to the beginning of the next
             if overlap:
-                offset = overlap
+                output_offset = overlap
                 out[:overlap] = out[-overlap:]
 
     def truncate(self, frames=None):
