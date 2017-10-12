@@ -382,6 +382,17 @@ def test_blocks_with_out(file_stereo_r):
         list(sf.blocks(filename_stereo, blocksize=3, out=out))
 
 
+def test_blocks_inplace_modification(file_stereo_r):
+    out = np.empty((3, 2))
+    blocks = []
+    for block in sf.blocks(file_stereo_r, out=out, overlap=1):
+        blocks.append(np.copy(block))
+        block *= 2
+
+    expected_blocks = [data_stereo[0:3], data_stereo[2:5]]
+    assert_equal_list_of_arrays(blocks, expected_blocks)
+
+
 def test_blocks_mono():
     blocks = list(sf.blocks(filename_mono, blocksize=3, dtype='int16',
                             fill_value=0))

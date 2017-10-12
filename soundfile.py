@@ -1181,10 +1181,7 @@ class SoundFile(object):
         out : numpy.ndarray or subclass, optional
             If `out` is specified, the data is written into the given
             array instead of creating a new array. In this case, the
-            arguments `dtype` and `always_2d` are silently ignored! If
-            `frames` is not given, it is obtained from the length of
-            `out`. If `overlap` is not 0, `out` should not be modified
-            in-place.
+            arguments `dtype` and `always_2d` are silently ignored!
 
         Examples
         --------
@@ -1211,21 +1208,30 @@ class SoundFile(object):
             blocksize = len(out)
             copy_out = False
 
-        output_offset = 0
+        overlap_memory = None
         frames = self._check_frames(frames, fill_value)
         while frames > 0:
+            if overlap_memory is None:
+                output_offset = 0
+            else:
+                output_offset = len(overlap_memory)
+                out[:output_offset] = overlap_memory
+
             toread = min(blocksize - output_offset, frames)
             self.read(toread, dtype, always_2d, fill_value, out[output_offset:])
+
+            if overlap:
+                if overlap_memory is None:
+                    overlap_memory = np.copy(out[-overlap:])
+                else:
+                    overlap_memory[:] = out[-overlap:]
+
             if blocksize > frames + overlap and fill_value is None:
                 block = out[:frames + overlap]
             else:
                 block = out
             yield np.copy(block) if copy_out else block
             frames -= toread
-            # Copy the end of the block to the beginning of the next
-            if overlap:
-                output_offset = overlap
-                out[:overlap] = out[-overlap:]
 
     def truncate(self, frames=None):
         """Truncate the file to a given number of frames.
