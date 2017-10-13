@@ -1176,6 +1176,12 @@ class SoundFile(object):
         ----------------
         always_2d, fill_value, out
             See :meth:`.read`.
+        fill_value : float, optional
+            See :meth:`.read`.
+        out : numpy.ndarray or subclass, optional
+            If `out` is specified, the data is written into the given
+            array instead of creating a new array. In this case, the
+            arguments `dtype` and `always_2d` are silently ignored!
 
         Examples
         --------
@@ -1185,33 +1191,47 @@ class SoundFile(object):
         >>>         pass  # do something with 'block'
 
         """
+        import numpy as np
+
         if 'r' not in self.mode and '+' not in self.mode:
             raise RuntimeError("blocks() is not allowed in write-only mode")
-
-        if overlap != 0 and not self.seekable():
-            raise ValueError("overlap is only allowed for seekable files")
 
         if out is None:
             if blocksize is None:
                 raise TypeError("One of {blocksize, out} must be specified")
+            out = self._create_empty_array(blocksize, always_2d, dtype)
+            copy_out = True
         else:
             if blocksize is not None:
                 raise TypeError(
                     "Only one of {blocksize, out} may be specified")
             blocksize = len(out)
+            copy_out = False
 
+        overlap_memory = None
         frames = self._check_frames(frames, fill_value)
         while frames > 0:
-            if frames < blocksize:
-                if fill_value is not None and out is None:
-                    out = self._create_empty_array(blocksize, always_2d, dtype)
-                blocksize = frames
-            block = self.read(blocksize, dtype, always_2d, fill_value, out)
-            frames -= blocksize
-            if frames > 0 and self.seekable():
-                self.seek(-overlap, SEEK_CUR)
-                frames += overlap
-            yield block
+            if overlap_memory is None:
+                output_offset = 0
+            else:
+                output_offset = len(overlap_memory)
+                out[:output_offset] = overlap_memory
+
+            toread = min(blocksize - output_offset, frames)
+            self.read(toread, dtype, always_2d, fill_value, out[output_offset:])
+
+            if overlap:
+                if overlap_memory is None:
+                    overlap_memory = np.copy(out[-overlap:])
+                else:
+                    overlap_memory[:] = out[-overlap:]
+
+            if blocksize > frames + overlap and fill_value is None:
+                block = out[:frames + overlap]
+            else:
+                block = out
+            yield np.copy(block) if copy_out else block
+            frames -= toread
 
     def truncate(self, frames=None):
         """Truncate the file to a given number of frames.
