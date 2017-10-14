@@ -76,4 +76,4 @@ def test_order_of_blocks_arguments():
     meth_args = list(signature(sf.SoundFile.blocks).parameters)[1:]
     meth_args[3:3] = ['start', 'stop']
     func_args = list(signature(sf.blocks).parameters)
-    assert func_args[:10] == ['file'] + meth_args
+    assert func_args[:9] == ['file'] + meth_args
