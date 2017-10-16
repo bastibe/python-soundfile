@@ -332,8 +332,7 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
     Returns
     -------
     audiodata : numpy.ndarray or type(out)
-        A two-dimensional NumPy array is returned, where the channels
-        are stored along the first dimension, i.e. as columns.
+        A two-dimensional (frames x channels) NumPy array is returned.
         If the sound file has only one channel, a one-dimensional array
         is returned.  Use ``always_2d=True`` to return a two-dimensional
         array anyway.
@@ -929,9 +928,8 @@ class SoundFile(object):
         Returns
         -------
         audiodata : numpy.ndarray or type(out)
-            A two-dimensional NumPy array is returned, where the
-            channels are stored along the first dimension, i.e. as
-            columns. If the sound file has only one channel, a
+            A two-dimensional NumPy (frames x channels) array is
+            returned. If the sound file has only one channel, a
             one-dimensional array is returned. Use ``always_2d=True``
             to return a two-dimensional array anyway.
 
