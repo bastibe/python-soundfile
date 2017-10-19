@@ -98,7 +98,9 @@ setup(
     package_data=package_data,
     zip_safe=zip_safe,
     license='BSD 3-Clause License',
-    install_requires=['cffi>=0.6'],
+    setup_requires=["cffi>=1.0"],
+    install_requires=['cffi>=1.0'],
+    cffi_modules=["soundfile_build.py:ffibuilder"],
     extras_require={'numpy': ['numpy']},
     platforms='any',
     classifiers=[
