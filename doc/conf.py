@@ -277,5 +277,5 @@ napoleon_include_special_with_doc = False
 # Fake imports to avoid actually loading NumPy and libsndfile
 import fake_numpy
 sys.modules['numpy'] = sys.modules['fake_numpy']
-import fake_cffi
-sys.modules['cffi'] = sys.modules['fake_cffi']
+import fake__soundfile
+sys.modules['_soundfile'] = sys.modules['fake__soundfile']

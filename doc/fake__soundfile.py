@@ -1,10 +1,7 @@
 """Mock module for Sphinx autodoc."""
 
 
-class FFI(object):
-
-    def cdef(self, _):
-        pass
+class ffi(object):
 
     def dlopen(self, _):
         return self
@@ -16,3 +13,6 @@ class FFI(object):
         return NotImplemented
 
     SFC_GET_FORMAT_INFO = NotImplemented
+
+
+ffi = ffi()
