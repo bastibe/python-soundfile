@@ -361,11 +361,23 @@ def test_blocks_with_frames(file_stereo_r):
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:3]])
 
 
+def test_blocks_with_too_large_frames(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=2, frames=99))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])
+
+
 def test_blocks_with_frames_and_fill_value(file_stereo_r):
     blocks = list(
         sf.blocks(file_stereo_r, blocksize=2, frames=3, fill_value=0))
     last_block = np.row_stack((data_stereo[2:3], np.zeros((1, 2))))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], last_block])
+
+
+def test_blocks_with_too_large_frames_and_fill_value(file_stereo_r):
+    blocks = list(
+        sf.blocks(file_stereo_r, blocksize=3, frames=3000, fill_value=0))
+    last_block = np.row_stack((data_stereo[3:4], np.zeros((2, 2))))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], last_block])
 
 
 def test_blocks_with_out(file_stereo_r):
