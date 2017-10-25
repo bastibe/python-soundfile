@@ -725,8 +725,9 @@ def test_read_into_out_over_end_should_return_shorter_data_and_write_into_out(
     out = np.ones((4, sf_stereo_r.channels), dtype='float64')
     sf_stereo_r.seek(-2, sf.SEEK_END)
     data = sf_stereo_r.read(out=out)
-    assert np.all(data[:2] == out[:2])
-    assert np.all(data[2:] == 1)
+    assert np.all(data == out[:2])
+    assert np.all(data == data_stereo[2:])
+    assert np.all(out[2:] == 1)
     assert out.shape == (4, sf_stereo_r.channels)
     assert data.shape == (2, sf_stereo_r.channels)
 
