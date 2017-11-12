@@ -1,4 +1,4 @@
-"""PySoundFile is an audio library based on libsndfile, CFFI and NumPy.
+"""SoundFile is an audio library based on libsndfile, CFFI and NumPy.
 
 Sound files can be read or written directly using the functions
 :func:`read` and :func:`write`.
@@ -707,7 +707,7 @@ class SoundFile(object):
 
     def __len__(self):
         # Note: This is deprecated and will be removed at some point,
-        # see https://github.com/bastibe/PySoundFile/issues/199
+        # see https://github.com/bastibe/SoundFile/issues/199
         return self._info.frames
 
     def __bool__(self):

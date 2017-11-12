@@ -1,27 +1,27 @@
-PySoundFile
-===========
+SoundFile
+=========
 
-`PySoundFile <https://github.com/bastibe/PySoundFile>`__ is an audio
+`SoundFile <https://github.com/bastibe/SoundFile>`__ is an audio
 library based on libsndfile, CFFI and NumPy. Full documentation is
 available on http://pysoundfile.readthedocs.org/.
 
-PySoundFile can read and write sound files. File reading/writing is
+SoundFile can read and write sound files. File reading/writing is
 supported through `libsndfile <http://www.mega-nerd.com/libsndfile/>`__,
 which is a free, cross-platform, open-source (LGPL) library for reading
 and writing many different sampled sound file formats that runs on many
 platforms including Windows, OS X, and Unix. It is accessed through
 `CFFI <http://cffi.readthedocs.org/>`__, which is a foreign function
 interface for Python calling C code. CFFI is supported for CPython 2.6+,
-3.x and PyPy 2.0+. PySoundFile represents audio data as NumPy arrays.
+3.x and PyPy 2.0+. SoundFile represents audio data as NumPy arrays.
 
-| PySoundFile is BSD licensed (BSD 3-Clause License).
+| SoundFile is BSD licensed (BSD 3-Clause License).
 | (c) 2013, Bastian Bechtold
 
 
 Breaking Changes
 ----------------
 
-PySoundFile has evolved rapidly during the last few releases. Most
+SoundFile has evolved rapidly during the last few releases. Most
 notably, we changed the import name from ``import pysoundfile`` to
 ``import soundfile`` in 0.7. In 0.6, we cleaned up many small
 inconsistencies, particularly in the the ordering and naming of
@@ -38,18 +38,18 @@ methods to ``dtype``, using the Numpy ``dtype`` notation. The old
 Installation
 ------------
 
-PySoundFile depends on the Python packages CFFI and NumPy, and the
+SoundFile depends on the Python packages CFFI and NumPy, and the
 system library libsndfile.
 
-In a modern Python, you can use ``pip install soundfile`` to download 
-and install the latest release of PySoundFile and its dependencies. 
-On Windows and OS X, this will also install the library libsndfile. 
-On Linux, you need to install libsndfile using your distribution's 
+In a modern Python, you can use ``pip install soundfile`` to download
+and install the latest release of SoundFile and its dependencies.
+On Windows and OS X, this will also install the library libsndfile.
+On Linux, you need to install libsndfile using your distribution's
 package manager, for example ``sudo apt-get install libsndfile1``.
 
 If you are running on an unusual platform or if you are using an older
 version of Python, you might need to install NumPy and CFFI separately,
-for example using the Anaconda_ package manager or the `Unofficial Windows 
+for example using the Anaconda_ package manager or the `Unofficial Windows
 Binaries for Python Extension Packages <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
 
 .. _Anaconda: https://www.continuum.io/downloads
@@ -58,10 +58,10 @@ Read/Write Functions
 --------------------
 
 Data can be written to the file using `soundfile.write()`, or read from
-the file using `soundfile.read()`. PySoundFile can open all file formats
+the file using `soundfile.read()`. SoundFile can open all file formats
 that `libsndfile supports
 <http://www.mega-nerd.com/libsndfile/#Features>`__, for example WAV,
-FLAC, OGG and MAT files (see `Known Issues <https://github.com/bastibe/PySoundFile#known-issues>`__ below about writing OGG files).
+FLAC, OGG and MAT files (see `Known Issues <https://github.com/bastibe/SoundFile#known-issues>`__ below about writing OGG files).
 
 Here is an example for a program that reads a wave file and copies it
 into an FLAC file:
@@ -169,7 +169,7 @@ For Python 2.x support, replace the third line with:
 Known Issues
 ------------
 
-Writing to OGG files can result in empty files with certain versions of libsndfile. See `#130 <https://github.com/bastibe/PySoundFile/issues/130>`__ for news on this issue.
+Writing to OGG files can result in empty files with certain versions of libsndfile. See `#130 <https://github.com/bastibe/SoundFile/issues/130>`__ for news on this issue.
 
 News
 ----
@@ -250,3 +250,14 @@ News
     - Adds official support for Python 3.6
 
     And some minor bug fixes.
+
+2017-11-12 V0.10.0 Bastian Bechtold:
+    Thank you, Matthias Geier, Toni Barth, Jon Peirce, Till Hoffmann,
+    and Tomas Garcia, for contributions to this release.
+
+    - Should now work with cx_freeze.
+    - Several documentation fixes in the README.
+    - Removes deprecated ``ctype`` argument in favor of ``dtype`` in ``buffer_*()``.
+    - Adds ``SoundFile.frames`` in favor of now-deprecated ``__len__()``.
+    - Improves performance of ``blocks`` and ``SoundFile.blocks()``.
+    - Improves import time by using CFFI's out of line mode.
