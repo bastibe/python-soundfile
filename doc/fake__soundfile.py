@@ -1,5 +1,10 @@
 """Mock module for Sphinx autodoc."""
 
+import ctypes
+
+# Monkey-patch ctypes to disable searching for libsndfile
+ctypes.util.find_library = lambda _: NotImplemented
+
 
 class ffi(object):
 

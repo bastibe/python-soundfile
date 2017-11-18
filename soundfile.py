@@ -137,7 +137,10 @@ _ffi_types = {
 }
 
 try:
-    _snd = _ffi.dlopen(_find_library('sndfile'))
+    _libname = _find_library('sndfile')
+    if _libname is None:
+        raise OSError('sndfile library not found')
+    _snd = _ffi.dlopen(_libname)
 except OSError:
     if _sys.platform == 'darwin':
         _libname = 'libsndfile.dylib'
