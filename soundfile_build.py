@@ -1,3 +1,4 @@
+import os
 import sys
 from cffi import FFI
 
@@ -126,9 +127,10 @@ typedef struct SF_FORMAT_INFO
 } SF_FORMAT_INFO ;
 """)
 
-if sys.platform == 'win32':
+platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
+if platform == 'win32':
     ffibuilder.cdef("""
-    SNDFILE* sf_wchar_open (LPCWSTR wpath, int mode, SF_INFO *sfinfo) ;
+    SNDFILE* sf_wchar_open (const wchar_t *wpath, int mode, SF_INFO *sfinfo) ;
     """)
 
 if __name__ == "__main__":
