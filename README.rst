@@ -261,3 +261,4 @@ News
     - Adds ``SoundFile.frames`` in favor of now-deprecated ``__len__()``.
     - Improves performance of ``blocks`` and ``SoundFile.blocks()``.
     - Improves import time by using CFFI's out of line mode.
+    - Adds a build script for building distributions.
