@@ -1,23 +1,14 @@
 import os
-import shutil
 
-architectures = dict(darwin=['64bit'],
-                     win32=['32bit', '64bit'],
-                     noplatform='noarch')
-
-def cleanup():
-    shutil.rmtree('build', ignore_errors=True)
-    try:
-        os.remove('_soundfile.py')
-    except:
-        pass
-
-for platform, archs in architectures.items():
+def make_wheel(platform, arch, dist):
+    os.system('python setup.py clean --all')
     os.environ['PYSOUNDFILE_PLATFORM'] = platform
-    for arch in archs:
-        os.environ['PYSOUNDFILE_ARCHITECTURE'] = arch
-        cleanup()
-        os.system('python setup.py bdist_wheel')
+    os.environ['PYSOUNDFILE_ARCHITECTURE'] = arch
+    os.system(f'python setup.py {dist}')
 
-cleanup()
-os.system('python setup.py sdist')
+if __name__ == '__main__':
+    make_wheel('darwin', '64bit', 'bdist_wheel')
+    make_wheel('win32', '32bit', 'bdist_wheel')
+    make_wheel('win32', '64bit', 'bdist_wheel')
+    make_wheel('', '', 'bdist_wheel')
+    make_wheel('', '', 'sdist')
