@@ -614,6 +614,9 @@ class SoundFile(object):
         >>> assert myfile.closed
 
         """
+        # resolve PathLike objects (see PEP519 for details):
+        # can be replaced with _os.fspath(file) for Python >= 3.6
+        file = file.__fspath__() if hasattr(file, '__fspath__') else file
         self._name = file
         if mode is None:
             mode = getattr(file, 'mode', None)
