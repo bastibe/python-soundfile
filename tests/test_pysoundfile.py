@@ -6,6 +6,7 @@ import shutil
 import pytest
 import cffi
 import sys
+import pathlib
 
 # floating point data is typically limited to the interval [-1.0, 1.0],
 # but smaller/larger values are supported as well
@@ -21,7 +22,7 @@ filename_raw = 'tests/mono.raw'
 filename_new = 'tests/delme.please'
 
 
-open_variants = 'name', 'fd', 'obj'
+open_variants = 'name', 'fd', 'obj', 'pathlib'
 
 
 xfail_from_buffer = pytest.mark.xfail(cffi.__version_info__ < (0, 9),
@@ -31,6 +32,8 @@ xfail_from_buffer = pytest.mark.xfail(cffi.__version_info__ < (0, 9),
 def _file_existing(request, filename, fdarg, objarg=None):
     if request.param == 'name':
         return filename
+    if request.param == 'pathlib':
+        return pathlib.Path(filename)
     elif request.param == 'fd':
         fd = os.open(filename, fdarg)
 
@@ -660,7 +663,7 @@ def test_seek_in_rplus_mode(sf_stereo_rplus):
 
 @pytest.mark.parametrize("use_default", [True, False])
 def test_truncate(file_stereo_rplus, use_default):
-    if isinstance(file_stereo_rplus, (str, int)):
+    if isinstance(file_stereo_rplus, (str, int, pathlib.Path)):
         with sf.SoundFile(file_stereo_rplus, 'r+', closefd=False) as f:
             if use_default:
                 f.seek(2)

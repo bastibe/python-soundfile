@@ -118,6 +118,6 @@ setup(
         'Topic :: Multimedia :: Sound/Audio',
     ],
     long_description=open('README.rst').read(),
-    tests_require=['pytest'],
+    tests_require=['pytest', 'pathlib'],
     cmdclass=cmdclass,
 )
