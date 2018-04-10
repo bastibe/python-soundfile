@@ -21,8 +21,11 @@ filename_raw = 'tests/mono.raw'
 filename_new = 'tests/delme.please'
 
 
-open_variants = 'name', 'fd', 'obj'
-
+if sys.version_info >= (3, 6):
+    import pathlib
+    open_variants = 'name', 'fd', 'obj', 'pathlib'
+else:
+    open_variants = 'name', 'fd', 'obj'
 
 xfail_from_buffer = pytest.mark.xfail(cffi.__version_info__ < (0, 9),
                                       reason="from_buffer() since CFFI 0.9")
@@ -31,6 +34,8 @@ xfail_from_buffer = pytest.mark.xfail(cffi.__version_info__ < (0, 9),
 def _file_existing(request, filename, fdarg, objarg=None):
     if request.param == 'name':
         return filename
+    if request.param == 'pathlib':
+        return pathlib.Path(filename)
     elif request.param == 'fd':
         fd = os.open(filename, fdarg)
 
@@ -660,7 +665,8 @@ def test_seek_in_rplus_mode(sf_stereo_rplus):
 
 @pytest.mark.parametrize("use_default", [True, False])
 def test_truncate(file_stereo_rplus, use_default):
-    if isinstance(file_stereo_rplus, (str, int)):
+    if (isinstance(file_stereo_rplus, (str, int))
+            or hasattr(file_stereo_rplus, '__fspath__')):
         with sf.SoundFile(file_stereo_rplus, 'r+', closefd=False) as f:
             if use_default:
                 f.seek(2)
