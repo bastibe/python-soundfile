@@ -22,8 +22,10 @@ filename_raw = 'tests/mono.raw'
 filename_new = 'tests/delme.please'
 
 
-open_variants = 'name', 'fd', 'obj', 'pathlib'
-
+if sys.version_info >= (3, 6):
+    open_variants = 'name', 'fd', 'obj', 'pathlib'
+else:
+    open_variants = 'name', 'fd', 'obj'
 
 xfail_from_buffer = pytest.mark.xfail(cffi.__version_info__ < (0, 9),
                                       reason="from_buffer() since CFFI 0.9")
