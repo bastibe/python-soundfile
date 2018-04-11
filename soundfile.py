@@ -614,7 +614,8 @@ class SoundFile(object):
         >>> assert myfile.closed
 
         """
-        file = _pathlib_to_str(file)
+        # resolve pathlib.Path objects:
+        file = file.__fspath__() if hasattr(file, '__fspath__') else file
         self._name = file
         if mode is None:
             mode = getattr(file, 'mode', None)
@@ -1383,18 +1384,6 @@ def _format_int(format, subtype, endian):
         raise ValueError(
             "Invalid combination of format, subtype and endian")
     return result
-
-
-def _pathlib_to_str(path):
-    """Convert path from pathlib.Path to str if applicable."""
-    if not isinstance(path, str) and path.__class__.__name__.endswith('Path'):
-        try:
-            import pathlib
-            if isinstance(path, pathlib.Path):
-                return str(path)
-        except:
-            pass
-    return path
 
 
 def _check_mode(mode):
