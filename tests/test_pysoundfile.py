@@ -6,7 +6,6 @@ import shutil
 import pytest
 import cffi
 import sys
-import pathlib
 
 # floating point data is typically limited to the interval [-1.0, 1.0],
 # but smaller/larger values are supported as well
@@ -23,6 +22,7 @@ filename_new = 'tests/delme.please'
 
 
 if sys.version_info >= (3, 6):
+    import pathlib
     open_variants = 'name', 'fd', 'obj', 'pathlib'
 else:
     open_variants = 'name', 'fd', 'obj'
@@ -665,7 +665,7 @@ def test_seek_in_rplus_mode(sf_stereo_rplus):
 
 @pytest.mark.parametrize("use_default", [True, False])
 def test_truncate(file_stereo_rplus, use_default):
-    if isinstance(file_stereo_rplus, (str, int, pathlib.Path)):
+    if isinstance(file_stereo_rplus, (str, int)) or hasattr(file_stereo_rplus, '__fspath__'):
         with sf.SoundFile(file_stereo_rplus, 'r+', closefd=False) as f:
             if use_default:
                 f.seek(2)
