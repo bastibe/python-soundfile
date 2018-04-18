@@ -665,8 +665,8 @@ def test_seek_in_rplus_mode(sf_stereo_rplus):
 
 @pytest.mark.parametrize("use_default", [True, False])
 def test_truncate(file_stereo_rplus, use_default):
-    if isinstance(file_stereo_rplus, (str, int))
-            or hasattr(file_stereo_rplus, '__fspath__'):
+    if (isinstance(file_stereo_rplus, (str, int))
+            or hasattr(file_stereo_rplus, '__fspath__')):
         with sf.SoundFile(file_stereo_rplus, 'r+', closefd=False) as f:
             if use_default:
                 f.seek(2)
