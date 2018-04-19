@@ -1,14 +1,20 @@
-import os
+#!/usr/bin/env python
+import sys
+import subprocess
+import shutil
 
-def make_wheel(platform, arch, dist):
-    os.system('python setup.py clean --all')
-    os.environ['PYSOUNDFILE_PLATFORM'] = platform
-    os.environ['PYSOUNDFILE_ARCHITECTURE'] = arch
-    os.system(f'python setup.py {dist}')
+def make_dist(platform, arch, dist):
+    print("removing 'SoundFile.egg-info' (and everything under it)")
+    shutil.rmtree('SoundFile.egg-info', ignore_errors=True)
+    subprocess.run([sys.executable, 'setup.py', 'clean', '--all'])
+    subprocess.run([sys.executable, 'setup.py', dist], env={
+        'PYSOUNDFILE_PLATFORM': platform,
+        'PYSOUNDFILE_ARCHITECTURE': arch
+    })
 
 if __name__ == '__main__':
-    make_wheel('darwin', '64bit', 'bdist_wheel')
-    make_wheel('win32', '32bit', 'bdist_wheel')
-    make_wheel('win32', '64bit', 'bdist_wheel')
-    make_wheel('', '', 'bdist_wheel')
-    make_wheel('', '', 'sdist')
+    make_dist('darwin', '64bit', 'bdist_wheel')
+    make_dist('win32', '32bit', 'bdist_wheel')
+    make_dist('win32', '64bit', 'bdist_wheel')
+    make_dist('', '', 'bdist_wheel')
+    make_dist('', '', 'sdist')

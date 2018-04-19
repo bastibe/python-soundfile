@@ -10,7 +10,7 @@ for line in open('soundfile.py'):
         exec(line)
         break
 else:
-    raise RuntimeException('No version number found')
+    raise RuntimeError('No version number found')
 
 PYTHON_INTERPRETERS = '.'.join([
     'cp26', 'cp27',
