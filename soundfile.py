@@ -402,6 +402,8 @@ class _SoundFileInfo(object):
             duration = "{0:.0g}:{1:02.0g}:{2:05.3f} h".format(hours, minutes, seconds)
         elif minutes >= 1:
             duration = "{0:02.0g}:{1:05.3f} min".format(minutes, seconds)
+        elif seconds <= 1:
+            duration = "{0:d} samples".format(self.frames)
         else:
             duration = "{0:.3f} s".format(seconds)
         return duration
