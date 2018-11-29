@@ -1,6 +1,10 @@
 SoundFile
 =========
 
+|version| |python| |status| |license| 
+
+|contributors| |downloads|
+
 `SoundFile <https://github.com/bastibe/SoundFile>`__ is an audio
 library based on libsndfile, CFFI and NumPy. Full documentation is
 available on http://pysoundfile.readthedocs.org/.
@@ -17,6 +21,20 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 | SoundFile is BSD licensed (BSD 3-Clause License).
 | (c) 2013, Bastian Bechtold
 
+
+|open-issues| |closed-issues| |open-prs| |closed-prs| 
+
+.. |status| image:: https://img.shields.io/pypi/status/soundfile.svg
+.. |contributors| image:: https://img.shields.io/github/contributors/bastibe/soundfile.svg
+.. |version| image:: https://img.shields.io/pypi/v/soundfile.svg 
+.. |python| image:: https://img.shields.io/pypi/pyversions/soundfile.svg
+.. |license| image:: https://img.shields.io/github/license/bastibe/soundfile.svg
+.. |downloads| image:: https://img.shields.io/pypi/dm/soundfile.svg
+.. |open-issues| image:: https://img.shields.io/github/issues/bastibe/soundfile.svg
+.. |closed-issues| image:: https://img.shields.io/github/issues-closed/bastibe/soundfile.svg
+.. |open-prs| image:: https://img.shields.io/github/issues-pr/bastibe/soundfile.svg
+.. |closed-prs| image:: https://img.shields.io/github/issues-pr-closed/bastibe/soundfile.svg
+.. |status| image:: https://img.shields.io/pypi/status/soundfile.svg
 
 Breaking Changes
 ----------------
