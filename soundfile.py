@@ -1295,8 +1295,8 @@ class SoundFile(object):
         try:
             return _ffi_types[dtype]
         except KeyError:
-            raise ValueError("dtype must be one of {0!r}".format(
-                sorted(_ffi_types.keys())))
+            raise ValueError("dtype must be one of {0!r} and not {1!r}".format(
+                sorted(_ffi_types.keys()), dtype))
 
     def _array_io(self, action, array, frames):
         """Check array and call low-level IO function."""
