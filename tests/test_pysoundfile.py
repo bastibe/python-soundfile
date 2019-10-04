@@ -6,6 +6,8 @@ import shutil
 import pytest
 import cffi
 import sys
+import gc
+import weakref
 
 # floating point data is typically limited to the interval [-1.0, 1.0],
 # but smaller/larger values are supported as well
@@ -888,6 +890,14 @@ def test_anything_on_closed_file(file_stereo_r):
     with pytest.raises(RuntimeError) as excinfo:
         f.seek(0)
     assert "closed" in str(excinfo.value)
+
+
+def test_garbage(file_stereo_r):
+    f = sf.SoundFile(file_stereo_r)
+    ref = weakref.ref(f)
+    f = None
+    gc.collect()
+    assert ref() is None
 
 
 def test_file_attributes_should_save_to_disk(file_w):
