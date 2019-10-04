@@ -1,23 +1,20 @@
 language: python
 python:
-  - "2.6"
   - "2.7"
-  - "3.2"
-  - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
   - "nightly"
-  - "pypy-5.3.1"
-  - "pypy-5.4.1"
-  # TODO: Enable pypy3 once NumPy is working there, see
-  # https://bitbucket.org/pypy/pypy/issues/1567/
+  - "pypy"
+  # TODO: Enable pypy3 once NumPy is working there, see	
+  # https://bitbucket.org/pypy/pypy/issues/1567/	
   #- "pypy3"
 addons:
   apt:
     packages:
     - libsndfile1
 install:
-  - "if [[ $TRAVIS_PYTHON_VERSION == pypy* ]]; then pip install git+https://bitbucket.org/pypy/numpy.git ; fi"
+  - "if [[ $TRAVIS_PYTHON_VERSION == pypy ]]; then pip install git+https://bitbucket.org/pypy/numpy.git ; fi"
 script:
   - python setup.py test
