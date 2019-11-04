@@ -5,6 +5,13 @@ from setuptools import setup
 from setuptools.command.test import test as TestCommand
 import sys
 
+for line in open('soundfile.py'):
+    if line.startswith('__version__'):
+        exec(line)
+        break
+else:
+    raise RuntimeError('No version number found')
+
 PYTHON_INTERPRETERS = '.'.join([
     'cp26', 'cp27',
     'cp32', 'cp33', 'cp34', 'cp35', 'cp36',
@@ -87,7 +94,7 @@ else:
 
 setup(
     name='SoundFile',
-    version='0.10.1',
+    version=__version__,
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',

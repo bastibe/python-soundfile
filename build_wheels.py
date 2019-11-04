@@ -1,23 +1,20 @@
-import os
+#!/usr/bin/env python
+import sys
+import subprocess
 import shutil
 
-architectures = dict(darwin=['64bit'],
-                     win32=['32bit', '64bit'],
-                     noplatform='noarch')
+def make_dist(platform, arch, dist):
+    print("removing 'SoundFile.egg-info' (and everything under it)")
+    shutil.rmtree('SoundFile.egg-info', ignore_errors=True)
+    subprocess.run([sys.executable, 'setup.py', 'clean', '--all'])
+    subprocess.run([sys.executable, 'setup.py', dist], env={
+        'PYSOUNDFILE_PLATFORM': platform,
+        'PYSOUNDFILE_ARCHITECTURE': arch
+    })
 
-def cleanup():
-    shutil.rmtree('build', ignore_errors=True)
-    try:
-        os.remove('_soundfile.py')
-    except:
-        pass
-
-for platform, archs in architectures.items():
-    os.environ['PYSOUNDFILE_PLATFORM'] = platform
-    for arch in archs:
-        os.environ['PYSOUNDFILE_ARCHITECTURE'] = arch
-        cleanup()
-        os.system('python setup.py bdist_wheel')
-
-cleanup()
-os.system('python setup.py sdist')
+if __name__ == '__main__':
+    make_dist('darwin', '64bit', 'bdist_wheel')
+    make_dist('win32', '32bit', 'bdist_wheel')
+    make_dist('win32', '64bit', 'bdist_wheel')
+    make_dist('', '', 'bdist_wheel')
+    make_dist('', '', 'sdist')
