@@ -87,7 +87,7 @@ else:
 
 setup(
     name='SoundFile',
-    version='0.10.3',
+    version='0.10.3post1',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
@@ -118,6 +118,7 @@ setup(
         'Topic :: Multimedia :: Sound/Audio',
     ],
     long_description=open('README.rst').read(),
+    long_description_content_type="text/x-rst",
     tests_require=['pytest'],
     cmdclass=cmdclass,
 )

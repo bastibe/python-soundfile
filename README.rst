@@ -1,7 +1,7 @@
 SoundFile
 =========
 
-|version| |python| |status| |license| 
+|version| |python| |status| |license|
 
 |contributors| |downloads|
 
@@ -22,11 +22,10 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 | (c) 2013, Bastian Bechtold
 
 
-|open-issues| |closed-issues| |open-prs| |closed-prs| 
+|open-issues| |closed-issues| |open-prs| |closed-prs|
 
-.. |status| image:: https://img.shields.io/pypi/status/soundfile.svg
 .. |contributors| image:: https://img.shields.io/github/contributors/bastibe/soundfile.svg
-.. |version| image:: https://img.shields.io/pypi/v/soundfile.svg 
+.. |version| image:: https://img.shields.io/pypi/v/soundfile.svg
 .. |python| image:: https://img.shields.io/pypi/pyversions/soundfile.svg
 .. |license| image:: https://img.shields.io/github/license/bastibe/soundfile.svg
 .. |downloads| image:: https://img.shields.io/pypi/dm/soundfile.svg
