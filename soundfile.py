@@ -316,8 +316,8 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
         f.write(data)
 
 
-def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
-           dtype='float64', always_2d=False, fill_value=None, out=None,
+def blocks(file, blocksize, overlap=0, frames=-1, start=0, stop=None,
+           dtype='float64', always_2d=False, fill_value=None,
            samplerate=None, channels=None,
            format=None, subtype=None, endian=None, closefd=True):
     """Return a generator for block-wise reading.
@@ -337,26 +337,26 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
         The file to read from.  See :class:`SoundFile` for details.
     blocksize : int
         The number of frames to read per block.
-        Either this or `out` must be given.
     overlap : int, optional
         The number of frames to rewind between each block.
 
     Yields
     ------
-    numpy.ndarray or type(out)
+    numpy.ndarray
         Blocks of audio data.
-        If `out` was given, and the requested frames are not an integer
-        multiple of the length of `out`, and no `fill_value` was given,
-        the last block will be a smaller view into `out`.
 
     Other Parameters
     ----------------
-    frames, start, stop
+    frames
+        See :meth:`SoundFile.blocks`.
+    start, stop
         See :func:`read`.
-    dtype : {'float64', 'float32', 'int32', 'int16'}, optional
+    dtype
         See :func:`read`.
-    always_2d, fill_value, out
+    always_2d
         See :func:`read`.
+    fill_value
+        See :meth:`SoundFile.blocks`.
     samplerate, channels, format, subtype, endian, closefd
         See :class:`SoundFile`.
 
@@ -371,7 +371,7 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
                    subtype, endian, format, closefd) as f:
         frames = f._prepare_read(start, stop, frames)
         for block in f.blocks(blocksize, overlap, frames,
-                              dtype, always_2d, fill_value, out):
+                              dtype, always_2d, fill_value):
             yield block
 
 
@@ -1020,8 +1020,8 @@ class SoundFile(object):
         assert written == frames
         self._update_frames(written)
 
-    def blocks(self, blocksize=None, overlap=0, frames=-1, dtype='float64',
-               always_2d=False, fill_value=None, out=None):
+    def blocks(self, blocksize, overlap=0, frames=-1, dtype='float64',
+               always_2d=False, fill_value=None):
         """Return a generator for block-wise reading.
 
         By default, the generator yields blocks of the given
@@ -1031,36 +1031,29 @@ class SoundFile(object):
         Parameters
         ----------
         blocksize : int
-            The number of frames to read per block. Either this or `out`
-            must be given.
+            The number of frames to read per block.
         overlap : int, optional
             The number of frames to rewind between each block.
         frames : int, optional
             The number of frames to read.
-            If ``frames < 0``, the file is read until the end.
+            If not specified, or if larger than the remaining number of
+            frames, the file is read until the end.
         dtype : {'float64', 'float32', 'int32', 'int16'}, optional
             See :meth:`.read`.
+        fill_value : float, optional
+            The last generated block may be smaller than *blocksize*.
+            If *fill_value* is specified, it will be used to fill the
+            remaining space and all blocks will have the same size.
 
         Yields
         ------
-        numpy.ndarray or type(out)
+        numpy.ndarray
             Blocks of audio data.
-            If `out` was given, and the requested frames are not an
-            integer multiple of the length of `out`, and no
-            `fill_value` was given, the last block will be a smaller
-            view into `out`.
-
 
         Other Parameters
         ----------------
-        always_2d, fill_value, out
+        always_2d
             See :meth:`.read`.
-        fill_value : float, optional
-            See :meth:`.read`.
-        out : numpy.ndarray or subclass, optional
-            If `out` is specified, the data is written into the given
-            array instead of creating a new array. In this case, the
-            arguments `dtype` and `always_2d` are silently ignored!
 
         Examples
         --------
@@ -1070,47 +1063,22 @@ class SoundFile(object):
         >>>         pass  # do something with 'block'
 
         """
-        import numpy as np
-
         if 'r' not in self.mode and '+' not in self.mode:
             raise RuntimeError("blocks() is not allowed in write-only mode")
 
-        if out is None:
-            if blocksize is None:
-                raise TypeError("One of {blocksize, out} must be specified")
-            out = self._create_empty_array(blocksize, always_2d, dtype)
-            copy_out = True
-        else:
-            if blocksize is not None:
-                raise TypeError(
-                    "Only one of {blocksize, out} may be specified")
-            blocksize = len(out)
-            copy_out = False
-
-        overlap_memory = None
-        frames = self._check_frames(frames, fill_value)
+        frames = self._check_frames(frames, fill_value=None)
+        buffer = self._create_empty_array(blocksize, always_2d, dtype)
+        read_target = buffer
         while frames > 0:
-            if overlap_memory is None:
-                output_offset = 0
-            else:
-                output_offset = len(overlap_memory)
-                out[:output_offset] = overlap_memory
-
-            toread = min(blocksize - output_offset, frames)
-            self.read(toread, dtype, always_2d, fill_value, out[output_offset:])
-
+            read_result = self.read(frames, fill_value=fill_value,
+                                    out=read_target)
+            out_frames = blocksize - len(read_target) + len(read_result)
+            yield buffer[:out_frames].copy(order='K')
+            frames -= len(read_result)
             if overlap:
-                if overlap_memory is None:
-                    overlap_memory = np.copy(out[-overlap:])
-                else:
-                    overlap_memory[:] = out[-overlap:]
-
-            if blocksize > frames + overlap and fill_value is None:
-                block = out[:frames + overlap]
-            else:
-                block = out
-            yield np.copy(block) if copy_out else block
-            frames -= toread
+                # Copy the end of the block to the beginning of the next
+                buffer[:overlap] = buffer[-overlap:]
+                read_target = buffer[overlap:]
 
     def truncate(self, frames=None):
         """Truncate the file to a given number of frames.

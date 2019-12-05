@@ -368,6 +368,11 @@ def test_blocks_with_frames(file_stereo_r):
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:3]])
 
 
+def test_blocks_with_too_large_frames(file_stereo_r):
+    blocks = list(sf.blocks(file_stereo_r, blocksize=2, frames=99))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])
+
+
 def test_blocks_with_frames_and_fill_value(file_stereo_r):
     blocks = list(
         sf.blocks(file_stereo_r, blocksize=2, frames=3, fill_value=0))
@@ -375,29 +380,11 @@ def test_blocks_with_frames_and_fill_value(file_stereo_r):
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], last_block])
 
 
-def test_blocks_with_out(file_stereo_r):
-    out = np.empty((3, 2))
-    blocks = list(sf.blocks(file_stereo_r, out=out))
-    assert blocks[0] is out
-    # First frame was overwritten by second block:
-    assert np.all(blocks[0] == data_stereo[[3, 1, 2]])
-
-    assert blocks[1].base is out
-    assert np.all(blocks[1] == data_stereo[[3]])
-
-    with pytest.raises(TypeError):
-        list(sf.blocks(filename_stereo, blocksize=3, out=out))
-
-
-def test_blocks_inplace_modification(file_stereo_r):
-    out = np.empty((3, 2))
-    blocks = []
-    for block in sf.blocks(file_stereo_r, out=out, overlap=1):
-        blocks.append(np.copy(block))
-        block *= 2
-
-    expected_blocks = [data_stereo[0:3], data_stereo[2:5]]
-    assert_equal_list_of_arrays(blocks, expected_blocks)
+def test_blocks_with_too_large_frames_and_fill_value(file_stereo_r):
+    blocks = list(
+        sf.blocks(file_stereo_r, blocksize=3, frames=3000, fill_value=0))
+    last_block = np.row_stack((data_stereo[3:4], np.zeros((2, 2))))
+    assert_equal_list_of_arrays(blocks, [data_stereo[0:3], last_block])
 
 
 def test_blocks_mono():
