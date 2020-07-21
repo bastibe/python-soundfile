@@ -1073,7 +1073,7 @@ class SoundFile(object):
         import numpy as np
 
         if 'r' not in self.mode and '+' not in self.mode:
-            raise RuntimeError("blocks() is not allowed in write-only mode")
+            raise SoundFileRuntimeError("blocks() is not allowed in write-only mode")
 
         if out is None:
             if blocksize is None:
@@ -1131,7 +1131,9 @@ class SoundFile(object):
                               _ffi.new("sf_count_t*", frames),
                               _ffi.sizeof("sf_count_t"))
         if err:
-            raise RuntimeError("Error truncating the file")
+            # get the actual error code
+            err = _snd.sf_error(self._file)
+            raise LibsndfileError(err, "Error truncating the file")
         self._info.frames = frames
 
     def flush(self):
@@ -1257,7 +1259,7 @@ class SoundFile(object):
 
         """
         if self.closed:
-            raise RuntimeError("I/O operation on closed file")
+            raise SoundFileRuntimeError("I/O operation on closed file")
 
     def _check_frames(self, frames, fill_value):
         """Reduce frames to no more than are available in the file."""
@@ -1351,10 +1353,9 @@ class SoundFile(object):
 
 
 def _error_check(err, prefix=""):
-    """Pretty-print a numerical error code if there is an error."""
+    """Raise LibsndfileError if there is an error."""
     if err != 0:
-        err_str = _snd.sf_error_number(err)
-        raise RuntimeError(prefix + _ffi.string(err_str).decode('utf-8', 'replace'))
+        raise LibsndfileError(err, prefix=prefix)
 
 
 def _format_int(format, subtype, endian):
@@ -1509,3 +1510,37 @@ def _has_virtual_io_attrs(file, mode_int):
         hasattr(file, 'write') or readonly,
         hasattr(file, 'read') or hasattr(file, 'readinto') or writeonly,
     ])
+
+
+class SoundFileError(Exception):
+    """Base class for all SoundFile-specific errors."""
+    pass
+
+class SoundFileRuntimeError(SoundFileError, RuntimeError):
+    """SoundFile runtime error.
+
+    Errors that used to be `RuntimeError`."""
+    pass
+
+class LibsndfileError(SoundFileRuntimeError):
+    """libsndfile errors.
+
+
+    Attributes
+    ----------
+    code
+        libsndfile internal error number.
+    """
+    def __init__(self, code, prefix=""):
+        SoundFileRuntimeError.__init__(self, code, prefix)
+        self.code = code
+        self.prefix = prefix
+
+    @property
+    def error_string(self):
+        """Raw libsndfile error message."""
+        err_str = _snd.sf_error_number(self.code)
+        return _ffi.string(err_str).decode('utf-8', 'replace')
+
+    def __str__(self):
+        return self.prefix + self.error_string
