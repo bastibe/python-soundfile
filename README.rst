@@ -71,6 +71,17 @@ Binaries for Python Extension Packages <http://www.lfd.uci.edu/~gohlke/pythonlib
 
 .. _Anaconda: https://www.continuum.io/downloads
 
+Error Reporting
+---------------
+
+In case of API usage errors the ``soundfile`` module raises the usual `ValueError` or `TypeError`.
+
+For other errors `SoundFileError` is raised (used to be `RuntimeError`).
+Particularly, a `LibsndfileError` subclass of this exception is raised on
+errors reported by the libsndfile library. In that case the exception object
+provides the libsndfile internal error code in the `LibsndfileError.code` attribute and the raw
+libsndfile error message in the `LibsndfileError.error_string` attribute.
+
 Read/Write Functions
 --------------------
 
