@@ -1,8 +1,8 @@
 """SoundFile is an audio library based on libsndfile, CFFI and NumPy.
 
 Sound files can be read or written directly using the functions
-:func:`read` and :func:`write`.
-To read a sound file in a block-wise fashion, use :func:`blocks`.
+`read()` and `write()`.
+To read a sound file in a block-wise fashion, use `blocks()`.
 Alternatively, sound files can be opened as `SoundFile` objects.
 
 For further information, see http://pysoundfile.readthedocs.org/.
@@ -352,11 +352,11 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
     Other Parameters
     ----------------
     frames, start, stop
-        See :func:`read`.
+        See `read()`.
     dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-        See :func:`read`.
+        See `read()`.
     always_2d, fill_value, out
-        See :func:`read`.
+        See `read()`.
     samplerate, channels, format, subtype, endian, closefd
         See `SoundFile`.
 
@@ -545,7 +545,7 @@ class SoundFile(object):
           most cases.
 
         A `SoundFile` object is a *context manager*, which means
-        if used in a "with" statement, :meth:`.close` is automatically
+        if used in a "with" statement, `close()` is automatically
         called when reaching the end of the code block inside the "with"
         statement.
 
@@ -592,7 +592,7 @@ class SoundFile(object):
             from the file extension.  See `available_formats()` for
             all possible values.
         closefd : bool, optional
-            Whether to close the file descriptor on :meth:`.close`. Only
+            Whether to close the file descriptor on `close()`. Only
             applicable if the *file* argument is a file descriptor.
 
         Examples
@@ -786,7 +786,7 @@ class SoundFile(object):
         read/write position by the same number of frames.
         By default, all frames from the current read/write position to
         the end of the file are returned.
-        Use :meth:`.seek` to move the current read/write position.
+        Use `seek()` to move the current read/write position.
 
         Parameters
         ----------
@@ -880,7 +880,7 @@ class SoundFile(object):
         read/write position by the same number of frames.
         By default, all frames from the current read/write position to
         the end of the file are returned.
-        Use :meth:`.seek` to move the current read/write position.
+        Use `seek()` to move the current read/write position.
 
         Parameters
         ----------
@@ -912,7 +912,7 @@ class SoundFile(object):
 
         Fills the given *buffer* with frames in the given data format
         starting at the current read/write position (which can be
-        changed with :meth:`.seek`) until the buffer is full or the end
+        changed with `seek()`) until the buffer is full or the end
         of the file is reached.  This advances the read/write position
         by the number of frames that were read.
 
@@ -1039,7 +1039,7 @@ class SoundFile(object):
             The number of frames to read.
             If ``frames < 0``, the file is read until the end.
         dtype : {'float64', 'float32', 'int32', 'int16'}, optional
-            See :meth:`.read`.
+            See `read()`.
 
         Yields
         ------
@@ -1054,9 +1054,9 @@ class SoundFile(object):
         Other Parameters
         ----------------
         always_2d, fill_value, out
-            See :meth:`.read`.
+            See `read()`.
         fill_value : float, optional
-            See :meth:`.read`.
+            See `read()`.
         out : numpy.ndarray or subclass, optional
             If *out* is specified, the data is written into the given
             array instead of creating a new array. In this case, the
@@ -1137,9 +1137,9 @@ class SoundFile(object):
     def flush(self):
         """Write unwritten data to the file system.
 
-        Data written with :meth:`.write` is not immediately written to
+        Data written with `write()` is not immediately written to
         the file system but buffered in memory to be written at a later
-        time.  Calling :meth:`.flush` makes sure that all changes are
+        time.  Calling `flush()` makes sure that all changes are
         actually written to the file system.
 
         This has no effect on files opened in read-only mode.
