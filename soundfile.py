@@ -3,7 +3,7 @@
 Sound files can be read or written directly using the functions
 :func:`read` and :func:`write`.
 To read a sound file in a block-wise fashion, use :func:`blocks`.
-Alternatively, sound files can be opened as :class:`SoundFile` objects.
+Alternatively, sound files can be opened as `SoundFile` objects.
 
 For further information, see http://pysoundfile.readthedocs.org/.
 
@@ -173,26 +173,26 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
     """Provide audio data from a sound file as NumPy array.
 
     By default, the whole file is read from the beginning, but the
-    position to start reading can be specified with `start` and the
-    number of frames to read can be specified with `frames`.
-    Alternatively, a range can be specified with `start` and `stop`.
+    position to start reading can be specified with *start* and the
+    number of frames to read can be specified with *frames*.
+    Alternatively, a range can be specified with *start* and *stop*.
 
     If there is less data left in the file than requested, the rest of
-    the frames are filled with `fill_value`.
-    If no `fill_value` is specified, a smaller array is returned.
+    the frames are filled with *fill_value*.
+    If no *fill_value* is specified, a smaller array is returned.
 
     Parameters
     ----------
     file : str or int or file-like object
-        The file to read from.  See :class:`SoundFile` for details.
+        The file to read from.  See `SoundFile` for details.
     frames : int, optional
-        The number of frames to read. If `frames` is negative, the whole
-        rest of the file is read.  Not allowed if `stop` is given.
+        The number of frames to read. If *frames* is negative, the whole
+        rest of the file is read.  Not allowed if *stop* is given.
     start : int, optional
         Where to start reading.  A negative value counts from the end.
     stop : int, optional
         The index after the last frame to be read.  A negative value
-        counts from the end.  Not allowed if `frames` is given.
+        counts from the end.  Not allowed if *frames* is given.
     dtype : {'float64', 'float32', 'int32', 'int16'}, optional
         Data type of the returned array, by default ``'float64'``.
         Floating point audio data is typically in the range from
@@ -213,10 +213,10 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
         is returned.  Use ``always_2d=True`` to return a two-dimensional
         array anyway.
 
-        If `out` was specified, it is returned.  If `out` has more
-        frames than available in the file (or if `frames` is smaller
-        than the length of `out`) and no `fill_value` is given, then
-        only a part of `out` is overwritten and a view containing all
+        If *out* was specified, it is returned.  If *out* has more
+        frames than available in the file (or if *frames* is smaller
+        than the length of *out*) and no *fill_value* is given, then
+        only a part of *out* is overwritten and a view containing all
         valid frames is returned.
     samplerate : int
         The sample rate of the audio file.
@@ -230,15 +230,15 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
         file has only one channel.
     fill_value : float, optional
         If more frames are requested than available in the file, the
-        rest of the output is be filled with `fill_value`.  If
-        `fill_value` is not specified, a smaller array is returned.
+        rest of the output is be filled with *fill_value*.  If
+        *fill_value* is not specified, a smaller array is returned.
     out : numpy.ndarray or subclass, optional
-        If `out` is specified, the data is written into the given array
+        If *out* is specified, the data is written into the given array
         instead of creating a new array.  In this case, the arguments
-        `dtype` and `always_2d` are silently ignored!  If `frames` is
-        not given, it is obtained from the length of `out`.
+        *dtype* and *always_2d* are silently ignored!  If *frames* is
+        not given, it is obtained from the length of *out*.
     samplerate, channels, format, subtype, endian, closefd
-        See :class:`SoundFile`.
+        See `SoundFile`.
 
     Examples
     --------
@@ -264,21 +264,21 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
           closefd=True):
     """Write data to a sound file.
 
-    .. note:: If `file` exists, it will be truncated and overwritten!
+    .. note:: If *file* exists, it will be truncated and overwritten!
 
     Parameters
     ----------
     file : str or int or file-like object
-        The file to write to.  See :class:`SoundFile` for details.
+        The file to write to.  See `SoundFile` for details.
     data : array_like
         The data to write.  Usually two-dimensional (frames x channels),
-        but one-dimensional `data` can be used for mono files.
+        but one-dimensional *data* can be used for mono files.
         Only the data types ``'float64'``, ``'float32'``, ``'int32'``
         and ``'int16'`` are supported.
 
-        .. note:: The data type of `data` does **not** select the data
+        .. note:: The data type of *data* does **not** select the data
                   type of the written file. Audio data will be
-                  converted to the given `subtype`. Writing int values
+                  converted to the given *subtype*. Writing int values
                   to a float file will *not* scale the values to
                   [-1.0, 1.0). If you write the value ``np.array([42],
                   dtype='int32')``, to a ``subtype='FLOAT'`` file, the
@@ -288,13 +288,13 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
     samplerate : int
         The sample rate of the audio data.
     subtype : str, optional
-        See :func:`default_subtype` for the default value and
-        :func:`available_subtypes` for all possible values.
+        See `default_subtype()` for the default value and
+        `available_subtypes()` for all possible values.
 
     Other Parameters
     ----------------
     format, endian, closefd
-        See :class:`SoundFile`.
+        See `SoundFile`.
 
     Examples
     --------
@@ -323,8 +323,8 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
     """Return a generator for block-wise reading.
 
     By default, iteration starts at the beginning and stops at the end
-    of the file.  Use `start` to start at a later position and `frames`
-    or `stop` to stop earlier.
+    of the file.  Use *start* to start at a later position and *frames*
+    or *stop* to stop earlier.
 
     If you stop iterating over the generator before it's exhausted,
     the sound file is not closed. This is normally not a problem
@@ -334,10 +334,10 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
     Parameters
     ----------
     file : str or int or file-like object
-        The file to read from.  See :class:`SoundFile` for details.
+        The file to read from.  See `SoundFile` for details.
     blocksize : int
         The number of frames to read per block.
-        Either this or `out` must be given.
+        Either this or *out* must be given.
     overlap : int, optional
         The number of frames to rewind between each block.
 
@@ -345,9 +345,9 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
     ------
     numpy.ndarray or type(out)
         Blocks of audio data.
-        If `out` was given, and the requested frames are not an integer
-        multiple of the length of `out`, and no `fill_value` was given,
-        the last block will be a smaller view into `out`.
+        If *out* was given, and the requested frames are not an integer
+        multiple of the length of *out*, and no *fill_value* was given,
+        the last block will be a smaller view into *out*.
 
     Other Parameters
     ----------------
@@ -358,7 +358,7 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
     always_2d, fill_value, out
         See :func:`read`.
     samplerate, channels, format, subtype, endian, closefd
-        See :class:`SoundFile`.
+        See `SoundFile`.
 
     Examples
     --------
@@ -544,7 +544,7 @@ class SoundFile(object):
         * an *endian-ness*, which doesn't have to be specified at all in
           most cases.
 
-        A :class:`SoundFile` object is a *context manager*, which means
+        A `SoundFile` object is a *context manager*, which means
         if used in a "with" statement, :meth:`.close` is automatically
         called when reaching the end of the code block inside the "with"
         statement.
@@ -558,13 +558,13 @@ class SoundFile(object):
             ``seek()`` and ``tell()``).
         mode : {'r', 'r+', 'w', 'w+', 'x', 'x+'}, optional
             Open mode.  Has to begin with one of these three characters:
-            ``'r'`` for reading, ``'w'`` for writing (truncates `file`)
-            or ``'x'`` for writing (raises an error if `file` already
+            ``'r'`` for reading, ``'w'`` for writing (truncates *file*)
+            or ``'x'`` for writing (raises an error if *file* already
             exists).  Additionally, it may contain ``'+'`` to open
-            `file` for both reading and writing.
+            *file* for both reading and writing.
             The character ``'b'`` for *binary mode* is implied because
             all sound files have to be opened in this mode.
-            If `file` is a file descriptor or a file-like object,
+            If *file* is a file descriptor or a file-like object,
             ``'w'`` doesn't truncate and ``'x'`` doesn't raise an error.
         samplerate : int
             The sample rate of the file.  If `mode` contains ``'r'``,
@@ -577,8 +577,8 @@ class SoundFile(object):
             The subtype of the sound file.  If `mode` contains ``'r'``,
             this is obtained from the file (except for ``'RAW'``
             files), if not, the default value depends on the selected
-            `format` (see :func:`default_subtype`).
-            See :func:`available_subtypes` for all possible subtypes for
+            `format` (see `default_subtype()`).
+            See `available_subtypes()` for all possible subtypes for
             a given `format`.
         endian : {'FILE', 'LITTLE', 'BIG', 'CPU'}, sometimes optional
             The endian-ness of the sound file.  If `mode` contains
@@ -589,11 +589,11 @@ class SoundFile(object):
             The major format of the sound file.  If `mode` contains
             ``'r'``, this is obtained from the file (except for
             ``'RAW'`` files), if not, the default value is determined
-            from the file extension.  See :func:`available_formats` for
+            from the file extension.  See `available_formats()` for
             all possible values.
         closefd : bool, optional
             Whether to close the file descriptor on :meth:`.close`. Only
-            applicable if the `file` argument is a file descriptor.
+            applicable if the *file* argument is a file descriptor.
 
         Examples
         --------
@@ -740,12 +740,12 @@ class SoundFile(object):
         frames : int
             The frame index or offset to seek.
         whence : {SEEK_SET, SEEK_CUR, SEEK_END}, optional
-            By default (``whence=SEEK_SET``), `frames` are counted from
+            By default (``whence=SEEK_SET``), *frames* are counted from
             the beginning of the file.
             ``whence=SEEK_CUR`` seeks from the current position
-            (positive and negative values are allowed for `frames`).
+            (positive and negative values are allowed for *frames*).
             ``whence=SEEK_END`` seeks from the end (use negative value
-            for `frames`).
+            for *frames*).
 
         Returns
         -------
@@ -814,10 +814,10 @@ class SoundFile(object):
             one-dimensional array is returned. Use ``always_2d=True``
             to return a two-dimensional array anyway.
 
-            If `out` was specified, it is returned. If `out` has more
-            frames than available in the file (or if `frames` is
-            smaller than the length of `out`) and no `fill_value` is
-            given, then only a part of `out` is overwritten and a view
+            If *out* was specified, it is returned. If *out* has more
+            frames than available in the file (or if *frames* is
+            smaller than the length of *out*) and no *fill_value* is
+            given, then only a part of *out* is overwritten and a view
             containing all valid frames is returned. numpy.ndarray or
             type(out)
 
@@ -830,15 +830,15 @@ class SoundFile(object):
             audio file has only one channel.
         fill_value : float, optional
             If more frames are requested than available in the file,
-            the rest of the output is be filled with `fill_value`. If
-            `fill_value` is not specified, a smaller array is
+            the rest of the output is be filled with *fill_value*. If
+            *fill_value* is not specified, a smaller array is
             returned.
         out : numpy.ndarray or subclass, optional
-            If `out` is specified, the data is written into the given
+            If *out* is specified, the data is written into the given
             array instead of creating a new array. In this case, the
-            arguments `dtype` and `always_2d` are silently ignored! If
-            `frames` is not given, it is obtained from the length of
-            `out`.
+            arguments *dtype* and *always_2d* are silently ignored! If
+            *frames* is not given, it is obtained from the length of
+            *out*.
 
         Examples
         --------
@@ -875,7 +875,7 @@ class SoundFile(object):
     def buffer_read(self, frames=-1, dtype=None):
         """Read from the file and return data as buffer object.
 
-        Reads the given number of `frames` in the given data format
+        Reads the given number of *frames* in the given data format
         starting at the current read/write position.  This advances the
         read/write position by the same number of frames.
         By default, all frames from the current read/write position to
@@ -885,7 +885,7 @@ class SoundFile(object):
         Parameters
         ----------
         frames : int, optional
-            The number of frames to read. If `frames < 0`, the whole
+            The number of frames to read. If ``frames < 0``, the whole
             rest of the file is read.
         dtype : {'float64', 'float32', 'int32', 'int16'}
             Audio data will be converted to the given data type.
@@ -910,7 +910,7 @@ class SoundFile(object):
     def buffer_read_into(self, buffer, dtype):
         """Read from the file into a given buffer object.
 
-        Fills the given `buffer` with frames in the given data format
+        Fills the given *buffer* with frames in the given data format
         starting at the current read/write position (which can be
         changed with :meth:`.seek`) until the buffer is full or the end
         of the file is reached.  This advances the read/write position
@@ -921,13 +921,13 @@ class SoundFile(object):
         buffer : writable buffer
             Audio frames from the file are written to this buffer.
         dtype : {'float64', 'float32', 'int32', 'int16'}
-            The data type of `buffer`.
+            The data type of *buffer*.
 
         Returns
         -------
         int
             The number of frames that were read from the file.
-            This can be less than the size of `buffer`.
+            This can be less than the size of *buffer*.
             The rest of the buffer is not filled with meaningful data.
 
         See Also
@@ -957,13 +957,13 @@ class SoundFile(object):
         ----------
         data : array_like
             The data to write. Usually two-dimensional (frames x
-            channels), but one-dimensional `data` can be used for mono
+            channels), but one-dimensional *data* can be used for mono
             files. Only the data types ``'float64'``, ``'float32'``,
             ``'int32'`` and ``'int16'`` are supported.
 
-            .. note:: The data type of `data` does **not** select the
+            .. note:: The data type of *data* does **not** select the
                   data type of the written file. Audio data will be
-                  converted to the given `subtype`. Writing int values
+                  converted to the given *subtype*. Writing int values
                   to a float file will *not* scale the values to
                   [-1.0, 1.0). If you write the value ``np.array([42],
                   dtype='int32')``, to a ``subtype='FLOAT'`` file, the
@@ -996,7 +996,7 @@ class SoundFile(object):
     def buffer_write(self, data, dtype):
         """Write audio data from a buffer/bytes object to the file.
 
-        Writes the contents of `data` to the file at the current
+        Writes the contents of *data* to the file at the current
         read/write position.
         This also advances the read/write position by the number of
         frames that were written and enlarges the file if necessary.
@@ -1007,7 +1007,7 @@ class SoundFile(object):
             A buffer or bytes object containing the audio data to be
             written.
         dtype : {'float64', 'float32', 'int32', 'int16'}
-            The data type of the audio data stored in `data`.
+            The data type of the audio data stored in *data*.
 
         See Also
         --------
@@ -1025,13 +1025,13 @@ class SoundFile(object):
         """Return a generator for block-wise reading.
 
         By default, the generator yields blocks of the given
-        `blocksize` (using a given `overlap`) until the end of the file
-        is reached; `frames` can be used to stop earlier.
+        *blocksize* (using a given *overlap*) until the end of the file
+        is reached; *frames* can be used to stop earlier.
 
         Parameters
         ----------
         blocksize : int
-            The number of frames to read per block. Either this or `out`
+            The number of frames to read per block. Either this or *out*
             must be given.
         overlap : int, optional
             The number of frames to rewind between each block.
@@ -1045,10 +1045,10 @@ class SoundFile(object):
         ------
         numpy.ndarray or type(out)
             Blocks of audio data.
-            If `out` was given, and the requested frames are not an
-            integer multiple of the length of `out`, and no
-            `fill_value` was given, the last block will be a smaller
-            view into `out`.
+            If *out* was given, and the requested frames are not an
+            integer multiple of the length of *out*, and no
+            *fill_value* was given, the last block will be a smaller
+            view into *out*.
 
 
         Other Parameters
@@ -1058,9 +1058,9 @@ class SoundFile(object):
         fill_value : float, optional
             See :meth:`.read`.
         out : numpy.ndarray or subclass, optional
-            If `out` is specified, the data is written into the given
+            If *out* is specified, the data is written into the given
             array instead of creating a new array. In this case, the
-            arguments `dtype` and `always_2d` are silently ignored!
+            arguments *dtype* and *always_2d* are silently ignored!
 
         Examples
         --------
@@ -1121,7 +1121,7 @@ class SoundFile(object):
         Parameters
         ----------
         frames : int, optional
-            Only the data before `frames` is kept, the rest is deleted.
+            Only the data before *frames* is kept, the rest is deleted.
             If not specified, the current read/write position is used.
 
         """

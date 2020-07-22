@@ -109,13 +109,13 @@ file:
 SoundFile Objects
 -----------------
 
-Sound files can also be opened as `soundfile.SoundFile` objects. Every
+Sound files can also be opened as `SoundFile` objects. Every
 SoundFile has a specific sample rate, data format and a set number of
 channels.
 
 If a file is opened, it is kept open for as long as the SoundFile
 object exists. The file closes when the object is garbage collected,
-but you should use the `soundfile.SoundFile.close()` method or the
+but you should use the `SoundFile.close()` method or the
 context manager to close the file explicitly:
 
 .. code:: python
