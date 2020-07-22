@@ -207,7 +207,7 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
 
     Returns
     -------
-    audiodata : numpy.ndarray or type(out)
+    audiodata : `numpy.ndarray` or type(out)
         A two-dimensional (frames x channels) NumPy array is returned.
         If the sound file has only one channel, a one-dimensional array
         is returned.  Use ``always_2d=True`` to return a two-dimensional
@@ -232,7 +232,7 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
         If more frames are requested than available in the file, the
         rest of the output is be filled with *fill_value*.  If
         *fill_value* is not specified, a smaller array is returned.
-    out : numpy.ndarray or subclass, optional
+    out : `numpy.ndarray` or subclass, optional
         If *out* is specified, the data is written into the given array
         instead of creating a new array.  In this case, the arguments
         *dtype* and *always_2d* are silently ignored!  If *frames* is
@@ -343,7 +343,7 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
 
     Yields
     ------
-    numpy.ndarray or type(out)
+    `numpy.ndarray` or type(out)
         Blocks of audio data.
         If *out* was given, and the requested frames are not an integer
         multiple of the length of *out*, and no *fill_value* was given,
@@ -808,7 +808,7 @@ class SoundFile(object):
 
         Returns
         -------
-        audiodata : numpy.ndarray or type(out)
+        audiodata : `numpy.ndarray` or type(out)
             A two-dimensional NumPy (frames x channels) array is
             returned. If the sound file has only one channel, a
             one-dimensional array is returned. Use ``always_2d=True``
@@ -818,8 +818,7 @@ class SoundFile(object):
             frames than available in the file (or if *frames* is
             smaller than the length of *out*) and no *fill_value* is
             given, then only a part of *out* is overwritten and a view
-            containing all valid frames is returned. numpy.ndarray or
-            type(out)
+            containing all valid frames is returned.
 
         Other Parameters
         ----------------
@@ -833,7 +832,7 @@ class SoundFile(object):
             the rest of the output is be filled with *fill_value*. If
             *fill_value* is not specified, a smaller array is
             returned.
-        out : numpy.ndarray or subclass, optional
+        out : `numpy.ndarray` or subclass, optional
             If *out* is specified, the data is written into the given
             array instead of creating a new array. In this case, the
             arguments *dtype* and *always_2d* are silently ignored! If
@@ -1043,7 +1042,7 @@ class SoundFile(object):
 
         Yields
         ------
-        numpy.ndarray or type(out)
+        `numpy.ndarray` or type(out)
             Blocks of audio data.
             If *out* was given, and the requested frames are not an
             integer multiple of the length of *out*, and no
@@ -1057,7 +1056,7 @@ class SoundFile(object):
             See `read()`.
         fill_value : float, optional
             See `read()`.
-        out : numpy.ndarray or subclass, optional
+        out : `numpy.ndarray` or subclass, optional
             If *out* is specified, the data is written into the given
             array instead of creating a new array. In this case, the
             arguments *dtype* and *always_2d* are silently ignored!
