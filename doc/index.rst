@@ -1,10 +1,8 @@
-.. default-role:: py:obj
+.. currentmodule:: soundfile
 
 .. include:: ../README.rst
 
 .. include:: ../CONTRIBUTING.rst
-
-.. default-role::
 
 API Documentation
 =================

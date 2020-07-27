@@ -109,13 +109,13 @@ file:
 SoundFile Objects
 -----------------
 
-Sound files can also be opened as `soundfile.SoundFile` objects. Every
+Sound files can also be opened as `SoundFile` objects. Every
 SoundFile has a specific sample rate, data format and a set number of
 channels.
 
 If a file is opened, it is kept open for as long as the SoundFile
 object exists. The file closes when the object is garbage collected,
-but you should use the `soundfile.SoundFile.close()` method or the
+but you should use the `SoundFile.close()` method or the
 context manager to close the file explicitly:
 
 .. code:: python
@@ -221,11 +221,11 @@ News
     - Switched to ``float64`` as default data type.
     - Function arguments changed for consistency.
     - Added unit tests.
-    - Added global ``read()``, ``write()``, ``blocks()`` convenience
+    - Added global `read()`, `write()`, `blocks()` convenience
       functions.
     - Documentation overhaul and hosting on readthedocs.
     - Added ``'x'`` open mode.
-    - Added ``tell()`` method.
+    - Added `tell()` method.
     - Added ``__repr__()`` method.
 
 2015-04-12 V0.7.0 Bastian Bechtold:
@@ -235,8 +235,8 @@ News
     - Renamed ``import pysoundfile`` to ``import soundfile``.
     - Installation through pip wheels that contain the necessary
       libraries for OS X and Windows.
-    - Removed ``exclusive_creation`` argument to ``write``.
-    - Added ``truncate()`` method.
+    - Removed ``exclusive_creation`` argument to `write()`.
+    - Added `truncate()` method.
 
 2015-10-20 V0.8.0 Bastian Bechtold:
     Again, Matthias Geier contributed a whole lot of hard work to this
@@ -246,11 +246,11 @@ News
       ``False``.
     - Numpy is now optional, and only loaded for ``read`` and
       ``write``.
-    - Added ``SoundFile.buffer_read`` and
-      ``SoundFile.buffer_read_into`` and ``SoundFile.buffer_write``,
+    - Added `SoundFile.buffer_read()` and
+      `SoundFile.buffer_read_into()` and `SoundFile.buffer_write()`,
       which read/write raw data without involving Numpy.
-    - Added ``info`` function that returns metadata of a sound file.
-    - Changed the argument order of the ``write`` function from
+    - Added `info()` function that returns metadata of a sound file.
+    - Changed the argument order of the `write()` function from
       ``write(data, file, ...)`` to ``write(file, data, ...)``
 
     And many more minor bug fixes.
@@ -275,7 +275,7 @@ News
     - Should now work with cx_freeze.
     - Several documentation fixes in the README.
     - Removes deprecated ``ctype`` argument in favor of ``dtype`` in ``buffer_*()``.
-    - Adds ``SoundFile.frames`` in favor of now-deprecated ``__len__()``.
-    - Improves performance of ``blocks`` and ``SoundFile.blocks()``.
+    - Adds `SoundFile.frames` in favor of now-deprecated ``__len__()``.
+    - Improves performance of `blocks()` and `SoundFile.blocks()`.
     - Improves import time by using CFFI's out of line mode.
     - Adds a build script for building distributions.
