@@ -91,7 +91,7 @@ setup(
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
-    url='https://github.com/bastibe/PySoundFile',
+    url='https://github.com/bastibe/SoundFile',
     keywords=['audio', 'libsndfile'],
     py_modules=['soundfile'],
     packages=packages,
