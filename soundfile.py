@@ -1546,6 +1546,7 @@ class LibsndfileError(SoundFileRuntimeError):
         else:
             # Due to race conditions, if used concurrently, sf_error() may
             # return 0 (= no error) even if an error has happened.
+            # See https://github.com/erikd/libsndfile/issues/610 for details.
             return "(Garbled error message from libsndfile)"
 
     def __str__(self):
