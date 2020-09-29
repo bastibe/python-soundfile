@@ -758,22 +758,21 @@ def test_concurren_open_error_reporting(file_inmemory):
     n_threads = 4
     n_trials_per_thread = 10
 
-    n_reported_errors = 0
+    n_reported_errors = [0]
 
     def target():
-        nonlocal n_reported_errors
         for _ in range(n_trials_per_thread):
             try:
                 sf.SoundFile(file_inmemory)
             except sf.LibsndfileError:
-                n_reported_errors += 1
+                n_reported_errors[0] += 1
 
     threads = [threading.Thread(target=target) for _ in range(n_threads)]
     for thread in threads:
         thread.start()
     for thread in threads:
         thread.join()
-    assert n_reported_errors == n_threads * n_trials_per_thread
+    assert n_reported_errors[0] == n_threads * n_trials_per_thread
 
 
 # -----------------------------------------------------------------------------
