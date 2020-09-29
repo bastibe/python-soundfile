@@ -765,7 +765,7 @@ def test_concurren_open_error_reporting(file_inmemory):
         for _ in range(n_trials_per_thread):
             try:
                 sf.SoundFile(file_inmemory)
-            except Exception as e:
+            except sf.LibsndfileError:
                 n_reported_errors += 1
 
     threads = [threading.Thread(target=target) for _ in range(n_threads)]
