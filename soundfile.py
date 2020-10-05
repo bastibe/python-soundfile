@@ -1181,8 +1181,10 @@ class SoundFile(object):
                                             mode_int, self._info, _ffi.NULL)
         else:
             raise TypeError("Invalid file: {0!r}".format(self.name))
-        _error_check(_snd.sf_error(file_ptr),
-                     "Error opening {0!r}: ".format(self.name))
+        if file_ptr == _ffi.NULL:
+            # get the actual error code
+            err = _snd.sf_error(file_ptr)
+            raise LibsndfileError(err, prefix="Error opening {0!r}: ".format(self.name))
         if mode_int == _snd.SFM_WRITE:
             # Due to a bug in libsndfile version <= 1.0.25, frames != 0
             # when opening a named pipe in SFM_WRITE mode.
@@ -1538,8 +1540,14 @@ class LibsndfileError(SoundFileRuntimeError):
     @property
     def error_string(self):
         """Raw libsndfile error message."""
-        err_str = _snd.sf_error_number(self.code)
-        return _ffi.string(err_str).decode('utf-8', 'replace')
+        if self.code:
+            err_str = _snd.sf_error_number(self.code)
+            return _ffi.string(err_str).decode('utf-8', 'replace')
+        else:
+            # Due to race conditions, if used concurrently, sf_error() may
+            # return 0 (= no error) even if an error has happened.
+            # See https://github.com/erikd/libsndfile/issues/610 for details.
+            return "(Garbled error message from libsndfile)"
 
     def __str__(self):
         return self.prefix + self.error_string

@@ -8,6 +8,7 @@ import cffi
 import sys
 import gc
 import weakref
+import threading
 
 # floating point data is typically limited to the interval [-1.0, 1.0],
 # but smaller/larger values are supported as well
@@ -749,6 +750,29 @@ def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into
     assert np.all(data == out)
     assert np.all(data[2:] == 0)
     assert out.shape == (4, sf_stereo_r.channels)
+
+def test_concurren_open_error_reporting(file_inmemory):
+    # Test that no sf_open errors are missed when pysoundfile is used
+    # concurrently (there are race conditions in libsndfile's error reporting).
+
+    n_threads = 4
+    n_trials_per_thread = 10
+
+    n_reported_errors = [0]
+
+    def target():
+        for _ in range(n_trials_per_thread):
+            try:
+                sf.SoundFile(file_inmemory)
+            except sf.LibsndfileError:
+                n_reported_errors[0] += 1
+
+    threads = [threading.Thread(target=target) for _ in range(n_threads)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert n_reported_errors[0] == n_threads * n_trials_per_thread
 
 
 # -----------------------------------------------------------------------------
