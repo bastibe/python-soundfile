@@ -2,7 +2,6 @@
 __pycache__/
 dist/
 build/
-PySoundFile.egg-info/
 .eggs/
 *.egg-info/
 .cache/

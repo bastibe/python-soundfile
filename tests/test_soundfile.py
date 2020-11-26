@@ -751,8 +751,8 @@ def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into
     assert np.all(data[2:] == 0)
     assert out.shape == (4, sf_stereo_r.channels)
 
-def test_concurren_open_error_reporting(file_inmemory):
-    # Test that no sf_open errors are missed when pysoundfile is used
+def test_concurrent_open_error_reporting(file_inmemory):
+    # Test that no sf_open errors are missed when used
     # concurrently (there are race conditions in libsndfile's error reporting).
 
     n_threads = 4

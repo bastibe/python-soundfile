@@ -86,12 +86,12 @@ else:
     cmdclass['bdist_wheel'] = bdist_wheel_half_pure
 
 setup(
-    name='SoundFile',
+    name='soundfile',
     version='0.10.3post1',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
-    url='https://github.com/bastibe/SoundFile',
+    url='https://github.com/bastibe/python-soundfile',
     keywords=['audio', 'libsndfile'],
     py_modules=['soundfile'],
     packages=packages,

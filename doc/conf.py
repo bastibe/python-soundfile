@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# PySoundFile documentation build configuration file, created by
+# python-soundfile documentation build configuration file, created by
 # sphinx-quickstart on Sun Sep 21 19:26:48 2014.
 #
 # This file is execfile()d with the current directory set to its
@@ -56,7 +56,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'PySoundFile'
+project = 'python-soundfile'
 copyright = '2015, Bastian Bechtold, Matthias Geier'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -193,7 +193,7 @@ html_theme = 'sphinx_rtd_theme'
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'PySoundFiledoc'
+htmlhelp_basename = 'python-soundfile-doc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -213,7 +213,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'PySoundFile.tex', 'PySoundFile Documentation',
+  ('index', 'python-soundfile.tex', 'python-soundfile Documentation',
    'Bastian Bechtold, Matthias Geier', 'howto'),
 ]
 
@@ -243,7 +243,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'pysoundfile', 'PySoundFile Documentation',
+    ('index', 'python-soundfile', 'python-soundfile Documentation',
      ['Bastian Bechtold, Matthias Geier'], 1)
 ]
 
@@ -257,8 +257,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'PySoundFile', 'PySoundFile Documentation',
-   'Bastian Bechtold, Matthias Geier', 'PySoundFile', 'One line description of project.',
+  ('index', 'python-soundfile', 'python-soundfile Documentation',
+   'Bastian Bechtold, Matthias Geier', 'python-soundfile', 'One line description of project.',
    'Miscellaneous'),
 ]
 
