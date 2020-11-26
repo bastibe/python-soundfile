@@ -1,11 +1,11 @@
-"""SoundFile is an audio library based on libsndfile, CFFI and NumPy.
+"""python-soundfile is an audio library based on libsndfile, CFFI and NumPy.
 
 Sound files can be read or written directly using the functions
 `read()` and `write()`.
 To read a sound file in a block-wise fashion, use `blocks()`.
 Alternatively, sound files can be opened as `SoundFile` objects.
 
-For further information, see http://pysoundfile.readthedocs.org/.
+For further information, see https://python-soundfile.readthedocs.io/.
 
 """
 __version__ = "0.10.3"
@@ -428,7 +428,7 @@ class _SoundFileInfo(object):
 
 
 def info(file, verbose=False):
-    """Returns an object with information about a SoundFile.
+    """Returns an object with information about a `SoundFile`.
 
     Parameters
     ----------
@@ -520,7 +520,7 @@ class SoundFile(object):
     """A sound file.
 
     For more documentation see the __init__() docstring (which is also
-    used for the online documentation (http://pysoundfile.readthedocs.org/).
+    used for the online documentation (https://python-soundfile.readthedocs.io/).
 
     """
 
@@ -715,7 +715,7 @@ class SoundFile(object):
 
     def __len__(self):
         # Note: This is deprecated and will be removed at some point,
-        # see https://github.com/bastibe/SoundFile/issues/199
+        # see https://github.com/bastibe/python-soundfile/issues/199
         return self._info.frames
 
     def __bool__(self):
@@ -1514,11 +1514,11 @@ def _has_virtual_io_attrs(file, mode_int):
 
 
 class SoundFileError(Exception):
-    """Base class for all SoundFile-specific errors."""
+    """Base class for all soundfile-specific errors."""
     pass
 
 class SoundFileRuntimeError(SoundFileError, RuntimeError):
-    """SoundFile runtime error.
+    """soundfile module runtime error.
 
     Errors that used to be `RuntimeError`."""
     pass

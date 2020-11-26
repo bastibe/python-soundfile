@@ -1,24 +1,24 @@
-SoundFile
-=========
+python-soundfile
+================
 
 |version| |python| |status| |license|
 
 |contributors| |downloads|
 
-`SoundFile <https://github.com/bastibe/SoundFile>`__ is an audio
+The `soundfile <https://github.com/bastibe/python-soundfile>`__ module is an audio
 library based on libsndfile, CFFI and NumPy. Full documentation is
-available on http://pysoundfile.readthedocs.org/.
+available on https://python-soundfile.readthedocs.io/.
 
-SoundFile can read and write sound files. File reading/writing is
+The ``soundfile`` module can read and write sound files. File reading/writing is
 supported through `libsndfile <http://www.mega-nerd.com/libsndfile/>`__,
 which is a free, cross-platform, open-source (LGPL) library for reading
 and writing many different sampled sound file formats that runs on many
 platforms including Windows, OS X, and Unix. It is accessed through
-`CFFI <http://cffi.readthedocs.org/>`__, which is a foreign function
+`CFFI <https://cffi.readthedocs.io/>`__, which is a foreign function
 interface for Python calling C code. CFFI is supported for CPython 2.6+,
-3.x and PyPy 2.0+. SoundFile represents audio data as NumPy arrays.
+3.x and PyPy 2.0+. The ``soundfile`` module represents audio data as NumPy arrays.
 
-| SoundFile is BSD licensed (BSD 3-Clause License).
+| python-soundfile is BSD licensed (BSD 3-Clause License).
 | (c) 2013, Bastian Bechtold
 
 
@@ -38,7 +38,7 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 Breaking Changes
 ----------------
 
-SoundFile has evolved rapidly during the last few releases. Most
+The ``soundfile`` module has evolved rapidly during the last few releases. Most
 notably, we changed the import name from ``import pysoundfile`` to
 ``import soundfile`` in 0.7. In 0.6, we cleaned up many small
 inconsistencies, particularly in the the ordering and naming of
@@ -55,11 +55,11 @@ methods to ``dtype``, using the Numpy ``dtype`` notation. The old
 Installation
 ------------
 
-SoundFile depends on the Python packages CFFI and NumPy, and the
+The ``soundfile`` module depends on the Python packages CFFI and NumPy, and the
 system library libsndfile.
 
 In a modern Python, you can use ``pip install soundfile`` to download
-and install the latest release of SoundFile and its dependencies.
+and install the latest release of the ``soundfile`` module and its dependencies.
 On Windows and OS X, this will also install the library libsndfile.
 On Linux, you need to install libsndfile using your distribution's
 package manager, for example ``sudo apt-get install libsndfile1``.
@@ -86,10 +86,10 @@ Read/Write Functions
 --------------------
 
 Data can be written to the file using `soundfile.write()`, or read from
-the file using `soundfile.read()`. SoundFile can open all file formats
+the file using `soundfile.read()`. The ``soundfile`` module can open all file formats
 that `libsndfile supports
 <http://www.mega-nerd.com/libsndfile/#Features>`__, for example WAV,
-FLAC, OGG and MAT files (see `Known Issues <https://github.com/bastibe/SoundFile#known-issues>`__ below about writing OGG files).
+FLAC, OGG and MAT files (see `Known Issues <https://github.com/bastibe/python-soundfile#known-issues>`__ below about writing OGG files).
 
 Here is an example for a program that reads a wave file and copies it
 into an FLAC file:
@@ -117,14 +117,14 @@ file:
    rms = [np.sqrt(np.mean(block**2)) for block in
           sf.blocks('myfile.wav', blocksize=1024, overlap=512)]
 
-SoundFile Objects
------------------
+``SoundFile`` Objects
+---------------------
 
 Sound files can also be opened as `SoundFile` objects. Every
-SoundFile has a specific sample rate, data format and a set number of
+`SoundFile` has a specific sample rate, data format and a set number of
 channels.
 
-If a file is opened, it is kept open for as long as the SoundFile
+If a file is opened, it is kept open for as long as the `SoundFile`
 object exists. The file closes when the object is garbage collected,
 but you should use the `SoundFile.close()` method or the
 context manager to close the file explicitly:
@@ -147,7 +147,7 @@ channels in the file.
 RAW Files
 ---------
 
-Pysoundfile can usually auto-detect the file type of sound files. This
+`soundfile.read()` can usually auto-detect the file type of sound files. This
 is not possible for RAW files, though:
 
 .. code:: python
@@ -167,7 +167,7 @@ cases, a more expressive format is better and should be used instead.
 Virtual IO
 ----------
 
-If you have an open file-like object, Pysoundfile can open it just like
+If you have an open file-like object, `soundfile.read()` can open it just like
 regular files:
 
 .. code:: python
@@ -197,7 +197,7 @@ For Python 2.x support, replace the third line with:
 Known Issues
 ------------
 
-Writing to OGG files can result in empty files with certain versions of libsndfile. See `#130 <https://github.com/bastibe/SoundFile/issues/130>`__ for news on this issue.
+Writing to OGG files can result in empty files with certain versions of libsndfile. See `#130 <https://github.com/bastibe/python-soundfile/issues/130>`__ for news on this issue.
 
 News
 ----

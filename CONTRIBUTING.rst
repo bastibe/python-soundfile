@@ -3,7 +3,7 @@ Contributing
 
 If you find bugs, errors, omissions or other things that need improvement,
 please create an issue or a pull request at
-https://github.com/bastibe/PySoundFile/.
+https://github.com/bastibe/python-soundfile/.
 Contributions are always welcome!
 
 Testing
