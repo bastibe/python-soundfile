@@ -12,6 +12,7 @@ __version__ = "0.10.3"
 
 import os as _os
 import sys as _sys
+from platform import machine as _machine
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 from ctypes.util import find_library as _find_library
 from _soundfile import ffi as _ffi
@@ -159,8 +160,16 @@ except OSError:
     while not _os.path.isdir(_path):
         _path = _os.path.abspath(_os.path.join(_path, '..'))
 
-    _snd = _ffi.dlopen(_os.path.join(
-        _path, '_soundfile_data', _libname))
+    # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
+    # `/usr/local/lib`. We are making sure we pick that up.
+    if _sys.platform == 'darwin' and _machine() == 'arm64':
+        _hbrew_path = '/opt/homebrew/lib/' if _os.path.isdir('/opt/homebrew/lib/') \
+            else '/usr/local/lib/'
+        _snd = _ffi.dlopen(_os.path.join(
+            _hbrew_path, _libname))
+    else:
+        _snd = _ffi.dlopen(_os.path.join(
+            _path, '_soundfile_data', _libname))
 
 __libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode('utf-8', 'replace')
 if __libsndfile_version__.startswith('libsndfile-'):
