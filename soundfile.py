@@ -1364,8 +1364,8 @@ class SoundFile(object):
             'tracknumber' and 'genre'. 
         """
         strs = {}
-        for strtype in _str_types:
-            data = _snd.sf_get_string(self._file, _str_types[name])
+        for strtype, strid in _str_types.items():
+            data = _snd.sf_get_string(self._file, strid)
             if data:
                 strs[strtype] = _ffi.string(data).decode('utf-8', 'replace')
         return strs
