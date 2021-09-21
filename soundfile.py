@@ -1352,6 +1352,25 @@ class SoundFile(object):
             self.seek(start, SEEK_SET)
         return frames
 
+    def copy_metadata(self):
+        """Get all metadata present in this SoundFile
+
+        Returns
+        -------
+
+        metadata: dict[str, str]
+            A dict with all metadata. Possible keys are: 'title', 'copyright', 
+            'software', 'artist', 'comment', 'date', 'album', 'license', 
+            'tracknumber' and 'genre'. 
+        """
+        strs = {}
+        for strtype, strid in _str_types.items():
+            data = _snd.sf_get_string(self._file, strid)
+            if data:
+                strs[strtype] = _ffi.string(data).decode('utf-8', 'replace')
+        return strs
+
+
 
 def _error_check(err, prefix=""):
     """Raise LibsndfileError if there is an error."""
