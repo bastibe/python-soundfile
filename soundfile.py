@@ -1352,13 +1352,13 @@ class SoundFile(object):
             self.seek(start, SEEK_SET)
         return frames
 
-    def get_strings(self):
-        """ Get all metadata present in this SoundFile
+    def copy_metadata(self):
+        """Get all metadata present in this SoundFile
 
         Returns
         -------
 
-        strings: dict[str, str]
+        metadata: dict[str, str]
             A dict with all metadata. Possible keys are: 'title', 'copyright', 
             'software', 'artist', 'comment', 'date', 'album', 'license', 
             'tracknumber' and 'genre'. 
