@@ -199,6 +199,8 @@ Known Issues
 
 Writing to OGG files can result in empty files with certain versions of libsndfile. See `#130 <https://github.com/bastibe/python-soundfile/issues/130>`__ for news on this issue.
 
+If using a Buildroot style system, Python has trouble locating ``libsndfile.so`` file, which causes python-soundfile to not be loaded. This is apparently a bug in `python <https://bugs.python.org/issue13508>`__. For the time being, in ``soundfile.py``, you can remove the call to ``_find_library`` and hardcode the location of the ``libsndfile.so`` in ``_ffi.dlopen``. See `#258 <https://github.com/bastibe/python-soundfile/issues/258>`__ for discussion on this issue.
+
 News
 ----
 
