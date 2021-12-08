@@ -167,7 +167,16 @@ except OSError:
             _path, '_soundfile_data', _libname))
     except OSError:
         # if no local installed library sndfile, try system-wide
-        _snd = _ffi.dlopen(_libname) 
+
+        # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
+        # `/usr/local/lib`. We are making sure we pick that up.
+        if _sys.platform == 'darwin':
+            _hbrew_path = '/opt/homebrew/lib/' if _os.path.isdir('/opt/homebrew/lib/') \
+                else '/usr/local/lib/'
+            _snd = _ffi.dlopen(_os.path.join(
+                _hbrew_path, _libname))
+        else:
+            _snd = _ffi.dlopen(_libname) 
 
 __libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode('utf-8', 'replace')
 if __libsndfile_version__.startswith('libsndfile-'):
