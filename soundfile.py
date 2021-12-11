@@ -12,6 +12,7 @@ __version__ = "0.10.3"
 
 import os as _os
 import sys as _sys
+from platform import machine as _machine
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 from ctypes.util import find_library as _find_library
 from _soundfile import ffi as _ffi
