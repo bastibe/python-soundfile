@@ -24,15 +24,15 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 
 |open-issues| |closed-issues| |open-prs| |closed-prs|
 
-.. |contributors| image:: https://img.shields.io/github/contributors/bastibe/soundfile.svg
+.. |contributors| image:: https://img.shields.io/github/contributors/bastibe/python-soundfile.svg
 .. |version| image:: https://img.shields.io/pypi/v/soundfile.svg
 .. |python| image:: https://img.shields.io/pypi/pyversions/soundfile.svg
-.. |license| image:: https://img.shields.io/github/license/bastibe/soundfile.svg
+.. |license| image:: https://img.shields.io/github/license/bastibe/python-soundfile.svg
 .. |downloads| image:: https://img.shields.io/pypi/dm/soundfile.svg
-.. |open-issues| image:: https://img.shields.io/github/issues/bastibe/soundfile.svg
-.. |closed-issues| image:: https://img.shields.io/github/issues-closed/bastibe/soundfile.svg
-.. |open-prs| image:: https://img.shields.io/github/issues-pr/bastibe/soundfile.svg
-.. |closed-prs| image:: https://img.shields.io/github/issues-pr-closed/bastibe/soundfile.svg
+.. |open-issues| image:: https://img.shields.io/github/issues/bastibe/python-soundfile.svg
+.. |closed-issues| image:: https://img.shields.io/github/issues-closed/bastibe/python-soundfile.svg
+.. |open-prs| image:: https://img.shields.io/github/issues-pr/bastibe/python-soundfile.svg
+.. |closed-prs| image:: https://img.shields.io/github/issues-pr-closed/bastibe/python-soundfile.svg
 .. |status| image:: https://img.shields.io/pypi/status/soundfile.svg
 
 Breaking Changes
