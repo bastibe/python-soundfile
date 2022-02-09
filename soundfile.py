@@ -8,11 +8,10 @@ Alternatively, sound files can be opened as `SoundFile` objects.
 For further information, see https://python-soundfile.readthedocs.io/.
 
 """
-__version__ = "0.10.3"
+__version__ = "0.11.0"
 
 import os as _os
 import sys as _sys
-from platform import machine as _machine
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 from ctypes.util import find_library as _find_library
 from _soundfile import ffi as _ffi
@@ -144,10 +143,16 @@ try:
     _snd = _ffi.dlopen(_libname)
 except OSError:
     if _sys.platform == 'darwin':
+        from platform import machine as _machine
+        _packaged_libname = 'libsndfile_' + machine() + '.dylib'
         _libname = 'libsndfile.dylib'
     elif _sys.platform == 'win32':
         from platform import architecture as _architecture
-        _libname = 'libsndfile' + _architecture()[0] + '.dll'
+        _packaged_libname = 'libsndfile_' + _architecture()[0] + '.dll'
+        _libname = 'libsndfile.dll'
+    elif _sys.platform == 'linux':
+        _packaged_libname = 'libsndfile.so'  # not provided!
+        _libname = 'libsndfile.so'
     else:
         raise
 
@@ -160,16 +165,19 @@ except OSError:
     while not _os.path.isdir(_path):
         _path = _os.path.abspath(_os.path.join(_path, '..'))
 
-    # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
-    # `/usr/local/lib`. We are making sure we pick that up.
-    if _sys.platform == 'darwin' and _machine() == 'arm64':
-        _hbrew_path = '/opt/homebrew/lib/' if _os.path.isdir('/opt/homebrew/lib/') \
-            else '/usr/local/lib/'
-        _snd = _ffi.dlopen(_os.path.join(
-            _hbrew_path, _libname))
-    else:
-        _snd = _ffi.dlopen(_os.path.join(
-            _path, '_soundfile_data', _libname))
+    try:  # packaged libsndfile:
+        _snd = _ffi.dlopen(_os.path.join(_path, '_soundfile_data', _packaged_libname))
+    except OSError:  # try system-wide libsndfile:
+        # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
+        # `/usr/local/lib`. We are making sure we pick that up.
+        from platform import machine as _machine
+        if _sys.platform == 'darwin' and _machine() == 'arm64':
+            _hbrew_path = '/opt/homebrew/lib/' if _os.path.isdir('/opt/homebrew/lib/') \
+                else '/usr/local/lib/'
+            _snd = _ffi.dlopen(_os.path.join(_hbrew_path, _libname))
+        else:
+            # Try explicit file name, if the general does not work (e.g. on nixos)
+            _snd = _ffi.dlopen(_libname)
 
 __libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode('utf-8', 'replace')
 if __libsndfile_version__.startswith('libsndfile-'):
@@ -1368,9 +1376,9 @@ class SoundFile(object):
         -------
 
         metadata: dict[str, str]
-            A dict with all metadata. Possible keys are: 'title', 'copyright', 
-            'software', 'artist', 'comment', 'date', 'album', 'license', 
-            'tracknumber' and 'genre'. 
+            A dict with all metadata. Possible keys are: 'title', 'copyright',
+            'software', 'artist', 'comment', 'date', 'album', 'license',
+            'tracknumber' and 'genre'.
         """
         strs = {}
         for strtype, strid in _str_types.items():

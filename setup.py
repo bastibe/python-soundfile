@@ -5,27 +5,14 @@ from setuptools import setup
 from setuptools.command.test import test as TestCommand
 import sys
 
-PYTHON_INTERPRETERS = '.'.join([
-    'cp26', 'cp27',
-    'cp32', 'cp33', 'cp34', 'cp35', 'cp36',
-    'pp27',
-    'pp32', 'pp33',
-])
-MACOSX_VERSIONS = '.'.join([
-    'macosx_10_5_x86_64',
-    'macosx_10_6_intel',
-    'macosx_10_9_intel',
-    'macosx_10_9_x86_64',
-])
-
 # environment variables for cross-platform package creation
 platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
 architecture0 = os.environ.get('PYSOUNDFILE_ARCHITECTURE', architecture()[0])
 
 if platform == 'darwin':
-    libname = 'libsndfile.dylib'
+    libname = 'libsndfile_' + architecture0 + '.dylib'
 elif platform == 'win32':
-    libname = 'libsndfile' + architecture0 + '.dll'
+    libname = 'libsndfile_' + architecture0 + '.dll'
 else:
     libname = None
 
@@ -70,9 +57,12 @@ else:
         """Create OS-dependent, but Python-independent wheels."""
 
         def get_tag(self):
-            pythons = 'py2.py3.' + PYTHON_INTERPRETERS
+            pythons = 'py2.py3'
             if platform == 'darwin':
-                oses = MACOSX_VERSIONS
+                if architecture0 == 'x86_64':
+                    oses = 'macosx-10.x-x86_64'
+                else:
+                    oses = 'macosx-10.x-arm64'
             elif platform == 'win32':
                 if architecture0 == '32bit':
                     oses = 'win32'
@@ -87,7 +77,7 @@ else:
 
 setup(
     name='soundfile',
-    version='0.10.3post1',
+    version='0.11.0b1',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',

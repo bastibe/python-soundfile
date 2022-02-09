@@ -1,7 +1,7 @@
 import os
 import shutil
 
-architectures = dict(darwin=['64bit'],
+architectures = dict(darwin=['x86_64', 'arm64'],
                      win32=['32bit', '64bit'],
                      noplatform='noarch')
 
