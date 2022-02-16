@@ -301,6 +301,7 @@ News
 
     - Adds binary wheels for macOS M1
     - Improves compatibility with macOS, specifically for M1 machines
+    - Fixes file descriptor open for binary wheels on Windows and Python 3.5+
     - Updates libsndfile to v1.0.31
     - Adds get_strings method for retrieving all metadata at once
     - Improves documentation, error messages and tests
