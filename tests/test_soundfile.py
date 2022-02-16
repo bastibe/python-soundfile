@@ -592,7 +592,8 @@ def test_file_content(sf_stereo_r):
 
 def test_file_attributes_in_read_mode(sf_stereo_r):
     if isinstance(sf_stereo_r.name, str):
-        assert sf_stereo_r.name == filename_stereo
+        # wrap in pathlib, to make tests pass on Windows:
+        assert pathlib.Path(sf_stereo_r.name) == pathlib.Path(filename_stereo)
     elif not isinstance(sf_stereo_r.name, int):
         assert sf_stereo_r.name.name == filename_stereo
     assert sf_stereo_r.mode == 'r'
