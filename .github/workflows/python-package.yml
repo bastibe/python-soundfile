@@ -1,0 +1,45 @@
+name: Python Package
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, windows-2019, macos-10.15]
+        python-version:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "pypy-3.7"
+          - "pypy-3.8"
+        architecture: ["x86", "x64"]
+        exclude:
+          - os: macos-10.15 # Can't compile Numpy for this implementation.
+            python-version: "pypy-3.7"
+          - os: macos-10.15
+            architecture: "x86"
+          - os: ubuntu-20.04
+            architecture: "x86"
+
+    steps:
+      - name: Install APT dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get install libsndfile1
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.architecture }}
+      - name: Install requirements
+        run: pip install numpy pytest
+      - name: Install editable package
+        run: pip install --editable . --verbose
+      - name: Run tests
+        run: python -m pytest
