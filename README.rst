@@ -292,3 +292,17 @@ News
     - Improves performance of `blocks()` and `SoundFile.blocks()`.
     - Improves import time by using CFFI's out of line mode.
     - Adds a build script for building distributions.
+
+2022-02-16 V0.11.0 Bastian Bechtold:
+    Thank you, tennies, Hannes Helmholz, Christoph Boeddeker, Matt
+    Vollrath, Matthias Geier, Jacek Konieczny, Boris Verkhovskiy,
+    Jonas Haag, Eduardo Moguillansky, Panos Laganakos, Jarvy Jarvison,
+    Domingo Ramirez, Tim Chagnon, Kyle Benesch
+
+    - Adds binary wheels for macOS M1
+    - Improves compatibility with macOS, specifically for M1 machines
+    - Updates libsndfile to v1.0.31
+    - Adds get_strings method for retrieving all metadata at once
+    - Improves documentation, error messages and tests
+    - Displays length of very short files in samples
+    - Supports the file system path protocol (pathlib et al)
