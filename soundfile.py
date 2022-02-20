@@ -144,7 +144,7 @@ try:
 except OSError:
     if _sys.platform == 'darwin':
         from platform import machine as _machine
-        _packaged_libname = 'libsndfile_' + machine() + '.dylib'
+        _packaged_libname = 'libsndfile_' + _machine() + '.dylib'
         _libname = 'libsndfile.dylib'
     elif _sys.platform == 'win32':
         from platform import architecture as _architecture
