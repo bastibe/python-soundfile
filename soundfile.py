@@ -62,6 +62,7 @@ _formats = {
     'OGG':   0x200000,  # Xiph OGG container
     'MPC2K': 0x210000,  # Akai MPC 2000 sampler
     'RF64':  0x220000,  # RF64 WAV file
+    'MPEG':  0x230000,  # MPEG-1/2 audio stream
 }
 
 _subtypes = {
@@ -78,6 +79,9 @@ _subtypes = {
     'MS_ADPCM':  0x0013,  # Microsoft ADPCM.
     'GSM610':    0x0020,  # GSM 6.10 encoding.
     'VOX_ADPCM': 0x0021,  # OKI / Dialogix ADPCM
+    'NMS_ADPCM_16': 0x0022,  # 16kbs NMS G721-variant encoding.
+    'NMS_ADPCM_24': 0x0023,  # 24kbs NMS G721-variant encoding.
+    'NMS_ADPCM_32': 0x0024,  # 32kbs NMS G721-variant encoding.
     'G721_32':   0x0030,  # 32kbs G721 ADPCM encoding.
     'G723_24':   0x0031,  # 24kbs G723 ADPCM encoding.
     'G723_40':   0x0032,  # 40kbs G723 ADPCM encoding.
@@ -88,10 +92,14 @@ _subtypes = {
     'DPCM_8':    0x0050,  # 8 bit differential PCM (XI only)
     'DPCM_16':   0x0051,  # 16 bit differential PCM (XI only)
     'VORBIS':    0x0060,  # Xiph Vorbis encoding.
+    'OPUS':      0x0064,  # Xiph/Skype Opus encoding.
     'ALAC_16':   0x0070,  # Apple Lossless Audio Codec (16 bit).
     'ALAC_20':   0x0071,  # Apple Lossless Audio Codec (20 bit).
     'ALAC_24':   0x0072,  # Apple Lossless Audio Codec (24 bit).
     'ALAC_32':   0x0073,  # Apple Lossless Audio Codec (32 bit).
+    'MPEG_LAYER_I':   0x0080,  # MPEG-1 Audio Layer I.
+    'MPEG_LAYER_II':   0x0081,  # MPEG-1 Audio Layer II.
+    'MP3':   0x0082,  # MPEG-2 Audio Layer III.
 }
 
 _endians = {
@@ -1333,7 +1341,10 @@ class SoundFile(object):
         frames = func(self._file, data, frames)
         _error_check(self._errorcode)
         if self.seekable():
-            self.seek(curr + frames, SEEK_SET)  # Update read & write position
+            if self.format != 'OGG':
+                # OGG(Vorbis, Opus) has seek bug from libopusfile
+                # see: https://github.com/libsndfile/libsndfile/issues/794
+                self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
 
     def _update_frames(self, written):
