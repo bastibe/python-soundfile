@@ -42,7 +42,7 @@ enum
 
 typedef int64_t sf_count_t ;
 
-typedef struct SNDFILE_tag SNDFILE ;
+typedef	struct sf_private_tag	SNDFILE ;
 
 typedef struct SF_INFO
 {
