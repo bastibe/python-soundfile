@@ -747,6 +747,10 @@ class SoundFile(object):
 
     def seekable(self):
         """Return True if the file supports seeking."""
+        if self.format == 'OGG':
+            # OGG(Vorbis, Opus) has seek bug from libopusfile
+            # see: https://github.com/libsndfile/libsndfile/issues/794
+            return _snd.SF_FALSE
         return self._info.seekable == _snd.SF_TRUE
 
     def seek(self, frames, whence=SEEK_SET):
@@ -1341,10 +1345,7 @@ class SoundFile(object):
         frames = func(self._file, data, frames)
         _error_check(self._errorcode)
         if self.seekable():
-            if self.format != 'OGG':
-                # OGG(Vorbis, Opus) has seek bug from libopusfile
-                # see: https://github.com/libsndfile/libsndfile/issues/794
-                self.seek(curr + frames, SEEK_SET)  # Update read & write position
+            self.seek(curr + frames, SEEK_SET)  # Update read & write position
         return frames
 
     def _update_frames(self, written):
