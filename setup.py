@@ -60,9 +60,9 @@ else:
             pythons = 'py2.py3'
             if platform == 'darwin':
                 if architecture0 == 'x86_64':
-                    oses = 'macosx-10.x-x86_64'
+                    oses = 'macosx_10_9_x86_64'
                 else:
-                    oses = 'macosx-10.x-arm64'
+                    oses = 'macosx_10_9_arm64'
             elif platform == 'win32':
                 if architecture0 == '32bit':
                     oses = 'win32'
