@@ -1342,7 +1342,19 @@ class SoundFile(object):
         if self.seekable():
             curr = self.tell()
         func = getattr(_snd, 'sf_' + action + 'f_' + ctype)
-        frames = func(self._file, data, frames)
+        if action == 'read':
+            # It seems sf_readf_double() read too many frame once would failed
+            # so read to buffer, according to 'libsndfile/programs/common.c:sfe_copy_data_fp()
+            buf_len = 4096
+            read = buf_len
+            total = 0
+            while total < frames and read > 0:
+                read = func(self._file, data, buf_len)
+                total += read
+                data += read
+            frames = total
+        else:
+            frames = func(self._file, data, frames)
         _error_check(self._errorcode)
         if self.seekable():
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
