@@ -148,6 +148,9 @@ except OSError:
     elif _sys.platform == 'win32':
         from platform import architecture as _architecture
         _libname = 'libsndfile' + _architecture()[0] + '.dll'
+    elif _sys.platform == 'linux':
+        # Try explicit file name, if the general does not work (e.g. on nixos)
+        _libname = 'libsndfile.so'
     else:
         raise
 
@@ -160,16 +163,21 @@ except OSError:
     while not _os.path.isdir(_path):
         _path = _os.path.abspath(_os.path.join(_path, '..'))
 
-    # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
-    # `/usr/local/lib`. We are making sure we pick that up.
-    if _sys.platform == 'darwin' and _machine() == 'arm64':
-        _hbrew_path = '/opt/homebrew/lib/' if _os.path.isdir('/opt/homebrew/lib/') \
-            else '/usr/local/lib/'
-        _snd = _ffi.dlopen(_os.path.join(
-            _hbrew_path, _libname))
-    else:
+    try:
         _snd = _ffi.dlopen(_os.path.join(
             _path, '_soundfile_data', _libname))
+    except OSError:
+        # if no local installed library sndfile, try system-wide
+
+        # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
+        # `/usr/local/lib`. We are making sure we pick that up.
+        if _sys.platform == 'darwin':
+            _hbrew_path = '/opt/homebrew/lib/' if _os.path.isdir('/opt/homebrew/lib/') \
+                else '/usr/local/lib/'
+            _snd = _ffi.dlopen(_os.path.join(
+                _hbrew_path, _libname))
+        else:
+            _snd = _ffi.dlopen(_libname) 
 
 __libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode('utf-8', 'replace')
 if __libsndfile_version__.startswith('libsndfile-'):
