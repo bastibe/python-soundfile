@@ -16,6 +16,7 @@ MACOSX_VERSIONS = '.'.join([
     'macosx_10_6_intel',
     'macosx_10_9_intel',
     'macosx_10_9_x86_64',
+    'macosx_11_0_arm64',
 ])
 
 # environment variables for cross-platform package creation
