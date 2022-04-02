@@ -136,6 +136,7 @@ _default_subtypes = {
     'OGG':   'VORBIS',
     'MPC2K': 'PCM_16',
     'RF64':  'PCM_16',
+    'MPEG':  'MP3',
 }
 
 _ffi_types = {
@@ -1376,9 +1377,9 @@ class SoundFile(object):
         -------
 
         metadata: dict[str, str]
-            A dict with all metadata. Possible keys are: 'title', 'copyright', 
-            'software', 'artist', 'comment', 'date', 'album', 'license', 
-            'tracknumber' and 'genre'. 
+            A dict with all metadata. Possible keys are: 'title', 'copyright',
+            'software', 'artist', 'comment', 'date', 'album', 'license',
+            'tracknumber' and 'genre'.
         """
         strs = {}
         for strtype, strid in _str_types.items():
