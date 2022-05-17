@@ -62,7 +62,7 @@ else:
                 if architecture0 == 'x86_64':
                     oses = 'macosx_10_9_x86_64.macosx_11_0_x86_64'
                 else:
-                    oses = 'macosx_11_0_arm64'
+                    oses = 'macosx_10_9_arm64.macosx_11_0_arm64'
             elif platform == 'win32':
                 if architecture0 == '32bit':
                     oses = 'win32'
