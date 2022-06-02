@@ -293,16 +293,17 @@ News
     - Improves import time by using CFFI's out of line mode.
     - Adds a build script for building distributions.
 
-2022-02-16 V0.11.0 Bastian Bechtold:
+2022-06-02 V0.11.0 Bastian Bechtold:
     Thank you, tennies, Hannes Helmholz, Christoph Boeddeker, Matt
     Vollrath, Matthias Geier, Jacek Konieczny, Boris Verkhovskiy,
     Jonas Haag, Eduardo Moguillansky, Panos Laganakos, Jarvy Jarvison,
-    Domingo Ramirez, Tim Chagnon, Kyle Benesch
+    Domingo Ramirez, Tim Chagnon, Kyle Benesch, Fabian-Robert Stöter
 
+    - MP3 support
     - Adds binary wheels for macOS M1
     - Improves compatibility with macOS, specifically for M1 machines
     - Fixes file descriptor open for binary wheels on Windows and Python 3.5+
-    - Updates libsndfile to v1.0.31
+    - Updates libsndfile to v1.1.0
     - Adds get_strings method for retrieving all metadata at once
     - Improves documentation, error messages and tests
     - Displays length of very short files in samples
