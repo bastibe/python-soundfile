@@ -4,9 +4,6 @@ from cffi import FFI
 platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
 print(platform)
 
-platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
-print(platform)
-
 ffibuilder = FFI()
 
 ffibuilder.set_source('_soundfile', '''
