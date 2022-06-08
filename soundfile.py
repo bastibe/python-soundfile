@@ -8,7 +8,7 @@ Alternatively, sound files can be opened as `SoundFile` objects.
 For further information, see https://python-soundfile.readthedocs.io/.
 
 """
-__version__ = "0.10.3"
+__version__ = "0.11.1"
 
 import os as _os
 import sys as _sys
@@ -16,11 +16,13 @@ from platform import machine as _machine
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 from ctypes.util import find_library as _find_library
 from _soundfile import ffi as _ffi
+from _soundfile import lib
 
 try:
     _unicode = unicode  # doesn't exist in Python 3.x
 except NameError:
     _unicode = str
+
 
 
 _str_types = {
@@ -383,146 +385,6 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
                               dtype, always_2d, fill_value, out):
             yield block
 
-
-class _SoundFileInfo(object):
-    """Information about a SoundFile"""
-
-    def __init__(self, file, verbose):
-        self.verbose = verbose
-        with SoundFile(file) as f:
-            self.name = f.name
-            self.samplerate = f.samplerate
-            self.channels = f.channels
-            self.frames = f.frames
-            self.duration = float(self.frames)/f.samplerate
-            self.format = f.format
-            self.subtype = f.subtype
-            self.endian = f.endian
-            self.format_info = f.format_info
-            self.subtype_info = f.subtype_info
-            self.sections = f.sections
-            self.extra_info = f.extra_info
-
-    @property
-    def _duration_str(self):
-        hours, rest = divmod(self.duration, 3600)
-        minutes, seconds = divmod(rest, 60)
-        if hours >= 1:
-            duration = "{0:.0g}:{1:02.0g}:{2:05.3f} h".format(hours, minutes, seconds)
-        elif minutes >= 1:
-            duration = "{0:02.0g}:{1:05.3f} min".format(minutes, seconds)
-        elif seconds <= 1:
-            duration = "{0:d} samples".format(self.frames)
-        else:
-            duration = "{0:.3f} s".format(seconds)
-        return duration
-
-    def __repr__(self):
-        info = "\n".join(
-            ["{0.name}",
-             "samplerate: {0.samplerate} Hz",
-             "channels: {0.channels}",
-             "duration: {0._duration_str}",
-             "format: {0.format_info} [{0.format}]",
-             "subtype: {0.subtype_info} [{0.subtype}]"])
-        if self.verbose:
-            info += "\n".join(
-                ["\nendian: {0.endian}",
-                 "sections: {0.sections}",
-                 "frames: {0.frames}",
-                 'extra_info: """',
-                 '    {1}"""'])
-        indented_extra_info = ("\n"+" "*4).join(self.extra_info.split("\n"))
-        return info.format(self, indented_extra_info)
-
-
-def info(file, verbose=False):
-    """Returns an object with information about a `SoundFile`.
-
-    Parameters
-    ----------
-    verbose : bool
-        Whether to print additional information.
-    """
-    return _SoundFileInfo(file, verbose)
-
-
-def available_formats():
-    """Return a dictionary of available major formats.
-
-    Examples
-    --------
-    >>> import soundfile as sf
-    >>> sf.available_formats()
-    {'FLAC': 'FLAC (FLAC Lossless Audio Codec)',
-     'OGG': 'OGG (OGG Container format)',
-     'WAV': 'WAV (Microsoft)',
-     'AIFF': 'AIFF (Apple/SGI)',
-     ...
-     'WAVEX': 'WAVEX (Microsoft)',
-     'RAW': 'RAW (header-less)',
-     'MAT5': 'MAT5 (GNU Octave 2.1 / Matlab 5.0)'}
-
-    """
-    return dict(_available_formats_helper(_snd.SFC_GET_FORMAT_MAJOR_COUNT,
-                                          _snd.SFC_GET_FORMAT_MAJOR))
-
-
-def available_subtypes(format=None):
-    """Return a dictionary of available subtypes.
-
-    Parameters
-    ----------
-    format : str
-        If given, only compatible subtypes are returned.
-
-    Examples
-    --------
-    >>> import soundfile as sf
-    >>> sf.available_subtypes('FLAC')
-    {'PCM_24': 'Signed 24 bit PCM',
-     'PCM_16': 'Signed 16 bit PCM',
-     'PCM_S8': 'Signed 8 bit PCM'}
-
-    """
-    subtypes = _available_formats_helper(_snd.SFC_GET_FORMAT_SUBTYPE_COUNT,
-                                         _snd.SFC_GET_FORMAT_SUBTYPE)
-    return dict((subtype, name) for subtype, name in subtypes
-                if format is None or check_format(format, subtype))
-
-
-def check_format(format, subtype=None, endian=None):
-    """Check if the combination of format/subtype/endian is valid.
-
-    Examples
-    --------
-    >>> import soundfile as sf
-    >>> sf.check_format('WAV', 'PCM_24')
-    True
-    >>> sf.check_format('FLAC', 'VORBIS')
-    False
-
-    """
-    try:
-        return bool(_format_int(format, subtype, endian))
-    except (ValueError, TypeError):
-        return False
-
-
-def default_subtype(format):
-    """Return the default subtype for a given format.
-
-    Examples
-    --------
-    >>> import soundfile as sf
-    >>> sf.default_subtype('WAV')
-    'PCM_16'
-    >>> sf.default_subtype('MAT5')
-    'DOUBLE'
-
-    """
-    _check_format(format)
-    return _default_subtypes.get(format.upper())
 
 
 class SoundFile(object):
@@ -1205,7 +1067,7 @@ class SoundFile(object):
 
     def _init_virtual_io(self, file):
         """Initialize callback functions for sf_open_virtual()."""
-        @_ffi.callback("sf_vio_get_filelen")
+        @_ffi.def_extern()
         def vio_get_filelen(user_data):
             curr = file.tell()
             file.seek(0, SEEK_END)
@@ -1213,12 +1075,13 @@ class SoundFile(object):
             file.seek(curr, SEEK_SET)
             return size
 
-        @_ffi.callback("sf_vio_seek")
+        @_ffi.def_extern()
         def vio_seek(offset, whence, user_data):
             file.seek(offset, whence)
             return file.tell()
 
-        @_ffi.callback("sf_vio_read")
+        # @_ffi.callback("sf_vio_read")
+        @_ffi.def_extern()
         def vio_read(ptr, count, user_data):
             # first try readinto(), if not available fall back to read()
             try:
@@ -1231,7 +1094,7 @@ class SoundFile(object):
                 buf[0:data_read] = data
             return data_read
 
-        @_ffi.callback("sf_vio_write")
+        @_ffi.def_extern()
         def vio_write(ptr, count, user_data):
             buf = _ffi.buffer(ptr, count)
             data = buf[:]
@@ -1241,16 +1104,16 @@ class SoundFile(object):
                 written = count
             return written
 
-        @_ffi.callback("sf_vio_tell")
+        @_ffi.def_extern()
         def vio_tell(user_data):
             return file.tell()
 
         # Note: the callback functions must be kept alive!
-        self._virtual_io = {'get_filelen': vio_get_filelen,
-                            'seek': vio_seek,
-                            'read': vio_read,
-                            'write': vio_write,
-                            'tell': vio_tell}
+        self._virtual_io = {'get_filelen': lib.vio_get_filelen,
+                            'seek': lib.vio_seek,
+                            'read': lib.vio_read,
+                            'write': lib.vio_write,
+                            'tell': lib.vio_tell}
 
         return _ffi.new("SF_VIRTUAL_IO*", self._virtual_io)
 

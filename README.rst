@@ -52,6 +52,7 @@ In 0.9.0, we changed the ``ctype`` arguments of the ``buffer_*``
 methods to ``dtype``, using the Numpy ``dtype`` notation. The old
 ``ctype`` arguments still work, but are now officially deprecated.
 
+In 0.11.0 switched from cffi ABI mode to API mode
 Installation
 ------------
 
