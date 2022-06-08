@@ -2,8 +2,15 @@ import os
 import sys
 from cffi import FFI
 
+platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
+print(platform)
+
 ffibuilder = FFI()
-ffibuilder.set_source("_soundfile", None)
+
+ffibuilder.set_source('_soundfile', '''
+#include <sndfile.h>
+''', libraries=['sndfile'])
+
 ffibuilder.cdef("""
 enum
 {
@@ -44,6 +51,8 @@ typedef int64_t sf_count_t ;
 
 typedef struct SNDFILE_tag SNDFILE ;
 
+
+
 typedef struct SF_INFO
 {
     sf_count_t frames ;        /* Used to be called samples.  Changed to avoid confusion. */
@@ -52,8 +61,15 @@ typedef struct SF_INFO
     int        format ;
     int        sections ;
     int        seekable ;
-} SF_INFO ;
+} SF_INFO ;""")
 
+if platform == 'win32':
+    ffibuilder.cdef("""
+    SNDFILE* sf_wchar_open (const wchar_t *wpath, int mode, SF_INFO *sfinfo);
+    """)
+
+ffibuilder.cdef(
+"""
 SNDFILE*    sf_open          (const char *path, int mode, SF_INFO *sfinfo) ;
 int         sf_format_check  (const SF_INFO *info) ;
 
@@ -108,6 +124,7 @@ typedef sf_count_t  (*sf_vio_read)        (void *ptr, sf_count_t count, void *us
 typedef sf_count_t  (*sf_vio_write)       (const void *ptr, sf_count_t count, void *user_data) ;
 typedef sf_count_t  (*sf_vio_tell)        (void *user_data) ;
 
+
 typedef struct SF_VIRTUAL_IO
 {    sf_count_t  (*get_filelen) (void *user_data) ;
      sf_count_t  (*seek)        (sf_count_t offset, int whence, void *user_data) ;
@@ -115,6 +132,7 @@ typedef struct SF_VIRTUAL_IO
      sf_count_t  (*write)       (const void *ptr, sf_count_t count, void *user_data) ;
      sf_count_t  (*tell)        (void *user_data) ;
 } SF_VIRTUAL_IO ;
+
 
 SNDFILE*    sf_open_virtual   (SF_VIRTUAL_IO *sfvirtual, int mode, SF_INFO *sfinfo, void *user_data) ;
 SNDFILE*    sf_open_fd        (int fd, int mode, SF_INFO *sfinfo, int close_desc) ;
@@ -125,13 +143,14 @@ typedef struct SF_FORMAT_INFO
     const char* name ;
     const char* extension ;
 } SF_FORMAT_INFO ;
-""")
 
-platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
-if platform == 'win32':
-    ffibuilder.cdef("""
-    SNDFILE* sf_wchar_open (const wchar_t *wpath, int mode, SF_INFO *sfinfo) ;
-    """)
+extern "Python" sf_count_t  vio_get_filelen (void *user_data) ;
+extern "Python" sf_count_t  vio_seek        (sf_count_t offset, int whence, void *user_data) ;
+extern "Python" sf_count_t  vio_read        (void *ptr, sf_count_t count, void *user_data) ;
+extern "Python" sf_count_t  vio_write       (const void *ptr, sf_count_t count, void *user_data) ;
+extern "Python" sf_count_t  vio_tell        (void *user_data) ;
+
+""")
 
 if __name__ == "__main__":
     ffibuilder.compile(verbose=True)
