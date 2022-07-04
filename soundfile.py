@@ -1169,7 +1169,7 @@ class SoundFile(object):
         err = _snd.sf_command(self._file, _snd.SFC_SET_COMPRESSION_LEVEL,
                               _ffi.new("double*", level),
                               _ffi.sizeof("double"))
-        if err == SF_FALSE
+        if err == SF_FALSE:
             err = _snd.sf_error(self._file)
             raise LibsndfileError(err, "Error setting the compression level")
 
@@ -1195,7 +1195,7 @@ class SoundFile(object):
                               _ffi.new("double*", quality),
                               _ffi.sizeof("double"))
 
-        if err == SF_FALSE
+        if err == SF_FALSE:
             err = _snd.sf_error(self._file)
             raise LibsndfileError(err, "Error setting the encoding quality")
             
