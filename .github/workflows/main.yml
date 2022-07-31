@@ -51,7 +51,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
       - name: Install requirements
-        run: pip install numpy pytest
+        run: pip install numpy pytest cffi
       - name: Install editable package
         run: pip install --editable . --verbose
       - name: Run tests
