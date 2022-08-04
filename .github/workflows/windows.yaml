@@ -38,14 +38,16 @@ jobs:
         run: |
           choco install libsndfile
           New-Item -ItemType Junction -Path "C:\libsndfile" -Target "C:\Program Files\libsndfile"
+          Set-Item -Path Env:LIB -Value "-LC:\libsndfile\bin"
+          Set-Item -Path Env:INCLUDE -Value "-IC:\libsndfile\include"
           $Env:windir
+          refreshenv
+          vswhere.exe -latest -property installationPath
           $Env:INCLUDE
           $Env:LIB
           $Env:PATH
-          $Env:PATH += ';C:\libsnfile\bin'
-          $Env:INCLUDE += ';C:\libsnfile\include'
-          refreshenv
-          vswhere.exe -latest -property installationPath
+# $Env:PATH += ';C:\libsnfile\bin
+# $Env:INCLUDE += ';C:\libsnfile\include'
 #Set-Item -Path Env:CGO_LDFLAGS -Value "-LC:\libsndfile\bin"
         
       - uses: actions/checkout@v2
