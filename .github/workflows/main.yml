@@ -46,7 +46,17 @@ jobs:
 #       - name: Install choco for Windows
       - name: Build on Windows
         if: runner.os == 'Windows'
-        run: choco install libsndfile
+        run: |
+          choco install libsndfile
+          New-Item -ItemType Junction -Path "C:\libsndfile" -Target "C:\Program Files\libsndfile"
+          $Env:windir
+          $Env:INCLUDE
+          $Env:LIB
+          $Env:PATH
+          $Env:PATH += ';C:\libsnfile\bin'
+          $Env:INCLUDE += ';C:\libsnfile\include'
+#Set-Item -Path Env:CGO_LDFLAGS -Value "-LC:\libsndfile\bin"
+        
       - uses: actions/checkout@v2
         with:
           submodules: true
