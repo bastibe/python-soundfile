@@ -135,7 +135,7 @@ setup(
             library_dirs = [os.getcwd(),],  # path to .a or .so file(s)
             extra_compile_args=extra_compile_args,
         ),
-    ]
+    ],
     long_description_content_type="text/x-rst",
     tests_require=['pytest'],
     cmdclass=cmdclass,
