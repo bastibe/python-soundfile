@@ -43,9 +43,10 @@ jobs:
           $Env:windir
           refreshenv
           vswhere.exe -latest -property installationPath
-          $Env:INCLUDE
-          $Env:LIB
-          $Env:PATH
+          Set-Item -Path Env:CFLAGS -Value "-IC:\wkhtmltopdf\include"
+#   $Env:INCLUDE
+#   $Env:LIB
+#   $Env:PATH
 # $Env:PATH += ';C:\libsnfile\bin
 # $Env:INCLUDE += ';C:\libsnfile\include'
 #Set-Item -Path Env:CGO_LDFLAGS -Value "-LC:\libsndfile\bin"
