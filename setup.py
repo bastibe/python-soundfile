@@ -5,6 +5,7 @@ from setuptools import setup
 from setuptools.command.test import test as TestCommand
 import sys
 import sysconfig
+from setuptools.extension import Extension
 
 PYTHON_INTERPRETERS = '.'.join([
     'cp26', 'cp27',
@@ -123,7 +124,18 @@ setup(
         'Topic :: Multimedia :: Sound/Audio',
     ],
     long_description=open('README.rst').read(),
-    extra_compile_args=extra_compile_args,
+    ext_modules=[
+        Extension("MyExtension",
+            sources=[
+                     '...',
+            ],
+            include_dirs=[
+                os.path.join(os.getcwd(), 'include'),
+            ],
+            library_dirs = [os.getcwd(),],  # path to .a or .so file(s)
+            extra_compile_args=extra_compile_args,
+        ),
+    ]
     long_description_content_type="text/x-rst",
     tests_require=['pytest'],
     cmdclass=cmdclass,
