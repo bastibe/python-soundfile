@@ -2,13 +2,21 @@ import os
 import sys
 from cffi import FFI
 platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
-print(platform)
+print("Platform:", platform)
 
 ffibuilder = FFI()
+import sysconfig
+try:
+    extra_includes = sysconfig.get_config_var('CFLAGS').split()
+except:
+    extra_includes = []
+print("CFLAGS: ", extra_includes)
 
 ffibuilder.set_source('_soundfile', '''
 #include <sndfile.h>
-''', libraries=['sndfile'])
+''',
+                      libraries=['sndfile'],
+                     include_dirs = extra_includes)
 
 ffibuilder.cdef("""
 enum
