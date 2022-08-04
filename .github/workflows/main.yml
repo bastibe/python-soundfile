@@ -43,11 +43,10 @@ jobs:
       - name: Install APT dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get install libsndfile1 libsndfile1-dev
-      - name: Install choco for Windows
+#       - name: Install choco for Windows
       - name: Build on Windows
         if: runner.os == 'Windows'
         run: choco install libsndfile
-
       - uses: actions/checkout@v2
         with:
           submodules: true
