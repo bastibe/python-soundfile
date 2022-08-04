@@ -4,7 +4,7 @@ from platform import architecture
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 import sys
-import sysconfig
+
 from setuptools.extension import Extension
 
 PYTHON_INTERPRETERS = '.'.join([
@@ -87,10 +87,6 @@ else:
 
     cmdclass['bdist_wheel'] = bdist_wheel_half_pure
 
-try:
-    extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
-except:
-    extra_compile_args = []
 setup(
     name='soundfile',
     version='0.11.1',
@@ -124,18 +120,6 @@ setup(
         'Topic :: Multimedia :: Sound/Audio',
     ],
     long_description=open('README.rst').read(),
-    ext_modules=[
-        Extension("MyExtension",
-            sources=[
-                     '...',
-            ],
-            include_dirs=[
-                os.path.join(os.getcwd(), 'include'),
-            ],
-            library_dirs = [os.getcwd(),],  # path to .a or .so file(s)
-            extra_compile_args=extra_compile_args,
-        ),
-    ],
     long_description_content_type="text/x-rst",
     tests_require=['pytest'],
     cmdclass=cmdclass,
