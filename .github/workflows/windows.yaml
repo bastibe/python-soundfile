@@ -43,7 +43,7 @@ jobs:
           $Env:windir
           refreshenv
           vswhere.exe -latest -property installationPath
-          Set-Item -Path Env:CFLAGS -Value "-IC:\libsndfile\include"
+          Set-Item -Path Env:CFLAGS -Value "C:\libsndfile\include"
 #   $Env:INCLUDE
 #   $Env:LIB
 #   $Env:PATH
