@@ -44,6 +44,8 @@ jobs:
           $Env:PATH
           $Env:PATH += ';C:\libsnfile\bin'
           $Env:INCLUDE += ';C:\libsnfile\include'
+          refreshenv
+          vswhere.exe -latest -property installationPath
 #Set-Item -Path Env:CGO_LDFLAGS -Value "-LC:\libsndfile\bin"
         
       - uses: actions/checkout@v2
