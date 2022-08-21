@@ -11,7 +11,7 @@ try:
     extra_includes = sysconfig.get_config_var('INCLUDE').split()
 except:
     extra_includes = ["C:\libsndfile\include"]
-    extra_libs = ["C:\libsndfile\bin"]
+    extra_libs = ["C:\libsndfile\lib"]
 print("$INCLUDE: ", extra_includes)
 print("$LIB: ", extra_libs)
 
