@@ -16,7 +16,8 @@ print("$INCLUDE: ", extra_includes)
 print("$LIB: ", extra_libs)
 
 ffibuilder.set_source('_soundfile',
-                      ''' #include <sndfile.h> ''',
+                      ''' #include <sndfile.h> 
+                      ''',
                       libraries=['sndfile'],
                       include_dirs = extra_includes,
                       library_dirs=extra_libs)
