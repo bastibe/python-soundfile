@@ -1,0 +1,48 @@
+# This is a basic workflow to help you get started with Actions
+name: CI
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "master" branch
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# name: Python Package
+
+# on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019]
+        python-version:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "pypy-3.7"
+          - "pypy-3.8"
+        architecture: ["x86", "x64"]
+
+    steps:
+      - name: Build on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install libsndfile
+          New-Item -ItemType Junction -Path "C:\libsndfile" -Target "C:\Program Files\libsndfile"
+          Set-Item -Path Env:LIB -Value "-LC:\libsndfile\bin"
+          Set-Item -Path Env:INCLUDE -Value "-IC:\libsndfile\include"
+          $Env:windir
+          refreshenv
+          vswhere.exe -latest -property installationPath
+          Get-ChildItem C:\libsndfile\
+          Get-ChildItem C:\libsndfile\bin
+          Get-ChildItem C:\libsndfile\lib
