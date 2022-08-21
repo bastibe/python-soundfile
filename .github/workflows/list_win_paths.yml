@@ -38,7 +38,7 @@ jobs:
         uses: johnwason/vcpkg-action@v2
         with:
           pkgs: libsndfile
-          triplet: x64-windows-release
+          triplet: x64-windows-static
         
       - uses: actions/checkout@v2
         with:
