@@ -34,3 +34,8 @@ jobs:
           Get-ChildItem C:\libsndfile\lib
           Get-ChildItem C:\libsndfile\bin
           Get-ChildItem C:\libsndfile\include
+      - name: vcpkg build
+        uses: johnwason/vcpkg-action@v2
+        with:
+          pkgs: libsndfile
+          triplet: x64-windows-release
