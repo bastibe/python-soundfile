@@ -7,16 +7,19 @@ print("Platform:", platform)
 ffibuilder = FFI()
 import sysconfig
 try:
-    extra_includes = sysconfig.get_config_var('CFLAGS').split()
+    extra_libs = sysconfig.get_config_var('LIB').split()
+    extra_includes = sysconfig.get_config_var('INCLUDE').split()
 except:
     extra_includes = ["C:\libsndfile\include"]
-print("CFLAGS: ", extra_includes)
+    extra_libs = ["C:\libsndfile\bin"]
+print("$INCLUDE: ", extra_includes)
+print("$LIB: ", extra_libs)
 
-ffibuilder.set_source('_soundfile', '''
-#include <sndfile.h>
-''',
+ffibuilder.set_source('_soundfile',
+                      ''' #include <sndfile.h> ''',
                       libraries=['sndfile'],
-                     include_dirs = extra_includes)
+                      include_dirs = extra_includes.
+                      library_dirs=extra_libs)
 
 ffibuilder.cdef("""
 enum
