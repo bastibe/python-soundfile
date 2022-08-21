@@ -9,7 +9,7 @@ import sysconfig
 try:
     extra_includes = sysconfig.get_config_var('CFLAGS').split()
 except:
-    extra_includes = []
+    extra_includes = ["C:\libsndfile\include"]
 print("CFLAGS: ", extra_includes)
 
 ffibuilder.set_source('_soundfile', '''
