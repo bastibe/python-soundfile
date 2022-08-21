@@ -1,0 +1,59 @@
+# This is a basic workflow to help you get started with Actions
+name: Windows Paths
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019]
+        python-version:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "pypy-3.7"
+          - "pypy-3.8"
+        architecture: ["x86", "x64"]
+
+    steps:
+      - name: Build on Windows
+        if: runner.os == 'Windows'
+#         run: |
+#           choco install libsndfile
+#           New-Item -ItemType Junction -Path "C:\libsndfile" -Target "C:\Program Files\libsndfile"
+#           Set-Item -Path Env:LIB -Value "-LC:\libsndfile\bin"
+#           Set-Item -Path Env:INCLUDE -Value "-IC:\libsndfile\include"
+#           $Env:windir
+#           refreshenv
+#           vswhere.exe -latest -property installationPath
+#           Get-ChildItem C:\libsndfile\lib
+#           Get-ChildItem C:\libsndfile\bin
+#           Get-ChildItem C:\libsndfile\include
+#       - name: vcpkg build
+#         uses: johnwason/vcpkg-action@v2
+#         with:
+#           pkgs: libsndfile
+#           triplet: x64-windows-static
+        
+        run: |
+          bootstrap-vcpkg
+          vcpkg install libsndfile
+          vcpkg integrate install
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.architecture }}
+      - name: Install requirements
+        run: pip install numpy pytest cffi
+      - name: Install editable package
+        run: pip install --editable . --verbose
+      - name: Run tests
+        run: python -m pytest

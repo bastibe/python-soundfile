@@ -8,7 +8,7 @@ Alternatively, sound files can be opened as `SoundFile` objects.
 For further information, see https://python-soundfile.readthedocs.io/.
 
 """
-__version__ = "0.10.3"
+__version__ = "0.11.1"
 
 import os as _os
 import sys as _sys
@@ -16,11 +16,13 @@ from platform import machine as _machine
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 from ctypes.util import find_library as _find_library
 from _soundfile import ffi as _ffi
+from _soundfile import lib
 
 try:
     _unicode = unicode  # doesn't exist in Python 3.x
 except NameError:
     _unicode = str
+
 
 
 _str_types = {
@@ -383,7 +385,6 @@ def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
                               dtype, always_2d, fill_value, out):
             yield block
 
-
 class _SoundFileInfo(object):
     """Information about a SoundFile"""
 
@@ -438,7 +439,6 @@ class _SoundFileInfo(object):
 
 def info(file, verbose=False):
     """Returns an object with information about a `SoundFile`.
-
     Parameters
     ----------
     verbose : bool
@@ -449,7 +449,6 @@ def info(file, verbose=False):
 
 def available_formats():
     """Return a dictionary of available major formats.
-
     Examples
     --------
     >>> import soundfile as sf
@@ -462,7 +461,6 @@ def available_formats():
      'WAVEX': 'WAVEX (Microsoft)',
      'RAW': 'RAW (header-less)',
      'MAT5': 'MAT5 (GNU Octave 2.1 / Matlab 5.0)'}
-
     """
     return dict(_available_formats_helper(_snd.SFC_GET_FORMAT_MAJOR_COUNT,
                                           _snd.SFC_GET_FORMAT_MAJOR))
@@ -470,12 +468,10 @@ def available_formats():
 
 def available_subtypes(format=None):
     """Return a dictionary of available subtypes.
-
     Parameters
     ----------
     format : str
         If given, only compatible subtypes are returned.
-
     Examples
     --------
     >>> import soundfile as sf
@@ -483,7 +479,6 @@ def available_subtypes(format=None):
     {'PCM_24': 'Signed 24 bit PCM',
      'PCM_16': 'Signed 16 bit PCM',
      'PCM_S8': 'Signed 8 bit PCM'}
-
     """
     subtypes = _available_formats_helper(_snd.SFC_GET_FORMAT_SUBTYPE_COUNT,
                                          _snd.SFC_GET_FORMAT_SUBTYPE)
@@ -493,7 +488,6 @@ def available_subtypes(format=None):
 
 def check_format(format, subtype=None, endian=None):
     """Check if the combination of format/subtype/endian is valid.
-
     Examples
     --------
     >>> import soundfile as sf
@@ -501,7 +495,6 @@ def check_format(format, subtype=None, endian=None):
     True
     >>> sf.check_format('FLAC', 'VORBIS')
     False
-
     """
     try:
         return bool(_format_int(format, subtype, endian))
@@ -511,7 +504,6 @@ def check_format(format, subtype=None, endian=None):
 
 def default_subtype(format):
     """Return the default subtype for a given format.
-
     Examples
     --------
     >>> import soundfile as sf
@@ -519,10 +511,11 @@ def default_subtype(format):
     'PCM_16'
     >>> sf.default_subtype('MAT5')
     'DOUBLE'
-
     """
     _check_format(format)
     return _default_subtypes.get(format.upper())
+
+
 
 
 class SoundFile(object):
@@ -1205,7 +1198,7 @@ class SoundFile(object):
 
     def _init_virtual_io(self, file):
         """Initialize callback functions for sf_open_virtual()."""
-        @_ffi.callback("sf_vio_get_filelen")
+        @_ffi.def_extern()
         def vio_get_filelen(user_data):
             curr = file.tell()
             file.seek(0, SEEK_END)
@@ -1213,12 +1206,13 @@ class SoundFile(object):
             file.seek(curr, SEEK_SET)
             return size
 
-        @_ffi.callback("sf_vio_seek")
+        @_ffi.def_extern()
         def vio_seek(offset, whence, user_data):
             file.seek(offset, whence)
             return file.tell()
 
-        @_ffi.callback("sf_vio_read")
+        # @_ffi.callback("sf_vio_read")
+        @_ffi.def_extern()
         def vio_read(ptr, count, user_data):
             # first try readinto(), if not available fall back to read()
             try:
@@ -1231,7 +1225,7 @@ class SoundFile(object):
                 buf[0:data_read] = data
             return data_read
 
-        @_ffi.callback("sf_vio_write")
+        @_ffi.def_extern()
         def vio_write(ptr, count, user_data):
             buf = _ffi.buffer(ptr, count)
             data = buf[:]
@@ -1241,16 +1235,16 @@ class SoundFile(object):
                 written = count
             return written
 
-        @_ffi.callback("sf_vio_tell")
+        @_ffi.def_extern()
         def vio_tell(user_data):
             return file.tell()
 
         # Note: the callback functions must be kept alive!
-        self._virtual_io = {'get_filelen': vio_get_filelen,
-                            'seek': vio_seek,
-                            'read': vio_read,
-                            'write': vio_write,
-                            'tell': vio_tell}
+        self._virtual_io = {'get_filelen': lib.vio_get_filelen,
+                            'seek': lib.vio_seek,
+                            'read': lib.vio_read,
+                            'write': lib.vio_write,
+                            'tell': lib.vio_tell}
 
         return _ffi.new("SF_VIRTUAL_IO*", self._virtual_io)
 

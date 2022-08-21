@@ -15,7 +15,7 @@ python:
 addons:
   apt:
     packages:
-    - libsndfile1
+    - libsndfile1-dev
 install:
   - "if [[ $TRAVIS_PYTHON_VERSION == pypy ]]; then pip install git+https://bitbucket.org/pypy/numpy.git ; fi"
 script:

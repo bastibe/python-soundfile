@@ -1,0 +1,70 @@
+# This is a basic workflow to help you get started with Actions
+name: Windows Build
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "master" branch
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# name: Python Package
+
+# on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019]
+        python-version:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "pypy-3.7"
+          - "pypy-3.8"
+        architecture: ["x86", "x64"]
+
+    steps:
+      - name: Build on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install libsndfile
+          New-Item -ItemType Junction -Path "C:\libsndfile" -Target "C:\Program Files\libsndfile"
+          Set-Item -Path Env:LIB -Value "-LC:\libsndfile\bin"
+          Set-Item -Path Env:INCLUDE -Value "-IC:\libsndfile\include"
+          $Env:windir
+          refreshenv
+          vswhere.exe -latest -property installationPath
+          Get-ChildItem C:\libsndfile\lib
+
+#   $Env:PATH
+#Set-Item -Path Env:CFLAGS -Value "C:\libsndfile\include"
+#   $Env:INCLUDE
+#   $Env:LIB
+#   $Env:PATH
+# $Env:PATH += ';C:\libsnfile\bin
+# $Env:INCLUDE += ';C:\libsnfile\include'
+#Set-Item -Path Env:CGO_LDFLAGS -Value "-LC:\libsndfile\bin"
+        
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.architecture }}
+      - name: Install requirements
+        run: pip install numpy pytest cffi
+      - name: Install editable package
+        run: pip install --editable . --verbose
+      - name: Run tests
+        run: python -m pytest
+

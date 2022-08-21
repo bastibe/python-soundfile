@@ -1,6 +1,19 @@
-name: Python Package
+# This is a basic workflow to help you get started with Actions
+name: CI
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "master" branch
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
-on: [push, pull_request]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# name: Python Package
+
+# on: [push, pull_request]
 
 jobs:
   test:
@@ -29,7 +42,21 @@ jobs:
     steps:
       - name: Install APT dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get install libsndfile1
+        run: sudo apt-get install libsndfile1 libsndfile1-dev
+#       - name: Install choco for Windows
+      - name: Build on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install libsndfile
+          New-Item -ItemType Junction -Path "C:\libsndfile" -Target "C:\Program Files\libsndfile"
+          $Env:windir
+          $Env:INCLUDE
+          $Env:LIB
+          $Env:PATH
+          $Env:PATH += ';C:\libsnfile\bin'
+          $Env:INCLUDE += ';C:\libsnfile\include'
+#Set-Item -Path Env:CGO_LDFLAGS -Value "-LC:\libsndfile\bin"
+        
       - uses: actions/checkout@v2
         with:
           submodules: true
@@ -38,8 +65,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
       - name: Install requirements
-        run: pip install numpy pytest
+        run: pip install numpy pytest cffi
       - name: Install editable package
         run: pip install --editable . --verbose
       - name: Run tests
         run: python -m pytest
+
