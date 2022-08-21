@@ -18,7 +18,7 @@ print("$LIB: ", extra_libs)
 ffibuilder.set_source('_soundfile',
                       ''' #include <sndfile.h> ''',
                       libraries=['sndfile'],
-                      include_dirs = extra_includes.
+                      include_dirs = extra_includes,
                       library_dirs=extra_libs)
 
 ffibuilder.cdef("""
