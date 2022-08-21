@@ -1,5 +1,5 @@
 # This is a basic workflow to help you get started with Actions
-name: CI
+name: Windows Build
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the "master" branch
@@ -43,7 +43,7 @@ jobs:
           $Env:windir
           refreshenv
           vswhere.exe -latest -property installationPath
-          Get-ChildItem C:\libsndfile\
+          Get-ChildItem C:\libsndfile\lib
 
 #   $Env:PATH
 #Set-Item -Path Env:CFLAGS -Value "C:\libsndfile\include"
