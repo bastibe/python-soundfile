@@ -21,17 +21,6 @@ jobs:
         architecture: ["x86", "x64"]
 
     steps:
-      - name: install with choco
-        if: runner.os == 'Windows'
-        run: |
-          choco install libsndfile
-          New-Item -ItemType Junction -Path "C:\libsndfile" -Target "C:\Program Files\libsndfile"
-          Set-Item -Path Env:LIB -Value "-LC:\libsndfile\bin"
-          Set-Item -Path Env:INCLUDE -Value "-IC:\libsndfile\include"
-          $Env:windir
-          refreshenv
-          vswhere.exe -latest -property installationPath
-          Get-ChildItem C:\libsndfile\lib
       - name: Build on Windows
         if: runner.os == 'Windows'
 #         run: |
