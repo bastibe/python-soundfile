@@ -10,8 +10,8 @@ try:
     extra_libs = sysconfig.get_config_var('LIB').split()
     extra_includes = sysconfig.get_config_var('INCLUDE').split()
 except:
-    extra_includes = ["C:\libsndfile\include"]
-    extra_libs = ["C:\libsndfile\lib"]
+    extra_includes = [r"C:vcpkg\packages\libsndfile_x86-windows\include"]
+    extra_libs = [r"C:vcpkg\packages\libsndfile_x86-windows\lib"]
 print("$INCLUDE: ", extra_includes)
 print("$LIB: ", extra_libs)
 
