@@ -35,11 +35,15 @@ jobs:
 #           Get-ChildItem C:\libsndfile\bin
 #           Get-ChildItem C:\libsndfile\include
 #       - name: vcpkg build
-        uses: johnwason/vcpkg-action@v2
-        with:
-          pkgs: libsndfile
-          triplet: x64-windows-static
+#         uses: johnwason/vcpkg-action@v2
+#         with:
+#           pkgs: libsndfile
+#           triplet: x64-windows-static
         
+        run: |
+          bootstrap-vcpkg
+          vcpkg install libsndfile
+          vcpkg integrate install
       - uses: actions/checkout@v2
         with:
           submodules: true
