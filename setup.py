@@ -8,7 +8,7 @@ import sys
 
 PYTHON_INTERPRETERS = [
     'cp36', 'cp37', 'cp38', 'cp39', 'cp310'
-    'pp32', 'pp33',
+    'pp38', 'pp39',
 ]
 MACOSX_VERSIONS = []
 MACOSX_VERSIONS += [
