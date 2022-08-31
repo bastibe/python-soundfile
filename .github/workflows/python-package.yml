@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Install APT dependencies
-        if: ${{ matrix.python-version == 'ubuntu-22.04' }}
+        if: runner.os == 'Linux'
         run: sudo apt-get install libsndfile1
       - uses: actions/checkout@v3
         with:
