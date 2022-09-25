@@ -62,6 +62,7 @@ _formats = {
     'OGG':   0x200000,  # Xiph OGG container
     'MPC2K': 0x210000,  # Akai MPC 2000 sampler
     'RF64':  0x220000,  # RF64 WAV file
+    'MPEG':  0x230000,  # MPEG-1/2 audio stream
 }
 
 _subtypes = {
@@ -92,6 +93,9 @@ _subtypes = {
     'ALAC_20':   0x0071,  # Apple Lossless Audio Codec (20 bit).
     'ALAC_24':   0x0072,  # Apple Lossless Audio Codec (24 bit).
     'ALAC_32':   0x0073,  # Apple Lossless Audio Codec (32 bit).
+    'MPEG_LAYER_I':   0x0080,  #MPEG-1 Audio Layer I.
+    'MPEG_LAYER_II':   0x0081,  #MPEG-1 Audio Layer II.
+    'MPEG_LAYER_III':   0x0082,  #MPEG-2 Audio Layer III.
 }
 
 _endians = {
