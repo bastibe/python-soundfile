@@ -132,6 +132,7 @@ _default_subtypes = {
     'OGG':   'VORBIS',
     'MPC2K': 'PCM_16',
     'RF64':  'PCM_16',
+    'MPEG':  'MPEG_LAYER_III',
 }
 
 _ffi_types = {
