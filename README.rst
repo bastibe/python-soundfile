@@ -297,7 +297,8 @@ News
     Thank you, tennies, Hannes Helmholz, Christoph Boeddeker, Matt
     Vollrath, Matthias Geier, Jacek Konieczny, Boris Verkhovskiy,
     Jonas Haag, Eduardo Moguillansky, Panos Laganakos, Jarvy Jarvison,
-    Domingo Ramirez, Tim Chagnon, Kyle Benesch, Fabian-Robert Stöter
+    Domingo Ramirez, Tim Chagnon, Kyle Benesch, Fabian-Robert Stöter,
+    Joe Todd
 
     - MP3 support
     - Adds binary wheels for macOS M1
