@@ -101,31 +101,31 @@ def file_wplus(request):
     return _file_new(request, os.O_CREAT | os.O_RDWR, 'w+b')
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def file_inmemory():
     with io.BytesIO() as f:
         yield f
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def sf_stereo_r(file_stereo_r):
     with sf.SoundFile(file_stereo_r) as f:
         yield f
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def sf_stereo_w(file_w):
     with sf.SoundFile(file_w, 'w', 44100, 2, format='WAV') as f:
         yield f
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def sf_stereo_rplus(file_stereo_rplus):
     with sf.SoundFile(file_stereo_rplus, 'r+') as f:
         yield f
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def sf_stereo_wplus(file_wplus):
     with sf.SoundFile(file_wplus, 'w+', 44100, 2,
                       format='WAV', subtype='FLOAT') as f:
@@ -592,7 +592,8 @@ def test_file_content(sf_stereo_r):
 
 def test_file_attributes_in_read_mode(sf_stereo_r):
     if isinstance(sf_stereo_r.name, str):
-        assert sf_stereo_r.name == filename_stereo
+        # wrap in pathlib, to make tests pass on Windows:
+        assert pathlib.Path(sf_stereo_r.name) == pathlib.Path(filename_stereo)
     elif not isinstance(sf_stereo_r.name, int):
         assert sf_stereo_r.name.name == filename_stereo
     assert sf_stereo_r.mode == 'r'
