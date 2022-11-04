@@ -160,7 +160,8 @@ except OSError:
         _packaged_libname = 'libsndfile_' + _architecture()[0] + '.dll'
         _libname = 'libsndfile.dll'
     elif _sys.platform == 'linux':
-        _packaged_libname = 'libsndfile.so'  # not provided!
+        from platform import machine as _machine
+        _packaged_libname = 'libsndfile_' + _machine() + '.so'
         _libname = 'libsndfile.so'
     else:
         raise

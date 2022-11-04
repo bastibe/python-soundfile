@@ -13,6 +13,8 @@ if platform == 'darwin':
     libname = 'libsndfile_' + architecture0 + '.dylib'
 elif platform == 'win32':
     libname = 'libsndfile_' + architecture0 + '.dll'
+elif platform == 'linux':
+    libname = 'libsndfile_' + architecture0 + '.so'
 else:
     libname = None
 
@@ -68,6 +70,8 @@ else:
                     oses = 'win32'
                 else:
                     oses = 'win_amd64'
+            elif platform == 'linux':
+                oses = 'manylinux2014_x86_64'
             else:
                 pythons = 'py2.py3'
                 oses = 'any'
