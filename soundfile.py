@@ -148,7 +148,7 @@ _ffi_types = {
 try:
     _libname = _find_library('sndfile')
     if _libname is None:
-        raise OSError('sndfile library not found')
+        raise OSError('sndfile library not found using ctypes.util.find_library')
     _snd = _ffi.dlopen(_libname)
 except OSError:
     if _sys.platform == 'darwin':
@@ -165,18 +165,12 @@ except OSError:
     else:
         raise
 
-    # hack for packaging tools like cx_Freeze, which
-    # compress all scripts into a zip file
-    # which causes __file__ to be inside this zip file
-
-    _path = _os.path.dirname(_os.path.abspath(__file__))
-
-    while not _os.path.isdir(_path):
-        _path = _os.path.abspath(_os.path.join(_path, '..'))
-
+    # try packaged lib (in _soundfile_data which should be on python path)
     try:  # packaged libsndfile:
-        _snd = _ffi.dlopen(_os.path.join(_path, '_soundfile_data', _packaged_libname))
-    except OSError:  # try system-wide libsndfile:
+        import _soundfile_data  # ImportError if this doesn't exist
+        _path = _os.path.dirname(_soundfile_data.__path__)
+        _snd = _ffi.dlopen(_os.path.join(_path, _packaged_libname))
+    except (OSError, ImportError):  # try system-wide libsndfile:
         # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
         # `/usr/local/lib`. We are making sure we pick that up.
         from platform import machine as _machine
