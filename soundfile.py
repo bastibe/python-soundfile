@@ -168,7 +168,7 @@ except OSError:
     # try packaged lib (in _soundfile_data which should be on python path)
     try:  # packaged libsndfile:
         import _soundfile_data  # ImportError if this doesn't exist
-        _path = _os.path.dirname(_soundfile_data.__path__[0])
+        _path = _os.path.dirname(_soundfile_data.__file__)
         _full_path = _os.path.join(_path, _packaged_libname)
         _snd = _ffi.dlopen(_full_path)
     except (OSError, ImportError):  # try system-wide libsndfile:
