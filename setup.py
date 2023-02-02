@@ -83,7 +83,7 @@ else:
 
 setup(
     name='soundfile',
-    version='0.11.0',
+    version='0.12.0',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',

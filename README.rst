@@ -59,10 +59,11 @@ The ``soundfile`` module depends on the Python packages CFFI and NumPy, and the
 system library libsndfile.
 
 In a modern Python, you can use ``pip install soundfile`` to download
-and install the latest release of the ``soundfile`` module and its dependencies.
-On Windows and OS X, this will also install the library libsndfile.
-On Linux, you need to install libsndfile using your distribution's
-package manager, for example ``sudo apt-get install libsndfile1``.
+and install the latest release of the ``soundfile`` module and its
+dependencies. On Windows and OS X and Linux 64, this will also install
+the library libsndfile. On Linux, you need to install libsndfile using
+your distribution's package manager, for example ``sudo apt-get
+install libsndfile1``.
 
 If you are running on an unusual platform or if you are using an older
 version of Python, you might need to install NumPy and CFFI separately,
@@ -309,3 +310,11 @@ News
     - Improves documentation, error messages and tests
     - Displays length of very short files in samples
     - Supports the file system path protocol (pathlib et al)
+
+2023-02-02 V0.12.0 Bastian Bechtold
+    Thank you, Barabazs, Andrew Murray, Jon Peirce, for contributions
+    to this release.
+
+    - Updated libsndfile to v1.2.0
+    - Improves precompiled library location, especially with py2app or cx-freeze.
+    - Now provide binary wheels for Linux x86_64
