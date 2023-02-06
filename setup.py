@@ -13,6 +13,8 @@ if platform == 'darwin':
     libname = 'libsndfile_' + architecture0 + '.dylib'
 elif platform == 'win32':
     libname = 'libsndfile_' + architecture0 + '.dll'
+elif platform == 'linux':
+    libname = 'libsndfile_' + architecture0 + '.so'
 else:
     libname = None
 
@@ -60,14 +62,18 @@ else:
             pythons = 'py2.py3'
             if platform == 'darwin':
                 if architecture0 == 'x86_64':
-                    oses = 'macosx_10_9_x86_64.macosx_11_0_x86_64'
+                    oses = 'macosx_10_9_x86_64'
                 else:
-                    oses = 'macosx_10_9_arm64.macosx_11_0_arm64'
+                    oses = 'macosx_11_0_arm64'
             elif platform == 'win32':
                 if architecture0 == '32bit':
                     oses = 'win32'
                 else:
                     oses = 'win_amd64'
+            elif platform == 'linux':
+                # the oldest mainline github runner available is ubuntu 20.04,
+                # which runs glibc 2.31:
+                oses = 'manylinux_2_31_x86_64'
             else:
                 pythons = 'py2.py3'
                 oses = 'any'
@@ -77,7 +83,7 @@ else:
 
 setup(
     name='soundfile',
-    version='0.11.0',
+    version='0.12.0',
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
