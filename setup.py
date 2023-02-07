@@ -81,9 +81,18 @@ else:
 
     cmdclass['bdist_wheel'] = bdist_wheel_half_pure
 
+with open('soundfile.py') as f:
+    for line in f:
+        if line.startswith('__version__'):
+            _, soundfile_version = line.split('=')
+            soundfile_version = soundfile_version.strip(' "\'\n')
+            break
+    else:
+         raise RuntimeError("Could not find __version__ in soundfile.py")
+
 setup(
     name='soundfile',
-    version='0.12.0',
+    version=soundfile_version,
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',
