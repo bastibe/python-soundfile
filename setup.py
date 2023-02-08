@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-from platform import architecture
+from platform import architecture, machine
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 import sys
@@ -59,7 +59,7 @@ else:
         def get_tag(self):
             pythons = 'py2.py3'
             if platform == 'darwin':
-                if architecture0 == 'x86_64':
+                if machine() == 'x86_64':
                     oses = 'macosx_10_9_x86_64.macosx_11_0_x86_64'
                 else:
                     oses = 'macosx_10_9_arm64.macosx_11_0_arm64'
