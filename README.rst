@@ -38,7 +38,7 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 Breaking Changes
 ----------------
 
-The ``soundfile`` module has evolved rapidly during the last few releases. Most
+The ``soundfile`` module has evolved rapidly in the past. Most
 notably, we changed the import name from ``import pysoundfile`` to
 ``import soundfile`` in 0.7. In 0.6, we cleaned up many small
 inconsistencies, particularly in the the ordering and naming of
@@ -60,10 +60,11 @@ system library libsndfile.
 
 In a modern Python, you can use ``pip install soundfile`` to download
 and install the latest release of the ``soundfile`` module and its
-dependencies. On Windows and OS X and Linux 64, this will also install
-the library libsndfile. On Linux, you need to install libsndfile using
-your distribution's package manager, for example ``sudo apt-get
-install libsndfile1``.
+dependencies. On Windows (64/32) and OS X (Intel/ARM) and Linux 64,
+this will also install a current version of the library libsndfile. If
+you install the source module, you need to install libsndfile using
+your distribution's package manager, for example ``sudo apt install
+libsndfile1``.
 
 If you are running on an unusual platform or if you are using an older
 version of Python, you might need to install NumPy and CFFI separately,
