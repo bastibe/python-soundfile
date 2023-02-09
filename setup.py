@@ -1,13 +1,20 @@
 #!/usr/bin/env python
 import os
-from platform import architecture
+from platform import architecture, machine
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 import sys
 
 # environment variables for cross-platform package creation
 platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
-architecture0 = os.environ.get('PYSOUNDFILE_ARCHITECTURE', architecture()[0])
+architecture0 = os.environ.get('PYSOUNDFILE_ARCHITECTURE')
+if architecture0 is None:
+    # follow the same decision tree as in soundfile.py after
+    # _find_library('sndfile') fails:
+    if sys.platform == 'win32':
+        architecture0 = architecture()[0]  # 64bit or 32bit
+    else:
+        architecture0 = machine()  # x86_64 or arm64
 
 if platform == 'darwin':
     libname = 'libsndfile_' + architecture0 + '.dylib'
