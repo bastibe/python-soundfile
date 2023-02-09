@@ -52,6 +52,12 @@ In 0.9.0, we changed the ``ctype`` arguments of the ``buffer_*``
 methods to ``dtype``, using the Numpy ``dtype`` notation. The old
 ``ctype`` arguments still work, but are now officially deprecated.
 
+In 0.12.0, we changed the load order of the libsndfile library. Now,
+the packaged libsndfile in the platform-specific wheels is tried
+before falling back to any system-provided libsndfile. If you would
+prefer using the system-provided libsndfile, install the source
+package or source wheel instead of the platform-specific wheels.
+
 Installation
 ------------
 
@@ -319,3 +325,4 @@ News
     - Updated libsndfile to v1.2.0
     - Improves precompiled library location, especially with py2app or cx-freeze.
     - Now provide binary wheels for Linux x86_64
+    - Now prefers packaged libsndfile over system-installed libsndfile

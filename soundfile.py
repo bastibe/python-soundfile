@@ -145,44 +145,51 @@ _ffi_types = {
     'int16': 'short'
 }
 
-try:
-    _libname = _find_library('sndfile')
-    if _libname is None:
-        raise OSError('sndfile library not found using ctypes.util.find_library')
-    _snd = _ffi.dlopen(_libname)
-except OSError:
+try:  # packaged lib (in _soundfile_data which should be on python path)
     if _sys.platform == 'darwin':
         from platform import machine as _machine
         _packaged_libname = 'libsndfile_' + _machine() + '.dylib'
-        _libname = 'libsndfile.dylib'
     elif _sys.platform == 'win32':
         from platform import architecture as _architecture
         _packaged_libname = 'libsndfile_' + _architecture()[0] + '.dll'
-        _libname = 'libsndfile.dll'
     elif _sys.platform == 'linux':
         from platform import machine as _machine
         _packaged_libname = 'libsndfile_' + _machine() + '.so'
-        _libname = 'libsndfile.so'
     else:
-        raise
+        raise OSError('no packaged library for this platform')
 
-    # try packaged lib (in _soundfile_data which should be on python path)
-    try:  # packaged libsndfile:
-        import _soundfile_data  # ImportError if this doesn't exist
-        _path = _os.path.dirname(_soundfile_data.__file__)
-        _full_path = _os.path.join(_path, _packaged_libname)
-        _snd = _ffi.dlopen(_full_path)
-    except (OSError, ImportError):  # try system-wide libsndfile:
+    import _soundfile_data  # ImportError if this doesn't exist
+    _path = _os.path.dirname(_soundfile_data.__file__)
+    _full_path = _os.path.join(_path, _packaged_libname)
+    _snd = _ffi.dlopen(_full_path)  # OSError if file doesn't exist or can't be loaded
+
+except (OSError, ImportError):
+    try:  # system-wide libsndfile:
+        _libname = _find_library('sndfile')
+        if _libname is None:
+            raise OSError('sndfile library not found using ctypes.util.find_library')
+        _snd = _ffi.dlopen(_libname)
+
+    except OSError:
+        # Try explicit file name, if the general does not work (e.g. on nixos)
+        if _sys.platform == 'darwin':
+            _explicit_libname = 'libsndfile.dylib'
+        elif _sys.platform == 'win32':
+            _explicit_libname = 'libsndfile.dll'
+        elif _sys.plaform == 'linux':
+            _explicit_libname = 'libsndfile.so'
+        else:
+            raise
+
         # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
         # `/usr/local/lib`. We are making sure we pick that up.
         from platform import machine as _machine
         if _sys.platform == 'darwin' and _machine() == 'arm64':
             _hbrew_path = '/opt/homebrew/lib/' if _os.path.isdir('/opt/homebrew/lib/') \
                 else '/usr/local/lib/'
-            _snd = _ffi.dlopen(_os.path.join(_hbrew_path, _libname))
+            _snd = _ffi.dlopen(_os.path.join(_hbrew_path, _explicit_libname))
         else:
-            # Try explicit file name, if the general does not work (e.g. on nixos)
-            _snd = _ffi.dlopen(_libname)
+            _snd = _ffi.dlopen(_explicit_libname)
 
 __libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode('utf-8', 'replace')
 if __libsndfile_version__.startswith('libsndfile-'):
