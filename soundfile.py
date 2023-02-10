@@ -159,11 +159,11 @@ try:  # packaged lib (in _soundfile_data which should be on python path)
         raise OSError('no packaged library for this platform')
 
     import _soundfile_data  # ImportError if this doesn't exist
-    _path = _os.path.dirname(_soundfile_data.__file__)
+    _path = _os.path.dirname(_soundfile_data.__file__)  # TypeError if __file__ is None
     _full_path = _os.path.join(_path, _packaged_libname)
     _snd = _ffi.dlopen(_full_path)  # OSError if file doesn't exist or can't be loaded
 
-except (OSError, ImportError):
+except (OSError, ImportError, TypeError):
     try:  # system-wide libsndfile:
         _libname = _find_library('sndfile')
         if _libname is None:
