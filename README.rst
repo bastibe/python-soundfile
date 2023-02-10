@@ -62,7 +62,7 @@ Installation
 ------------
 
 The ``soundfile`` module depends on the Python packages CFFI and NumPy, and the
-system library libsndfile.
+library libsndfile.
 
 In a modern Python, you can use ``pip install soundfile`` to download
 and install the latest release of the ``soundfile`` module and its
@@ -78,6 +78,24 @@ for example using the Anaconda_ package manager or the `Unofficial Windows
 Binaries for Python Extension Packages <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
 
 .. _Anaconda: https://www.continuum.io/downloads
+
+Building
+--------
+
+``Soundfile`` itself does not contain any compiled code and can be
+bundled into a wheel with the usual ``python setup.py bdist_wheel``.
+However, ``soundfile`` relies on libsndfile, and optionally ships its
+own copy of libsndfile in the wheel.
+
+To build a binary wheel that contains libsndfile, make sure to
+checkout and update the ``_soundfile_data`` submodule, then run
+``python setup.py bdist_wheel`` as usual. If the resulting file size
+of the wheel is around one megabyte, a matching libsndfile has been
+bundled (without libsndfile, it's around 25 KB).
+
+To build binary wheels for all supported platforms, run ``python
+build_wheels.py``, which will ``python setup.py bdist_wheel`` for each
+of the platforms we have precompiled libsndfiles for.
 
 Error Reporting
 ---------------
