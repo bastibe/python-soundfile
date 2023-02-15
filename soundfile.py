@@ -8,7 +8,7 @@ Alternatively, sound files can be opened as `SoundFile` objects.
 For further information, see https://python-soundfile.readthedocs.io/.
 
 """
-__version__ = "0.12.0"
+__version__ = "0.12.1"
 
 import os as _os
 import sys as _sys
@@ -176,7 +176,7 @@ except (OSError, ImportError, TypeError):
             _explicit_libname = 'libsndfile.dylib'
         elif _sys.platform == 'win32':
             _explicit_libname = 'libsndfile.dll'
-        elif _sys.plaform == 'linux':
+        elif _sys.platform == 'linux':
             _explicit_libname = 'libsndfile.so'
         else:
             raise
