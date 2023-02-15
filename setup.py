@@ -1,18 +1,27 @@
 #!/usr/bin/env python
 import os
-from platform import architecture
+from platform import architecture, machine
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 import sys
 
 # environment variables for cross-platform package creation
 platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
-architecture0 = os.environ.get('PYSOUNDFILE_ARCHITECTURE', architecture()[0])
+architecture0 = os.environ.get('PYSOUNDFILE_ARCHITECTURE')
+if architecture0 is None:
+    # follow the same decision tree as in soundfile.py after
+    # _find_library('sndfile') fails:
+    if sys.platform == 'win32':
+        architecture0 = architecture()[0]  # 64bit or 32bit
+    else:
+        architecture0 = machine()  # x86_64 or arm64
 
 if platform == 'darwin':
     libname = 'libsndfile_' + architecture0 + '.dylib'
 elif platform == 'win32':
     libname = 'libsndfile_' + architecture0 + '.dll'
+elif platform == 'linux':
+    libname = 'libsndfile_' + architecture0 + '.so'
 else:
     libname = None
 
@@ -60,14 +69,18 @@ else:
             pythons = 'py2.py3'
             if platform == 'darwin':
                 if architecture0 == 'x86_64':
-                    oses = 'macosx_10_9_x86_64.macosx_11_0_x86_64'
+                    oses = 'macosx_10_9_x86_64'
                 else:
-                    oses = 'macosx_10_9_arm64.macosx_11_0_arm64'
+                    oses = 'macosx_11_0_arm64'
             elif platform == 'win32':
                 if architecture0 == '32bit':
                     oses = 'win32'
                 else:
                     oses = 'win_amd64'
+            elif platform == 'linux':
+                # the oldest mainline github runner available is ubuntu 20.04,
+                # which runs glibc 2.31:
+                oses = 'manylinux_2_31_x86_64'
             else:
                 pythons = 'py2.py3'
                 oses = 'any'
@@ -75,9 +88,18 @@ else:
 
     cmdclass['bdist_wheel'] = bdist_wheel_half_pure
 
+with open('soundfile.py') as f:
+    for line in f:
+        if line.startswith('__version__'):
+            _, soundfile_version = line.split('=')
+            soundfile_version = soundfile_version.strip(' "\'\n')
+            break
+    else:
+         raise RuntimeError("Could not find __version__ in soundfile.py")
+
 setup(
     name='soundfile',
-    version='0.11.0',
+    version=soundfile_version,
     description='An audio library based on libsndfile, CFFI and NumPy',
     author='Bastian Bechtold',
     author_email='basti@bastibe.de',

@@ -8,7 +8,7 @@ Alternatively, sound files can be opened as `SoundFile` objects.
 For further information, see https://python-soundfile.readthedocs.io/.
 
 """
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 import os as _os
 import sys as _sys
@@ -145,48 +145,51 @@ _ffi_types = {
     'int16': 'short'
 }
 
-try:
-    _libname = _find_library('sndfile')
-    if _libname is None:
-        raise OSError('sndfile library not found')
-    _snd = _ffi.dlopen(_libname)
-except OSError:
+try:  # packaged lib (in _soundfile_data which should be on python path)
     if _sys.platform == 'darwin':
         from platform import machine as _machine
         _packaged_libname = 'libsndfile_' + _machine() + '.dylib'
-        _libname = 'libsndfile.dylib'
     elif _sys.platform == 'win32':
         from platform import architecture as _architecture
         _packaged_libname = 'libsndfile_' + _architecture()[0] + '.dll'
-        _libname = 'libsndfile.dll'
     elif _sys.platform == 'linux':
-        _packaged_libname = 'libsndfile.so'  # not provided!
-        _libname = 'libsndfile.so'
+        from platform import machine as _machine
+        _packaged_libname = 'libsndfile_' + _machine() + '.so'
     else:
-        raise
+        raise OSError('no packaged library for this platform')
 
-    # hack for packaging tools like cx_Freeze, which
-    # compress all scripts into a zip file
-    # which causes __file__ to be inside this zip file
+    import _soundfile_data  # ImportError if this doesn't exist
+    _path = _os.path.dirname(_soundfile_data.__file__)  # TypeError if __file__ is None
+    _full_path = _os.path.join(_path, _packaged_libname)
+    _snd = _ffi.dlopen(_full_path)  # OSError if file doesn't exist or can't be loaded
 
-    _path = _os.path.dirname(_os.path.abspath(__file__))
+except (OSError, ImportError, TypeError):
+    try:  # system-wide libsndfile:
+        _libname = _find_library('sndfile')
+        if _libname is None:
+            raise OSError('sndfile library not found using ctypes.util.find_library')
+        _snd = _ffi.dlopen(_libname)
 
-    while not _os.path.isdir(_path):
-        _path = _os.path.abspath(_os.path.join(_path, '..'))
+    except OSError:
+        # Try explicit file name, if the general does not work (e.g. on nixos)
+        if _sys.platform == 'darwin':
+            _explicit_libname = 'libsndfile.dylib'
+        elif _sys.platform == 'win32':
+            _explicit_libname = 'libsndfile.dll'
+        elif _sys.plaform == 'linux':
+            _explicit_libname = 'libsndfile.so'
+        else:
+            raise
 
-    try:  # packaged libsndfile:
-        _snd = _ffi.dlopen(_os.path.join(_path, '_soundfile_data', _packaged_libname))
-    except OSError:  # try system-wide libsndfile:
         # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
         # `/usr/local/lib`. We are making sure we pick that up.
         from platform import machine as _machine
         if _sys.platform == 'darwin' and _machine() == 'arm64':
             _hbrew_path = '/opt/homebrew/lib/' if _os.path.isdir('/opt/homebrew/lib/') \
                 else '/usr/local/lib/'
-            _snd = _ffi.dlopen(_os.path.join(_hbrew_path, _libname))
+            _snd = _ffi.dlopen(_os.path.join(_hbrew_path, _explicit_libname))
         else:
-            # Try explicit file name, if the general does not work (e.g. on nixos)
-            _snd = _ffi.dlopen(_libname)
+            _snd = _ffi.dlopen(_explicit_libname)
 
 __libsndfile_version__ = _ffi.string(_snd.sf_version_string()).decode('utf-8', 'replace')
 if __libsndfile_version__.startswith('libsndfile-'):

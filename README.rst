@@ -38,7 +38,7 @@ interface for Python calling C code. CFFI is supported for CPython 2.6+,
 Breaking Changes
 ----------------
 
-The ``soundfile`` module has evolved rapidly during the last few releases. Most
+The ``soundfile`` module has evolved rapidly in the past. Most
 notably, we changed the import name from ``import pysoundfile`` to
 ``import soundfile`` in 0.7. In 0.6, we cleaned up many small
 inconsistencies, particularly in the the ordering and naming of
@@ -52,17 +52,25 @@ In 0.9.0, we changed the ``ctype`` arguments of the ``buffer_*``
 methods to ``dtype``, using the Numpy ``dtype`` notation. The old
 ``ctype`` arguments still work, but are now officially deprecated.
 
+In 0.12.0, we changed the load order of the libsndfile library. Now,
+the packaged libsndfile in the platform-specific wheels is tried
+before falling back to any system-provided libsndfile. If you would
+prefer using the system-provided libsndfile, install the source
+package or source wheel instead of the platform-specific wheels.
+
 Installation
 ------------
 
 The ``soundfile`` module depends on the Python packages CFFI and NumPy, and the
-system library libsndfile.
+library libsndfile.
 
 In a modern Python, you can use ``pip install soundfile`` to download
-and install the latest release of the ``soundfile`` module and its dependencies.
-On Windows and OS X, this will also install the library libsndfile.
-On Linux, you need to install libsndfile using your distribution's
-package manager, for example ``sudo apt-get install libsndfile1``.
+and install the latest release of the ``soundfile`` module and its
+dependencies. On Windows (64/32) and OS X (Intel/ARM) and Linux 64,
+this will also install a current version of the library libsndfile. If
+you install the source module, you need to install libsndfile using
+your distribution's package manager, for example ``sudo apt install
+libsndfile1``.
 
 If you are running on an unusual platform or if you are using an older
 version of Python, you might need to install NumPy and CFFI separately,
@@ -70,6 +78,24 @@ for example using the Anaconda_ package manager or the `Unofficial Windows
 Binaries for Python Extension Packages <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
 
 .. _Anaconda: https://www.continuum.io/downloads
+
+Building
+--------
+
+``Soundfile`` itself does not contain any compiled code and can be
+bundled into a wheel with the usual ``python setup.py bdist_wheel``.
+However, ``soundfile`` relies on libsndfile, and optionally ships its
+own copy of libsndfile in the wheel.
+
+To build a binary wheel that contains libsndfile, make sure to
+checkout and update the ``_soundfile_data`` submodule, then run
+``python setup.py bdist_wheel`` as usual. If the resulting file size
+of the wheel is around one megabyte, a matching libsndfile has been
+bundled (without libsndfile, it's around 25 KB).
+
+To build binary wheels for all supported platforms, run ``python
+build_wheels.py``, which will ``python setup.py bdist_wheel`` for each
+of the platforms we have precompiled libsndfiles for.
 
 Error Reporting
 ---------------
@@ -309,3 +335,12 @@ News
     - Improves documentation, error messages and tests
     - Displays length of very short files in samples
     - Supports the file system path protocol (pathlib et al)
+
+2023-02-02 V0.12.0 Bastian Bechtold
+    Thank you, Barabazs, Andrew Murray, Jon Peirce, for contributions
+    to this release.
+
+    - Updated libsndfile to v1.2.0
+    - Improves precompiled library location, especially with py2app or cx-freeze.
+    - Now provide binary wheels for Linux x86_64
+    - Now prefers packaged libsndfile over system-installed libsndfile
