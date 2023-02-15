@@ -344,3 +344,9 @@ News
     - Improves precompiled library location, especially with py2app or cx-freeze.
     - Now provide binary wheels for Linux x86_64
     - Now prefers packaged libsndfile over system-installed libsndfile
+
+2023-02-15 V0.12.1 Bastian Bechtold
+    Thank you, funnypig, for the bug report
+
+    - Fixed typo on library location detection if no packaged lib and
+      no system lib was found
