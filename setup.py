@@ -80,7 +80,7 @@ else:
             elif platform == 'linux':
                 # the oldest mainline github runner available is ubuntu 20.04,
                 # which runs glibc 2.31:
-                oses = 'manylinux_2_31_x86_64'
+                oses = 'manylinux_2_31_{}'.format(architecture0)
             else:
                 pythons = 'py2.py3'
                 oses = 'any'
