@@ -78,9 +78,8 @@ else:
                 else:
                     oses = 'win_amd64'
             elif platform == 'linux':
-                # the oldest mainline github runner available is ubuntu 20.04,
-                # which runs glibc 2.31:
-                oses = 'manylinux_2_31_{}'.format(architecture0)
+                # using the centos:7 runner with glibc2.17:
+                oses = 'manylinux_2_17_{}'.format(architecture0)
             else:
                 pythons = 'py2.py3'
                 oses = 'any'
