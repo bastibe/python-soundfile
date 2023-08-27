@@ -148,7 +148,7 @@ _ffi_types = {
 try:  # packaged lib (in _soundfile_data which should be on python path)
     if _sys.platform == 'darwin':
         from platform import machine as _machine
-        _packaged_libname = 'libsndfile_' + _machine() + '.dylib'
+        _packaged_libname = 'libsndfile.dylib'
     elif _sys.platform == 'win32':
         from platform import architecture as _architecture
         _packaged_libname = 'libsndfile_' + _architecture()[0] + '.dll'
