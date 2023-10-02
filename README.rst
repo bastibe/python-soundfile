@@ -97,6 +97,9 @@ To build binary wheels for all supported platforms, run ``python
 build_wheels.py``, which will ``python setup.py bdist_wheel`` for each
 of the platforms we have precompiled libsndfiles for.
 
+To build the documentation, install Sphinx and the ReadTheDocs theme
+(``pip install sphinx sphinx-rtd-theme``) and run the Makefile in ``doc/``.
+
 Error Reporting
 ---------------
 
