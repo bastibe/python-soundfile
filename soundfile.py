@@ -1379,10 +1379,11 @@ class SoundFile(object):
 
     def _array_io(self, action, array, frames):
         """Check array and call low-level IO function."""
-        if (array.ndim not in (1, 2) or
-                array.ndim == 1 and self.channels != 1 or
-                array.ndim == 2 and array.shape[1] != self.channels):
-            raise ValueError("Invalid shape: {0!r}".format(array.shape))
+        if self.channels not in (1,2):
+            raise ValueError("Cannot convert: file has {0} channels, but only 1 or 2 is supported".format(self.channels))
+        array_channels = 1 if array.ndim == 1 else array.shape[1]
+        if array_channels != self.channels:
+            raise ValueError("Invalid shape: {0!r} (Expected {1} channels, got {2})".format(array.shape, self.channels, array_channels))
         if not array.flags.c_contiguous:
             raise ValueError("Data must be C-contiguous")
         ctype = self._check_dtype(array.dtype.name)
