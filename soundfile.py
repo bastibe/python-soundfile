@@ -1332,8 +1332,8 @@ class SoundFile(object):
 
     def _array_io(self, action, array, frames):
         """Check array and call low-level IO function."""
-        if self.channels not in (1,2):
-            raise ValueError("Cannot convert: file has {0} channels, but only 1 or 2 is supported".format(self.channels))
+        if array.ndim not in (1,2):
+            raise ValueError("Invalid shape: {0!r} ({1})".format(array.shape, "0 dimensions not supported" if array.ndim < 1 else "too many dimensions"))
         array_channels = 1 if array.ndim == 1 else array.shape[1]
         if array_channels != self.channels:
             raise ValueError("Invalid shape: {0!r} (Expected {1} channels, got {2})".format(array.shape, self.channels, array_channels))
