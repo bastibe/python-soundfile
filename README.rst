@@ -220,6 +220,27 @@ For Python 2.x support, replace the third line with:
 
     from urllib2 import urlopen
 
+In-memory files
+^^^^^^^^^^^^^^^
+
+Chunks of audio, i.e. `bytes`, can also be read and written without touching the filesystem.
+In the following example OGG is converted to WAV entirely in memory (without writing files to the disk):
+
+.. code:: python
+
+    import io
+    import soundfile as sf
+
+    def ogg2wav(ogg: bytes):
+        ogg_buf = io.BytesIO(ogg)
+        ogg_buf.name = 'file.ogg'
+        data, samplerate = sf.read(ogg_buf)
+        wav_buf = io.BytesIO()
+        wav_buf.name = 'file.wav'
+        sf.write(wav_buf, data, samplerate)
+        wav_buf.seek(0)  # Necessary for `.read()` to return all bytes
+        return wav_buf.read()
+
 Known Issues
 ------------
 
