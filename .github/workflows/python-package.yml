@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-10.15]
+        os: [ubuntu-20.04, windows-2019, macos-11]
         python-version:
           - "3.6"
           - "3.7"
@@ -20,9 +20,9 @@ jobs:
           - "pypy-3.8"
         architecture: ["x86", "x64"]
         exclude:
-          - os: macos-10.15 # Can't compile Numpy for this implementation.
+          - os: macos-11 # Can't compile Numpy for this implementation.
             python-version: "pypy-3.7"
-          - os: macos-10.15
+          - os: macos-11
             architecture: "x86"
           - os: ubuntu-20.04
             architecture: "x86"
