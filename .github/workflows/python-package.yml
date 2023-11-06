@@ -42,6 +42,8 @@ jobs:
           architecture: ${{ matrix.architecture }}
       - name: Install requirements
         run: pip install numpy pytest
+      - name: "Workaround: Generate _soundfile.py explicitly"
+        run: python soundfile_build.py
       - name: Install editable package
         run: pip install --editable . --verbose
       - name: Run tests
