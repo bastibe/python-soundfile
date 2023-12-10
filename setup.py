@@ -110,9 +110,9 @@ setup(
     zip_safe=zip_safe,
     license='BSD 3-Clause License',
     setup_requires=["cffi>=1.0"],
-    install_requires=['cffi>=1.0'],
+    install_requires=['cffi>=1.0', 'numpy'],
     cffi_modules=["soundfile_build.py:ffibuilder"],
-    extras_require={'numpy': ['numpy']},
+    extras_require={'numpy': []}, # This option is no longer relevant, but the empty entry must be left in to avoid breaking old build scripts.
     platforms='any',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
