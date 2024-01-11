@@ -125,13 +125,10 @@ typedef struct SF_FORMAT_INFO
     const char* name ;
     const char* extension ;
 } SF_FORMAT_INFO ;
-""")
 
-platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
-if platform == 'win32':
-    ffibuilder.cdef("""
-    SNDFILE* sf_wchar_open (const wchar_t *wpath, int mode, SF_INFO *sfinfo) ;
-    """)
+/* This is only available on Windows: */
+SNDFILE* sf_wchar_open (const wchar_t *wpath, int mode, SF_INFO *sfinfo) ;
+""")
 
 if __name__ == "__main__":
     ffibuilder.compile(verbose=True)
