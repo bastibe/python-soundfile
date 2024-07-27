@@ -74,8 +74,7 @@ libsndfile1``.
 
 If you are running on an unusual platform or if you are using an older
 version of Python, you might need to install NumPy and CFFI separately,
-for example using the Anaconda_ package manager or the `Unofficial Windows
-Binaries for Python Extension Packages <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
+for example using the Anaconda_ package manager.
 
 .. _Anaconda: https://www.continuum.io/downloads
 
