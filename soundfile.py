@@ -1164,6 +1164,62 @@ class SoundFile(object):
             raise LibsndfileError(err, "Error truncating the file")
         self._info.frames = frames
 
+    def set_compression_level(self, level):
+        """Set the compression level 
+
+        The compression level should be between 0.0 (minimum compression 
+        level) and 1.0 (highest compression level). Currenly this command 
+        is only implemented for FLAC and Ogg/Vorbis files. It has no 
+        effect on uncompressed file formats.
+
+        Setting the compression level is only valid when open in 
+        write mode. This method must be called before any data is actually
+        written
+
+        Parameters
+        ----------
+        level : float
+            The compression level, between 0. (minimum compression) and
+            1.0 (highest  compression)
+        """
+        if self._mode == 'r':
+            raise SoundFileRuntimeError("Cannot set compression level "
+                                        "for a file in 'read' mode")
+
+        err = _snd.sf_command(self._file, _snd.SFC_SET_COMPRESSION_LEVEL,
+                              _ffi.new("double*", level),
+                              _ffi.sizeof("double"))
+        if err == SF_FALSE:
+            err = _snd.sf_error(self._file)
+            raise LibsndfileError(err, "Error setting the compression level")
+
+    def set_vbr_encoding_quality(self, quality):
+        """Set the Variable Bit Rate encoding quality.
+
+        The encoding quality value should be between 0.0 (lowest quality) 
+        and 1.0 (highest quality). Currenly this command is only implemented
+        for FLAC and Ogg/Vorbis files. It has no effect on un-compressed file 
+        formats. 
+        
+        Parameters
+        ----------
+        quality : float
+            The encoding quality as a value between 0.0 (lowest quality) and
+            1.0 (highest quality)
+        """
+        if self._mode == 'r':
+            raise SoundFileRuntimeError("Cannot set VBR encoding quality "
+                                        "for a file in 'read' mode")
+
+        err = _snd.sf_command(self._file, _snd.SFC_SET_VBR_ENCODING_QUALITY,
+                              _ffi.new("double*", quality),
+                              _ffi.sizeof("double"))
+
+        if err == SF_FALSE:
+            err = _snd.sf_error(self._file)
+            raise LibsndfileError(err, "Error setting the encoding quality")
+            
+
     def flush(self):
         """Write unwritten data to the file system.
 
