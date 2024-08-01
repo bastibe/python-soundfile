@@ -154,7 +154,10 @@ try:  # packaged lib (in _soundfile_data which should be on python path)
         _packaged_libname = 'libsndfile_' + _architecture()[0] + '.dll'
     elif _sys.platform == 'linux':
         from platform import machine as _machine
-        _packaged_libname = 'libsndfile_' + _machine() + '.so'
+        if _machine() in ["aarch64", "aarch64_be", "armv8b", "armv8l"]:
+            _packaged_libname = 'libsndfile_arm64.so'
+        else:
+            _packaged_libname = 'libsndfile_' + _machine() + '.so'
     else:
         raise OSError('no packaged library for this platform')
 
