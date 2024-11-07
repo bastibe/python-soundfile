@@ -408,6 +408,12 @@ def test_blocks_mono():
     assert_equal_list_of_arrays(blocks, [[0, 1, 2], [-2, -1, 0]])
 
 
+def test_block_longer_than_file_with_overlap_mono():
+    blocks = list(sf.blocks(filename_mono, blocksize=20, dtype='int16',
+                            overlap=2))
+    assert_equal_list_of_arrays(blocks, [[0, 1, 2, -2, -1]])
+
+
 def test_blocks_rplus(sf_stereo_rplus):
     blocks = list(sf_stereo_rplus.blocks(blocksize=2))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])

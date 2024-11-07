@@ -1103,10 +1103,12 @@ class SoundFile(object):
         if 'r' not in self.mode and '+' not in self.mode:
             raise SoundFileRuntimeError("blocks() is not allowed in write-only mode")
 
+        frames = self._check_frames(frames, fill_value)
         if out is None:
             if blocksize is None:
                 raise TypeError("One of {blocksize, out} must be specified")
-            out = self._create_empty_array(blocksize, always_2d, dtype)
+            out_size = min(blocksize, frames)
+            out = self._create_empty_array(out_size, always_2d, dtype)
             copy_out = True
         else:
             if blocksize is not None:
@@ -1116,7 +1118,6 @@ class SoundFile(object):
             copy_out = False
 
         overlap_memory = None
-        frames = self._check_frames(frames, fill_value)
         while frames > 0:
             if overlap_memory is None:
                 output_offset = 0
