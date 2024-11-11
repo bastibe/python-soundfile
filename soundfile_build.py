@@ -27,6 +27,9 @@ enum
 
     SFC_SET_SCALE_FLOAT_INT_READ    = 0x1014,
     SFC_SET_SCALE_INT_FLOAT_WRITE   = 0x1015,
+                
+    SFC_SET_COMPRESSION_LEVEL		= 0x1301,
+	SFC_SET_BITRATE_MODE			= 0x1305,
 } ;
 
 enum
@@ -38,6 +41,11 @@ enum
     SFM_READ    = 0x10,
     SFM_WRITE   = 0x20,
     SFM_RDWR    = 0x30,
+                
+    /* Modes for bitrate. */
+    SF_BITRATE_MODE_CONSTANT    = 0,
+    SF_BITRATE_MODE_AVERAGE     = 1,
+    SF_BITRATE_MODE_VARIABLE    = 2,
 } ;
 
 typedef int64_t sf_count_t ;
