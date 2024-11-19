@@ -674,7 +674,8 @@ def test__repr__(sf_stereo_r):
     assert repr(sf_stereo_r) == ("SoundFile({0.name!r}, mode='r', "
                                  "samplerate=44100, channels=2, "
                                  "format='WAV', subtype='FLOAT', "
-                                 "endian='FILE')").format(sf_stereo_r)
+                                 "endian='FILE', compression_level=None, "
+                                 "bitrate_mode=None)").format(sf_stereo_r)
 
 
 def test_extra_info(sf_stereo_r):

@@ -30,6 +30,8 @@ def test_read_defaults():
     init_defaults = defaults(sf.SoundFile.__init__)
 
     del init_defaults['mode']  # mode is always 'r'
+    del init_defaults['compression_level'] # only write()
+    del init_defaults['bitrate_mode'] # only write()
 
     del func_defaults['start']
     del func_defaults['stop']
@@ -45,10 +47,6 @@ def test_write_defaults():
     write_defaults = defaults(sf.write)
     init_defaults = defaults(sf.SoundFile.__init__)
 
-    # Only write values
-    del write_defaults['compression_level'] # compression_level is [0, 1] or None
-    del write_defaults['bitrate_mode'] # bitrate_mode is 'CONSTANT' or 'AVERAGE' or 'VARIABLE' or None
-
     # Same default values as SoundFile.__init__()
     init_defaults = remove_items(init_defaults, write_defaults)
 
@@ -62,6 +60,9 @@ def test_if_blocks_function_and_method_have_same_defaults():
     func_defaults = defaults(sf.blocks)
     meth_defaults = defaults(sf.SoundFile.blocks)
     init_defaults = defaults(sf.SoundFile.__init__)
+
+    del init_defaults['compression_level'] # only write()
+    del init_defaults['bitrate_mode'] # only write()
 
     del func_defaults['start']
     del func_defaults['stop']

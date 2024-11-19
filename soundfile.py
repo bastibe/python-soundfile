@@ -328,13 +328,8 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
 
     Other Parameters
     ----------------
-    format, endian, closefd
+    format, endian, closefd, compression_level, bitrate_mode
         See `SoundFile`.
-
-    compression_level : float, optional
-        See `libsndfile document <https://github.com/libsndfile/libsndfile/blob/c81375f070f3c6764969a738eacded64f53a076e/docs/command.md>`__.
-    bitrate_mode : {'CONSTANT', 'AVERAGE', 'VARIABLE'}, optional
-        See `libsndfile document <https://github.com/libsndfile/libsndfile/blob/c81375f070f3c6764969a738eacded64f53a076e/docs/command.md>`__.
 
     Examples
     --------
@@ -352,8 +347,9 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
     else:
         channels = data.shape[1]
     with SoundFile(file, 'w', samplerate, channels,
-                   subtype, endian, format, closefd) as f:
-        f.write(data, compression_level, bitrate_mode)
+                   subtype, endian, format, closefd,
+                   compression_level, bitrate_mode) as f:
+        f.write(data)
 
 
 def blocks(file, blocksize=None, overlap=0, frames=-1, start=0, stop=None,
@@ -565,7 +561,8 @@ class SoundFile(object):
     """
 
     def __init__(self, file, mode='r', samplerate=None, channels=None,
-                 subtype=None, endian=None, format=None, closefd=True):
+                 subtype=None, endian=None, format=None, closefd=True,
+                 compression_level=None, bitrate_mode=None):
         """Open a sound file.
 
         If a file is opened with `mode` ``'r'`` (the default) or
@@ -634,6 +631,14 @@ class SoundFile(object):
         closefd : bool, optional
             Whether to close the file descriptor on `close()`. Only
             applicable if the *file* argument is a file descriptor.
+        compression_level : float, optional
+            The compression level on 'write()'. The compression level
+            should be between 0.0 (minimum compression level) and 1.0
+            (highest compression level).
+            See `libsndfile document <https://github.com/libsndfile/libsndfile/blob/c81375f070f3c6764969a738eacded64f53a076e/docs/command.md>`__.
+        bitrate_mode : {'CONSTANT', 'AVERAGE', 'VARIABLE'}, optional
+            The bitrate mode on 'write()'. 
+            See `libsndfile document <https://github.com/libsndfile/libsndfile/blob/c81375f070f3c6764969a738eacded64f53a076e/docs/command.md>`__.
 
         Examples
         --------
@@ -664,6 +669,8 @@ class SoundFile(object):
             mode = getattr(file, 'mode', None)
         mode_int = _check_mode(mode)
         self._mode = mode
+        self._compression_level = compression_level
+        self._bitrate_mode = bitrate_mode
         self._info = _create_info_struct(file, mode, samplerate, channels,
                                          format, subtype, endian)
         self._file = self._open(file, mode_int, closefd)
@@ -706,6 +713,10 @@ class SoundFile(object):
     """Whether the sound file is closed or not."""
     _errorcode = property(lambda self: _snd.sf_error(self._file))
     """A pending sndfile error code."""
+    compression_level = property(lambda self: self._compression_level)
+    """The compression level on 'write()'"""
+    bitrate_mode = property(lambda self: self._bitrate_mode)
+    """The bitrate mode on 'write()'"""
 
     @property
     def extra_info(self):
@@ -722,7 +733,8 @@ class SoundFile(object):
         return ("SoundFile({0.name!r}, mode={0.mode!r}, "
                 "samplerate={0.samplerate}, channels={0.channels}, "
                 "format={0.format!r}, subtype={0.subtype!r}, "
-                "endian={0.endian!r})".format(self))
+                "endian={0.endian!r}, compression_level={0.compression_level}, "
+                "bitrate_mode={0.bitrate_mode})".format(self))
 
     def __del__(self):
         self.close()
@@ -979,7 +991,7 @@ class SoundFile(object):
         frames = self._cdata_io('read', cdata, ctype, frames)
         return frames
 
-    def write(self, data, compression_level=None, bitrate_mode=None):
+    def write(self, data):
         """Write audio data from a NumPy array to the file.
 
         Writes a number of frames at the read/write position to the
@@ -1009,12 +1021,6 @@ class SoundFile(object):
                   file will then contain ``np.array([42.],
                   dtype='float32')``.
 
-        Other Parameters
-        ----------------
-        compression_level : float, optional
-        bitrate_mode : {'CONSTANT', 'AVERAGE', 'VARIABLE'}, optional
-            See `libsndfile document <https://github.com/libsndfile/libsndfile/blob/c81375f070f3c6764969a738eacded64f53a076e/docs/command.md>`__.
-
         Examples
         --------
         >>> import numpy as np
@@ -1033,11 +1039,11 @@ class SoundFile(object):
         """
         import numpy as np
 
-        if compression_level is not None:
+        if self._compression_level is not None:
             # needs to be called before set_bitrate_mode
-            self.set_compression_level(compression_level)
-            if bitrate_mode is not None:
-                self.set_bitrate_mode(bitrate_mode)
+            self._set_compression_level(self._compression_level)
+            if self._bitrate_mode is not None:
+                self._set_bitrate_mode(self._bitrate_mode)
 
         # no copy is made if data has already the correct memory layout:
         data = np.ascontiguousarray(data)
@@ -1045,7 +1051,7 @@ class SoundFile(object):
         assert written == len(data)
         self._update_frames(written)
 
-    def buffer_write(self, data, dtype, compression_level=None, bitrate_mode=None):
+    def buffer_write(self, data, dtype):
         """Write audio data from a buffer/bytes object to the file.
 
         Writes the contents of *data* to the file at the current
@@ -1061,22 +1067,16 @@ class SoundFile(object):
         dtype : {'float64', 'float32', 'int32', 'int16'}
             The data type of the audio data stored in *data*.
 
-        Other Parameters
-        ----------------
-        compression_level : float, optional
-        bitrate_mode : {'CONSTANT', 'AVERAGE', 'VARIABLE'}, optional
-            See `libsndfile document <https://github.com/libsndfile/libsndfile/blob/c81375f070f3c6764969a738eacded64f53a076e/docs/command.md>`__.
-
         See Also
         --------
         .write, buffer_read
 
         """
-        if compression_level is not None:
+        if self._compression_level is not None:
             # needs to be called before set_bitrate_mode
-            self.set_compression_level(compression_level)
-            if bitrate_mode is not None:
-                self.set_bitrate_mode(bitrate_mode)
+            self._set_compression_level(self._compression_level)
+            if self._bitrate_mode is not None:
+                self._set_bitrate_mode(self._bitrate_mode)
 
         ctype = self._check_dtype(dtype)
         cdata, frames = self._check_buffer(data, ctype)
@@ -1436,7 +1436,7 @@ class SoundFile(object):
                 strs[strtype] = _ffi.string(data).decode('utf-8', 'replace')
         return strs
     
-    def set_bitrate_mode(self, bitrate_mode):
+    def _set_bitrate_mode(self, bitrate_mode):
         """Call libsndfile's set bitrate mode function."""
         assert bitrate_mode in _bitrate_modes
 
@@ -1448,7 +1448,7 @@ class SoundFile(object):
             raise LibsndfileError(err, f"Error set bitrate mode {bitrate_mode}")
 
         
-    def set_compression_level(self, compression_level):
+    def _set_compression_level(self, compression_level):
         """Call libsndfile's set compression level function."""
         if not (0 <= compression_level <= 1):
             raise ValueError("Compression level must be in range [0..1]")
