@@ -24,6 +24,7 @@ filename_raw = 'tests/mono.raw'
 filename_new = 'tests/delme.please'
 filename_mp3 = 'tests/stereo.mp3'
 filename_flac = 'tests/stereo.flac'
+filename_opus = 'tests/stereo.opus'
 
 
 if sys.version_info >= (3, 6):
@@ -674,8 +675,15 @@ def test__repr__(sf_stereo_r):
     assert repr(sf_stereo_r) == ("SoundFile({0.name!r}, mode='r', "
                                  "samplerate=44100, channels=2, "
                                  "format='WAV', subtype='FLOAT', "
-                                 "endian='FILE', compression_level=None, "
-                                 "bitrate_mode=None)").format(sf_stereo_r)
+                                 "endian='FILE')").format(sf_stereo_r)
+    
+    sf_stereo_r._compression_level = 0
+    sf_stereo_r._bitrate_mode = "CONSTANT"
+    assert repr(sf_stereo_r) == ("SoundFile({0.name!r}, mode='r', "
+                                 "samplerate=44100, channels=2, "
+                                 "format='WAV', subtype='FLOAT', "
+                                 "endian='FILE', compression_level=0, "
+                                 "bitrate_mode='CONSTANT')").format(sf_stereo_r)
 
 
 def test_extra_info(sf_stereo_r):

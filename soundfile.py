@@ -679,6 +679,13 @@ class SoundFile(object):
             self.seek(0)
         _snd.sf_command(self._file, _snd.SFC_SET_CLIPPING, _ffi.NULL,
                         _snd.SF_TRUE)
+        
+        # set compression setting
+        if self._compression_level is not None:
+            # needs to be called before set_bitrate_mode
+            self._set_compression_level(self._compression_level)
+            if self._bitrate_mode is not None:
+                self._set_bitrate_mode(self._bitrate_mode)
 
     name = property(lambda self: self._name)
     """The file name of the sound file."""
@@ -730,11 +737,14 @@ class SoundFile(object):
     _file = None
 
     def __repr__(self):
+        compression_setting = (", compression_level={0}".format(self.compression_level) 
+                               if self.compression_level is not None else "")
+        compression_setting += (", bitrate_mode='{0}'".format(self.bitrate_mode) 
+                                if self.bitrate_mode is not None else "")
         return ("SoundFile({0.name!r}, mode={0.mode!r}, "
                 "samplerate={0.samplerate}, channels={0.channels}, "
                 "format={0.format!r}, subtype={0.subtype!r}, "
-                "endian={0.endian!r}, compression_level={0.compression_level}, "
-                "bitrate_mode={0.bitrate_mode})".format(self))
+                "endian={0.endian!r}{1})".format(self, compression_setting))
 
     def __del__(self):
         self.close()
@@ -1039,12 +1049,6 @@ class SoundFile(object):
         """
         import numpy as np
 
-        if self._compression_level is not None:
-            # needs to be called before set_bitrate_mode
-            self._set_compression_level(self._compression_level)
-            if self._bitrate_mode is not None:
-                self._set_bitrate_mode(self._bitrate_mode)
-
         # no copy is made if data has already the correct memory layout:
         data = np.ascontiguousarray(data)
         written = self._array_io('write', data, len(data))
@@ -1072,12 +1076,6 @@ class SoundFile(object):
         .write, buffer_read
 
         """
-        if self._compression_level is not None:
-            # needs to be called before set_bitrate_mode
-            self._set_compression_level(self._compression_level)
-            if self._bitrate_mode is not None:
-                self._set_bitrate_mode(self._bitrate_mode)
-
         ctype = self._check_dtype(dtype)
         cdata, frames = self._check_buffer(data, ctype)
         written = self._cdata_io('write', cdata, ctype, frames)
