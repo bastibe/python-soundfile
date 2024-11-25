@@ -340,7 +340,7 @@ def test_write_flac_compression():
     sr = 44100
     # Compression requires a certain size
     data_stereo = np.random.random((sr, 1))
-    data_stereo = np.concat([data_stereo, -data_stereo], axis=1)
+    data_stereo = np.concatenate([data_stereo, -data_stereo], axis=1)
 
     sf.write(filename_flac, data_stereo, sr, format='FLAC', subtype='PCM_16', compression_level=0)
     low_compression_size = os.path.getsize(filename_flac)
