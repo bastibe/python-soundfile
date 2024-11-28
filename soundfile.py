@@ -145,6 +145,12 @@ _ffi_types = {
     'int16': 'short'
 }
 
+_bitrate_modes = {
+    'CONSTANT': 0,
+    'AVERAGE': 1,
+    'VARIABLE': 2,
+}
+
 try:  # packaged lib (in _soundfile_data which should be on python path)
     if _sys.platform == 'darwin':
         from platform import machine as _machine
@@ -290,7 +296,7 @@ def read(file, frames=-1, start=0, stop=None, dtype='float64', always_2d=False,
 
 
 def write(file, data, samplerate, subtype=None, endian=None, format=None,
-          closefd=True):
+          closefd=True, compression_level=None, bitrate_mode=None):
     """Write data to a sound file.
 
     .. note:: If *file* exists, it will be truncated and overwritten!
@@ -322,7 +328,7 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
 
     Other Parameters
     ----------------
-    format, endian, closefd
+    format, endian, closefd, compression_level, bitrate_mode
         See `SoundFile`.
 
     Examples
@@ -341,7 +347,8 @@ def write(file, data, samplerate, subtype=None, endian=None, format=None,
     else:
         channels = data.shape[1]
     with SoundFile(file, 'w', samplerate, channels,
-                   subtype, endian, format, closefd) as f:
+                   subtype, endian, format, closefd,
+                   compression_level, bitrate_mode) as f:
         f.write(data)
 
 
@@ -554,7 +561,8 @@ class SoundFile(object):
     """
 
     def __init__(self, file, mode='r', samplerate=None, channels=None,
-                 subtype=None, endian=None, format=None, closefd=True):
+                 subtype=None, endian=None, format=None, closefd=True,
+                 compression_level=None, bitrate_mode=None):
         """Open a sound file.
 
         If a file is opened with `mode` ``'r'`` (the default) or
@@ -623,6 +631,14 @@ class SoundFile(object):
         closefd : bool, optional
             Whether to close the file descriptor on `close()`. Only
             applicable if the *file* argument is a file descriptor.
+        compression_level : float, optional
+            The compression level on 'write()'. The compression level
+            should be between 0.0 (minimum compression level) and 1.0
+            (highest compression level).
+            See `libsndfile document <https://github.com/libsndfile/libsndfile/blob/c81375f070f3c6764969a738eacded64f53a076e/docs/command.md>`__.
+        bitrate_mode : {'CONSTANT', 'AVERAGE', 'VARIABLE'}, optional
+            The bitrate mode on 'write()'. 
+            See `libsndfile document <https://github.com/libsndfile/libsndfile/blob/c81375f070f3c6764969a738eacded64f53a076e/docs/command.md>`__.
 
         Examples
         --------
@@ -653,6 +669,8 @@ class SoundFile(object):
             mode = getattr(file, 'mode', None)
         mode_int = _check_mode(mode)
         self._mode = mode
+        self._compression_level = compression_level
+        self._bitrate_mode = bitrate_mode
         self._info = _create_info_struct(file, mode, samplerate, channels,
                                          format, subtype, endian)
         self._file = self._open(file, mode_int, closefd)
@@ -661,6 +679,13 @@ class SoundFile(object):
             self.seek(0)
         _snd.sf_command(self._file, _snd.SFC_SET_CLIPPING, _ffi.NULL,
                         _snd.SF_TRUE)
+        
+        # set compression setting
+        if self._compression_level is not None:
+            # needs to be called before set_bitrate_mode
+            self._set_compression_level(self._compression_level)
+            if self._bitrate_mode is not None:
+                self._set_bitrate_mode(self._bitrate_mode)
 
     name = property(lambda self: self._name)
     """The file name of the sound file."""
@@ -695,6 +720,10 @@ class SoundFile(object):
     """Whether the sound file is closed or not."""
     _errorcode = property(lambda self: _snd.sf_error(self._file))
     """A pending sndfile error code."""
+    compression_level = property(lambda self: self._compression_level)
+    """The compression level on 'write()'"""
+    bitrate_mode = property(lambda self: self._bitrate_mode)
+    """The bitrate mode on 'write()'"""
 
     @property
     def extra_info(self):
@@ -708,10 +737,14 @@ class SoundFile(object):
     _file = None
 
     def __repr__(self):
+        compression_setting = (", compression_level={0}".format(self.compression_level) 
+                               if self.compression_level is not None else "")
+        compression_setting += (", bitrate_mode='{0}'".format(self.bitrate_mode) 
+                                if self.bitrate_mode is not None else "")
         return ("SoundFile({0.name!r}, mode={0.mode!r}, "
                 "samplerate={0.samplerate}, channels={0.channels}, "
                 "format={0.format!r}, subtype={0.subtype!r}, "
-                "endian={0.endian!r})".format(self))
+                "endian={0.endian!r}{1})".format(self, compression_setting))
 
     def __del__(self):
         self.close()
@@ -1015,6 +1048,7 @@ class SoundFile(object):
 
         """
         import numpy as np
+
         # no copy is made if data has already the correct memory layout:
         data = np.ascontiguousarray(data)
         written = self._array_io('write', data, len(data))
@@ -1399,7 +1433,30 @@ class SoundFile(object):
             if data:
                 strs[strtype] = _ffi.string(data).decode('utf-8', 'replace')
         return strs
+    
+    def _set_bitrate_mode(self, bitrate_mode):
+        """Call libsndfile's set bitrate mode function."""
+        assert bitrate_mode in _bitrate_modes
 
+        pointer_bitrate_mode = _ffi.new("int[1]")
+        pointer_bitrate_mode[0] = _bitrate_modes[bitrate_mode]
+        err = _snd.sf_command(self._file, _snd.SFC_SET_BITRATE_MODE, pointer_bitrate_mode, _ffi.sizeof(pointer_bitrate_mode))
+        if err != _snd.SF_TRUE:
+            err = _snd.sf_error(self._file)
+            raise LibsndfileError(err, f"Error set bitrate mode {bitrate_mode}")
+
+        
+    def _set_compression_level(self, compression_level):
+        """Call libsndfile's set compression level function."""
+        if not (0 <= compression_level <= 1):
+            raise ValueError("Compression level must be in range [0..1]")
+
+        pointer_compression_level = _ffi.new("double[1]")
+        pointer_compression_level[0] = compression_level
+        err = _snd.sf_command(self._file, _snd.SFC_SET_COMPRESSION_LEVEL, pointer_compression_level, _ffi.sizeof(pointer_compression_level))
+        if err != _snd.SF_TRUE:
+            err = _snd.sf_error(self._file)
+            raise LibsndfileError(err, f"Error set compression level {compression_level}")
 
 
 def _error_check(err, prefix=""):

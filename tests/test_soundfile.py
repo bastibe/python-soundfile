@@ -22,6 +22,9 @@ filename_stereo = 'tests/stereo.wav'
 filename_mono = 'tests/mono.wav'
 filename_raw = 'tests/mono.raw'
 filename_new = 'tests/delme.please'
+filename_mp3 = 'tests/stereo.mp3'
+filename_flac = 'tests/stereo.flac'
+filename_opus = 'tests/stereo.opus'
 
 
 if sys.version_info >= (3, 6):
@@ -293,6 +296,58 @@ def test_write_with_unknown_extension(filename):
     with pytest.raises(TypeError) as excinfo:
         sf.write(filename, [0.0], 44100)
     assert "file extension" in str(excinfo.value)
+
+
+def test_write_mp3_compression():
+    sr = 44100
+    sf.write(filename_mp3, data_stereo, sr, format='MP3', subtype='MPEG_LAYER_III',
+             compression_level=0, bitrate_mode='CONSTANT')
+    constant_0_size = os.path.getsize(filename_mp3)
+
+    sf.write(filename_mp3, data_stereo, sr, format='MP3', subtype='MPEG_LAYER_III',
+             compression_level=0, bitrate_mode='VARIABLE')
+    variable_0_size = os.path.getsize(filename_mp3)
+    assert variable_0_size < constant_0_size
+
+    sf.write(filename_mp3, data_stereo, sr, format='MP3', subtype='MPEG_LAYER_III',
+             compression_level=0, bitrate_mode='AVERAGE')
+    average_0_size = os.path.getsize(filename_mp3)
+    assert (average_0_size < variable_0_size < constant_0_size)
+
+    sf.write(filename_mp3, data_stereo, sr, format='MP3', subtype='MPEG_LAYER_III',
+             compression_level=0.999, bitrate_mode='CONSTANT')
+    constant_1_size= os.path.getsize(filename_mp3)
+    assert constant_1_size < constant_0_size
+
+    sf.write(filename_mp3, data_stereo, sr, format='MP3', subtype='MPEG_LAYER_III',
+             compression_level=0.999, bitrate_mode='VARIABLE')
+    variable_1_size = os.path.getsize(filename_mp3)
+    assert constant_1_size <variable_1_size < constant_0_size
+
+    sf.write(filename_mp3, data_stereo, sr, format='MP3', subtype='MPEG_LAYER_III',
+             compression_level=0.999, bitrate_mode='AVERAGE')
+    average_1_size = os.path.getsize(filename_mp3)
+    assert constant_1_size < average_1_size < constant_0_size
+
+    # This test case should be OK, but an exception is raised at libsndfile<=1.2.2.
+    with pytest.raises(RuntimeError) as excinfo:
+        sf.write(filename_mp3, data_stereo, sr, format='MP3', subtype='MPEG_LAYER_III',
+                 compression_level=1, bitrate_mode='VARIABLE')
+    assert "compression" in str(excinfo.value)
+
+
+def test_write_flac_compression():
+    sr = 44100
+    # Compression requires a certain size
+    data_stereo = np.random.random((sr, 1))
+    data_stereo = np.concatenate([data_stereo, -data_stereo], axis=1)
+
+    sf.write(filename_flac, data_stereo, sr, format='FLAC', subtype='PCM_16', compression_level=0)
+    low_compression_size = os.path.getsize(filename_flac)
+
+    sf.write(filename_flac, data_stereo, sr, format='FLAC', subtype='PCM_16', compression_level=1)
+    high_compression_size = os.path.getsize(filename_flac)
+    assert high_compression_size < low_compression_size
 
 
 # -----------------------------------------------------------------------------
@@ -621,6 +676,14 @@ def test__repr__(sf_stereo_r):
                                  "samplerate=44100, channels=2, "
                                  "format='WAV', subtype='FLOAT', "
                                  "endian='FILE')").format(sf_stereo_r)
+    
+    sf_stereo_r._compression_level = 0
+    sf_stereo_r._bitrate_mode = "CONSTANT"
+    assert repr(sf_stereo_r) == ("SoundFile({0.name!r}, mode='r', "
+                                 "samplerate=44100, channels=2, "
+                                 "format='WAV', subtype='FLOAT', "
+                                 "endian='FILE', compression_level=0, "
+                                 "bitrate_mode='CONSTANT')").format(sf_stereo_r)
 
 
 def test_extra_info(sf_stereo_r):
