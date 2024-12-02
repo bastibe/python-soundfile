@@ -3,7 +3,7 @@ import shutil
 
 architectures = dict(darwin=['x86_64', 'arm64'],
                      win32=['32bit', '64bit'],
-                     linux=['x86_64'],
+                     linux=['x86_64', 'aarch64'],
                      noplatform='noarch')
 
 def cleanup():
