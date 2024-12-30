@@ -182,8 +182,6 @@ try:  # packaged lib (in _soundfile_data which should be on python path)
     _snd = _ffi.dlopen(_full_path)  # OSError if file doesn't exist or can't be loaded
 
 except (OSError, ImportError, TypeError):
-    import pathlib
-    print('DEBUG: {} exists: {}'.format(_full_path, pathlib.Path(_full_path).exists()))
     try:  # system-wide libsndfile:
         _libname = _find_library('sndfile')
         if _libname is None:
