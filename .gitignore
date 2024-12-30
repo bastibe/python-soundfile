@@ -8,3 +8,5 @@ build/
 .vscode/
 .DS_Store
 .venv/
+tests/
+_soundfile.py

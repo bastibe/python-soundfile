@@ -378,7 +378,7 @@ def test_blocks_partial_last_block(file_stereo_r):
 
 def test_blocks_fill_last_block(file_stereo_r):
     blocks = list(sf.blocks(file_stereo_r, blocksize=3, fill_value=0))
-    last_block = np.row_stack((data_stereo[3:4], np.zeros((2, 2))))
+    last_block = np.vstack((data_stereo[3:4], np.zeros((2, 2))))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:3], last_block])
 
 
@@ -428,7 +428,7 @@ def test_blocks_with_frames(file_stereo_r):
 def test_blocks_with_frames_and_fill_value(file_stereo_r):
     blocks = list(
         sf.blocks(file_stereo_r, blocksize=2, frames=3, fill_value=0))
-    last_block = np.row_stack((data_stereo[2:3], np.zeros((1, 2))))
+    last_block = np.vstack((data_stereo[2:3], np.zeros((1, 2))))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], last_block])
 
 
