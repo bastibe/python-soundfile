@@ -79,7 +79,12 @@ else:
                     oses = 'win_amd64'
             elif platform == 'linux':
                 # using the centos:7 runner with glibc2.17:
-                oses = 'manylinux_2_17_{}'.format(architecture0)
+                if architecture0 == 'arm64':
+                    pep600_architecture = 'aarch64'
+                else:
+                    pep600_architecture = architecture0
+
+                oses = 'manylinux_2_17_{}'.format(pep600_architecture)
             else:
                 pythons = 'py2.py3'
                 oses = 'any'

@@ -157,10 +157,22 @@ try:  # packaged lib (in _soundfile_data which should be on python path)
         _packaged_libname = 'libsndfile_' + _machine() + '.dylib'
     elif _sys.platform == 'win32':
         from platform import architecture as _architecture
-        _packaged_libname = 'libsndfile_' + _architecture()[0] + '.dll'
+        from platform import machine as _machine
+        if _machine() == 'ARM64':
+            _packaged_libname = 'libsndfile_arm64.dll'    
+        elif _architecture()[0] == '64bit':
+            _packaged_libname = 'libsndfile_x64.dll'
+        elif _architecture()[0] == '32bit':
+            _packaged_libname = 'libsndfile_x86.dll'
+        else:
+            raise OSError('no packaged library for Windows {} {}'
+                          .format(_architecture(), _machine()))
     elif _sys.platform == 'linux':
         from platform import machine as _machine
-        _packaged_libname = 'libsndfile_' + _machine() + '.so'
+        if _machine() in ["aarch64", "aarch64_be", "armv8b", "armv8l"]:
+            _packaged_libname = 'libsndfile_arm64.so'
+        else:
+            _packaged_libname = 'libsndfile_' + _machine() + '.so'
     else:
         raise OSError('no packaged library for this platform')
 
