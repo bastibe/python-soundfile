@@ -6,3 +6,5 @@ build/
 *.egg-info/
 .cache/
 .vscode/
+.DS_Store
+.venv/

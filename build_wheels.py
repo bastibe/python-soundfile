@@ -2,8 +2,8 @@ import os
 import shutil
 
 architectures = dict(darwin=['x86_64', 'arm64'],
-                     win32=['32bit', '64bit'],
-                     linux=['x86_64'],
+                     win32=['x86', 'x64', 'arm64'],
+                     linux=['x86_64', 'arm64'],
                      noplatform='noarch')
 
 def cleanup():
