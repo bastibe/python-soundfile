@@ -52,11 +52,11 @@ else:
                 else:
                     oses = 'macosx_11_0_arm64'
             elif platform == 'win32':
-                if architecture0 == 'arm64':
+                if architecture0.lower() == 'arm64' or machine() == 'ARM64':
                     oses = 'win_arm64'
-                elif architecture0 == 'x86':
+                elif architecture0 == 'x86' or architecture0 == '32bit':
                     oses = 'win32'
-                elif architecture0 == 'x64':
+                elif architecture0 == 'x64' or architecture0 == '64bit':
                     oses = 'win_amd64'
             elif platform == 'linux':
                 # using the centos:7 runner with glibc2.17:
@@ -116,6 +116,5 @@ setup(
     ],
     long_description=open('README.rst').read(),
     long_description_content_type="text/x-rst",
-    tests_require=['pytest'],
     cmdclass=cmdclass,
 )
