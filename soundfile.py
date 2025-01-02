@@ -8,7 +8,7 @@ Alternatively, sound files can be opened as `SoundFile` objects.
 For further information, see https://python-soundfile.readthedocs.io/.
 
 """
-__version__ = "0.12.1"
+__version__ = "0.13.0"
 
 import os as _os
 import sys as _sys
