@@ -158,9 +158,11 @@ try:  # packaged lib (in _soundfile_data which should be on python path)
     elif _sys.platform == 'win32':
         from platform import architecture as _architecture
         from platform import machine as _machine
-        if _machine() == 'ARM64':
-            _packaged_libname = 'libsndfile_arm64.dll'    
-        elif _architecture()[0] == '64bit':
+        # this check can not be completed correctly: for x64 binaries running on
+        # arm64 Windows report the same values as arm64 binaries. For now, neither
+        # numpy nor cffi are available for arm64, so we can safely assume we're
+        # in x86 land:
+        if _architecture()[0] == '64bit':
             _packaged_libname = 'libsndfile_x64.dll'
         elif _architecture()[0] == '32bit':
             _packaged_libname = 'libsndfile_x86.dll'
