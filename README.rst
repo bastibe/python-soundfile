@@ -391,3 +391,14 @@ News
 
     - Fixed typo on library location detection if no packaged lib and
       no system lib was found
+
+2025-01-02 V0.13.0 Bastian Bechtold
+    Thank you, Zhong Jianxin, mcclure, jneuendorf-i4h, aoirint, endolith, Guy Illes, ytya, Sam Lapp, Benjamin Moody
+
+    - Linux arm64 builds added
+    - Numpy is now a dependency
+    - Fixed error in blocks, if file is very short
+    - Compression level and bitrate controls added for compressed files
+    - Various README improvements
+    - Various build system improvements
+    - Various improvements to error messages
