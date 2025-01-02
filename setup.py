@@ -2,7 +2,6 @@
 import os
 from platform import architecture, machine
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
 import sys
 
 # environment variables for cross-platform package creation
@@ -34,27 +33,7 @@ else:
     package_data = None
     zip_safe = True
 
-
-class PyTest(TestCommand):
-
-    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = []
-
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(self.pytest_args)
-        sys.exit(errno)
-
-cmdclass = {'test': PyTest}
+cmdclass = {}
 
 try:
     from wheel.bdist_wheel import bdist_wheel
@@ -73,9 +52,11 @@ else:
                 else:
                     oses = 'macosx_11_0_arm64'
             elif platform == 'win32':
-                if architecture0 == '32bit':
+                if architecture0.lower() == 'arm64' or machine() == 'ARM64':
+                    oses = 'win_arm64'
+                elif architecture0 == 'x86' or architecture0 == '32bit':
                     oses = 'win32'
-                else:
+                elif architecture0 == 'x64' or architecture0 == '64bit':
                     oses = 'win_amd64'
             elif platform == 'linux':
                 # using the centos:7 runner with glibc2.17:
@@ -84,7 +65,7 @@ else:
                 else:
                     pep600_architecture = architecture0
 
-                oses = 'manylinux_2_17_{}'.format(pep600_architecture)
+                oses = 'manylinux_2_28_{}'.format(pep600_architecture)
             else:
                 pythons = 'py2.py3'
                 oses = 'any'
@@ -135,6 +116,5 @@ setup(
     ],
     long_description=open('README.rst').read(),
     long_description_content_type="text/x-rst",
-    tests_require=['pytest'],
     cmdclass=cmdclass,
 )
