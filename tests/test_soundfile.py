@@ -335,6 +335,9 @@ def test_write_mp3_compression():
                  compression_level=1, bitrate_mode='VARIABLE')
     assert "compression" in str(excinfo.value)
 
+    # just run one more time so we're left with a valid MP3 in the directory
+    sf.write(filename_mp3, data_stereo, sr, format='MP3', subtype='MPEG_LAYER_III')
+
 
 def test_write_flac_compression():
     sr = 44100
