@@ -1107,7 +1107,7 @@ class SoundFile(object):
         if out is None:
             if blocksize is None:
                 raise TypeError("One of {blocksize, out} must be specified")
-            out_size = min(blocksize, frames)
+            out_size = blocksize if fill_value is not None else min(blocksize, frames)
             out = self._create_empty_array(out_size, always_2d, dtype)
             copy_out = True
         else:
