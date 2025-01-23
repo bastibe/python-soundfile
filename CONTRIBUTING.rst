@@ -12,14 +12,18 @@ Testing
 If you fix a bug, you should add a test that exposes the bug (to avoid future
 regressions), if you add a feature, you should add tests for it as well.
 
+Set up local environment with the following commands::
+
+   pip install numpy pytest "cffi>=1.0"
+   python soundfile_build.py
+
 To run the tests, use::
 
-   python setup.py test
+   python -m pytest
 
-This uses py.test_; if you haven't installed it already, it will be downloaded
-and installed for you.
+This uses pytest_;
 
-.. _py.test: http://pytest.org/
+.. _pytest: http://pytest.org/
 
 .. note:: There is a `known problem`_ that prohibits the use of file
    descriptors on Windows if the libsndfile DLL was compiled with a different
@@ -41,14 +45,14 @@ Just install it with::
 
 ... and run it with::
 
-   coverage run --source soundfile.py -m py.test
+   coverage run --source soundfile -m pytest
    coverage html
 
 The resulting HTML files will be written to the ``htmlcov/`` directory.
 
 You can even check `branch coverage`_::
 
-   coverage run --branch --source soundfile.py -m py.test
+   coverage run --branch --source soundfile -m pytest
    coverage html
 
 .. _coverage.py: http://nedbatchelder.com/code/coverage/
