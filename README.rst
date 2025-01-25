@@ -403,3 +403,8 @@ News
     - Various README improvements
     - Various build system improvements
     - Various improvements to error messages
+
+2025-01-25 V0.13.1 Bastian Bechtold
+    Thank you, Brian McFee and Guy Illes
+
+    - Fixed regression in blocks
