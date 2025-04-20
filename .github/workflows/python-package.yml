@@ -54,3 +54,23 @@ jobs:
         run: pip install --editable . --verbose
       - name: Run tests
         run: python -m pytest
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      - name: Install requirements
+        run: pip install numpy pytest pyright
+      - name: "Workaround: Generate _soundfile.py explicitly"
+        run: |
+          pip install cffi>=1.0
+          python soundfile_build.py
+      - name: Install editable package
+        run: pip install --editable . --verbose
+      - name: Run tests
+        run: python -m pyright soundfile.py
