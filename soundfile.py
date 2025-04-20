@@ -33,7 +33,10 @@ Endian: TypeAlias = Literal['FILE', 'LITTLE', 'BIG', 'CPU']
 Dtype: TypeAlias = Literal['float64', 'float32', 'int32', 'int16']
 BitrateMode: TypeAlias = Literal['CONSTANT', 'AVERAGE', 'VARIABLE']
 OpenMode: TypeAlias = Literal['r', 'r+', 'w', 'w+', 'x', 'x+']
-FileDescriptorOrPath: TypeAlias = Union[str, int, BinaryIO, _os.PathLike[Any]]
+if _sys.version_info >= (3, 9):
+    FileDescriptorOrPath: TypeAlias = Union[str, int, BinaryIO, _os.PathLike[Any]]
+else:
+    FileDescriptorOrPath: TypeAlias = Union[str, int, BinaryIO, _os.PathLike]
 NumpyArray: TypeAlias = npt.NDArray[Any]
 AudioData: TypeAlias = npt.NDArray[Union[np.float64, np.float32, np.int32, np.int16]]
 T_ndarr = TypeVar("T_ndarr", bound=NumpyArray)
