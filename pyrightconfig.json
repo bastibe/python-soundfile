@@ -1,0 +1,9 @@
+{
+    "pythonVersion": "3.9",
+    "exclude": [
+      "**/node_modules",
+      "**/__pycache__",
+      "**/.venv",
+      "tests/"
+    ]
+  }
