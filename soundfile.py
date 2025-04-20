@@ -1617,6 +1617,7 @@ class SoundFile(object):
         """Call one of libsndfile's read/write functions."""
         assert ctype in _ffi_types.values()
         self._check_if_closed()
+        curr = 0
         if self.seekable():
             curr = self.tell()
         func = getattr(_snd, 'sf_' + action + 'f_' + ctype)
