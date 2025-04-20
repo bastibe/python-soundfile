@@ -52,6 +52,7 @@ When contributing, please maintain type hints for all public functions, methods,
 Make sure to use appropriate types from the typing and typing-extensions modules.
 
 The following conventions are used:
+
 - Use Literal types for enumerated string values
 - Use TypeAlias for complex type definitions
 - Use overloads to provide precise return type information
