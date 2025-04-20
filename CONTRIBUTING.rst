@@ -35,6 +35,29 @@ This uses pytest_;
 
    .. _known problem: http://www.mega-nerd.com/libsndfile/api.html#open_fd
 
+Type Checking
+^^^^^^^^^^^^^
+
+Type hints have been added to the codebase to support static type checking. 
+You can use pyright to check the types:
+
+.. code-block:: bash
+
+   pip install pyright
+   pyright soundfile.py
+
+Or you can use the VS Code extension for inline type checking.
+
+When contributing, please maintain type hints for all public functions, methods, and classes.
+Make sure to use appropriate types from the typing and typing-extensions modules.
+
+The following conventions are used:
+- Use Literal types for enumerated string values
+- Use TypeAlias for complex type definitions
+- Use overloads to provide precise return type information
+- Use Optional for parameters that can be None
+- Use Union for values that can be different types
+
 Coverage
 ^^^^^^^^
 
