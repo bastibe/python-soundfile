@@ -72,5 +72,5 @@ jobs:
           python soundfile_build.py
       - name: Install editable package
         run: pip install --editable . --verbose
-      - name: Run tests
+      - name: Run type check
         run: python -m pyright soundfile.py
