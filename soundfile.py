@@ -16,8 +16,8 @@ import numpy as np
 import numpy.typing as npt
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 from ctypes.util import find_library as _find_library
-from typing import Any, BinaryIO, Dict, Final, Generator, Literal, Optional, Tuple, Union, TypeVar, overload, cast
-from typing_extensions import TypeAlias, Self
+from typing import Any, BinaryIO, Dict, Generator, Literal, Optional, Tuple, Union, TypeVar, overload, cast
+from typing_extensions import TypeAlias, Self, Final
 from _soundfile import ffi as _ffi
 
 try:
