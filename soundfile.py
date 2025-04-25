@@ -702,8 +702,6 @@ class SoundFile(object):
         >>> assert myfile.closed
 
         """
-        # resolve PathLike objects (see PEP519 for details):
-        # can be replaced with _os.fspath(file) for Python >= 3.6
         if isinstance(file, _os.PathLike):
             file = _os.fspath(file)
         self._name = file
