@@ -14,7 +14,7 @@ regressions), if you add a feature, you should add tests for it as well.
 
 Set up local environment with the following commands::
 
-   pip install numpy pytest "cffi>=1.0"
+   pip install numpy pytest "cffi>=1.0" typing-extensions
    python soundfile_build.py
 
 To run the tests, use::
