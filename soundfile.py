@@ -321,13 +321,7 @@ def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: Opt
     with SoundFile(file, 'r', samplerate, channels,
                    subtype, endian, format, closefd) as f:
         frames = f._prepare_read(start, stop, frames)
-        data = f.read(
-            frames, 
-            dtype=dtype, 
-            always_2d=always_2d, 
-            fill_value=fill_value, 
-            out=out
-        )
+        data = f.read(frames, dtype, always_2d, fill_value, out)
     return data, f.samplerate
 
 
@@ -450,15 +444,7 @@ def blocks(file: FileDescriptorOrPath, blocksize: Optional[int] = None,
     with SoundFile(file, 'r', samplerate, channels,
                    subtype, endian, format, closefd) as f:
         frames = f._prepare_read(start, stop, frames)
-        for block in f.blocks(
-            blocksize=blocksize,
-            overlap=overlap,
-            frames=frames,
-            dtype=dtype,
-            always_2d=always_2d,
-            fill_value=fill_value,
-            out=out
-        ):
+        for block in f.blocks(blocksize, overlap, frames, dtype, always_2d, fill_value, out):
             yield block
 
 
