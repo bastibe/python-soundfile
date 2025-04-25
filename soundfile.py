@@ -1211,13 +1211,7 @@ class SoundFile(object):
                 actual_out[:output_offset] = overlap_memory
 
             toread = min(blocksize - output_offset, frames)
-            self.read(
-                frames=toread,
-                dtype=dtype,
-                always_2d=always_2d,
-                fill_value=fill_value,
-                out=actual_out[output_offset:]
-            )
+            self.read(toread, dtype, always_2d, fill_value, actual_out[output_offset:])
 
             if overlap:
                 if overlap_memory is None:
