@@ -967,18 +967,17 @@ class SoundFile(object):
         """
         if out is None:
             frames = self._check_frames(frames, fill_value)
-            actual_out = self._create_empty_array(frames, always_2d, dtype)
+            out = self._create_empty_array(frames, always_2d, dtype)
         else:
             if frames < 0 or frames > len(out):
                 frames = len(out)
-            actual_out = out
-        frames = self._array_io('read', actual_out, frames)
-        if len(actual_out) > frames:
+        frames = self._array_io('read', out, frames)
+        if len(out) > frames:
             if fill_value is None:
-                actual_out = actual_out[:frames]
+                out = out[:frames]
             else:
-                actual_out[frames:] = fill_value
-        return actual_out
+                out[frames:] = fill_value
+        return out
 
 
     def buffer_read(self, frames: int = -1, dtype: Optional[str] = None) -> memoryview:
@@ -1192,7 +1191,7 @@ class SoundFile(object):
             if blocksize is None:
                 raise TypeError("One of {blocksize, out} must be specified")
             out_size = blocksize if fill_value is not None else min(blocksize, frames)
-            actual_out = self._create_empty_array(out_size, always_2d, dtype)
+            out = self._create_empty_array(out_size, always_2d, dtype)
             copy_out = True
         else:
             if blocksize is not None:
@@ -1200,7 +1199,6 @@ class SoundFile(object):
                     "Only one of {blocksize, out} may be specified")
             blocksize = len(out)
             copy_out = False
-            actual_out = out
 
         overlap_memory = None
         while frames > 0:
@@ -1208,21 +1206,21 @@ class SoundFile(object):
                 output_offset = 0
             else:
                 output_offset = len(overlap_memory)
-                actual_out[:output_offset] = overlap_memory
+                out[:output_offset] = overlap_memory
 
             toread = min(blocksize - output_offset, frames)
-            self.read(toread, dtype, always_2d, fill_value, actual_out[output_offset:])
+            self.read(toread, dtype, always_2d, fill_value, out[output_offset:])
 
             if overlap:
                 if overlap_memory is None:
-                    overlap_memory = np.copy(actual_out[-overlap:])
+                    overlap_memory = np.copy(out[-overlap:])
                 else:
-                    overlap_memory[:] = actual_out[-overlap:]
+                    overlap_memory[:] = out[-overlap:]
 
             if blocksize > frames + overlap and fill_value is None:
-                block = actual_out[:frames + overlap]
+                block = out[:frames + overlap]
             else:
-                block = actual_out
+                block = out
             yield np.copy(block) if copy_out else block
             frames -= toread
 
