@@ -710,7 +710,7 @@ class SoundFile(object):
         if mode is None:
             mode = getattr(file, 'mode', None)
             if mode is None:
-                raise ValueError("Can not detect mode from file") # Raises ValueError explicitly for type checking.
+                raise TypeError("Can not get `mode` from file. provided `mode` is None.") # Raises ValueError explicitly for type checking.
         mode_int = _check_mode(mode)
         self._mode = mode
         self._compression_level = compression_level
