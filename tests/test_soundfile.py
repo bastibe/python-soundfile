@@ -598,7 +598,7 @@ def test_open_w_and_wplus_with_too_few_arguments():
 def test_open_with_mode_is_none():
     with pytest.raises(TypeError) as excinfo:
         sf.SoundFile(filename_stereo, mode=None)
-    assert "Invalid mode: None" in str(excinfo.value)
+    assert "Can not get `mode` from file. provided `mode` is None." in str(excinfo.value)
     with open(filename_stereo, 'rb') as fobj:
         with sf.SoundFile(fobj, mode=None) as f:
             assert f.mode == 'rb'
