@@ -347,12 +347,18 @@ def write(file: FileDescriptorOrPath, data: AudioData, samplerate: int,
 
         .. note:: The data type of *data* does **not** select the data
                   type of the written file. Audio data will be
-                  converted to the given *subtype*. Writing int values
-                  to a float file will *not* scale the values to
-                  [-1.0, 1.0). If you write the value ``np.array([42],
-                  dtype='int32')``, to a ``subtype='FLOAT'`` file, the
-                  file will then contain ``np.array([42.],
-                  dtype='float32')``.
+                  converted to the given *subtype*, with these caveats:
+
+                  * Writing int values to a float file will *not* scale the
+                    values to [-1.0, 1.0). If you write the value
+                    ``np.array([42], dtype='int32')``, to a ``subtype='FLOAT'``
+                    file, the file will then contain ``np.array([42.],
+                    dtype='float32')``.
+                  * For pure Python (non-Numpy) input values, floats will
+                    be scaled from the range [-1.0, 1.0) and integers will
+                    be scaled from the int64 range, [``-2**63``, ``2**63``).
+                    Since the int64 range is probably not what you want, using
+                    floats is recommended.
 
     samplerate : int
         The sample rate of the audio data.
@@ -1112,7 +1118,8 @@ class SoundFile(object):
         ----------
         data : buffer or bytes
             A buffer or bytes object containing the audio data to be
-            written.
+            written. For bytes the data will be interpreted according to the
+            system endianness, ``sys.byteorder``.
         dtype : {'float64', 'float32', 'int32', 'int16'}
             The data type of the audio data stored in *data*.
 
