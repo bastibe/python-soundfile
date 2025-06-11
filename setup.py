@@ -45,7 +45,8 @@ else:
         """Create OS-dependent, but Python-independent wheels."""
 
         def get_tag(self):
-            pythons = 'py2.py3'
+            pythons = 'py37'
+            oses = 'any'
             if platform == 'darwin':
                 if architecture0 == 'x86_64':
                     oses = 'macosx_10_9_x86_64'
@@ -66,9 +67,6 @@ else:
                     pep600_architecture = architecture0
 
                 oses = 'manylinux_2_28_{}'.format(pep600_architecture)
-            else:
-                pythons = 'py2.py3'
-                oses = 'any'
             return pythons, 'none', oses
 
     cmdclass['bdist_wheel'] = bdist_wheel_half_pure
@@ -95,8 +93,9 @@ setup(
     package_data=package_data,
     zip_safe=zip_safe,
     license='BSD 3-Clause License',
+    python_requires='>=3.7',
     setup_requires=["cffi>=1.0"],
-    install_requires=['cffi>=1.0', 'numpy', 'typing-extensions'],
+    install_requires=['cffi>=1.0', 'numpy>=1.21', 'typing-extensions>=4.0.0'],
     cffi_modules=["soundfile_build.py:ffibuilder"],
     extras_require={'numpy': []}, # This option is no longer relevant, but the empty entry must be left in to avoid breaking old build scripts.
     platforms='any',
@@ -109,7 +108,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Multimedia :: Sound/Audio',
