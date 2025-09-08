@@ -9,6 +9,7 @@ import sys
 import gc
 import weakref
 import threading
+import concurrent.futures
 
 # floating point data is typically limited to the interval [-1.0, 1.0],
 # but smaller/larger values are supported as well
@@ -702,7 +703,7 @@ def test__repr__(sf_stereo_r):
                                  "samplerate=44100, channels=2, "
                                  "format='WAV', subtype='FLOAT', "
                                  "endian='FILE')").format(sf_stereo_r)
-    
+
     sf_stereo_r._compression_level = 0
     sf_stereo_r._bitrate_mode = "CONSTANT"
     assert repr(sf_stereo_r) == ("SoundFile({0.name!r}, mode='r', "
@@ -869,6 +870,59 @@ def test_concurrent_open_error_reporting(file_inmemory):
     for thread in threads:
         thread.join()
     assert n_reported_errors[0] == n_threads * n_trials_per_thread
+
+
+def test_concurrent_file_processing():
+    n_threads = 4
+    iterations = 10
+    b = threading.Barrier(n_threads)
+
+    def target():
+        b.wait()
+        for _ in range(iterations):
+            my_file = io.BytesIO()
+            sf.write(my_file, data_stereo, 44100, format='WAV', subtype='FLOAT')
+            my_file.seek(0)
+            read, fs = sf.read(my_file)
+            assert np.all(read == data_stereo)
+            assert fs == 44100
+
+    threads = [threading.Thread(target=target) for _ in range(n_threads)]
+    try:
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+    finally:
+        b.abort()
+
+
+
+def test_shared_file_raises():
+    n_threads = 2
+    b = threading.Barrier(n_threads)
+
+    sf_file = sf.SoundFile(filename_mp3)
+
+    def target():
+        b.wait()
+        try:
+            sf_file.read()
+            return 0
+        except RuntimeError as e:
+            assert str(e) == "Multithreaded use of a SoundFile object detected"
+            return 1
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as tpe:
+        try:
+            futures = []
+            for _ in range(n_threads):
+                futures.append(tpe.submit(target))
+            # only one thread raised an exception
+            assert(sum([f.result() for f in futures]) == 1)
+        finally:
+            b.abort()
+
 
 
 # -----------------------------------------------------------------------------
