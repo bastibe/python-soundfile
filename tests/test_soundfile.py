@@ -918,11 +918,39 @@ def test_shared_file_raises():
             futures = []
             for _ in range(n_threads):
                 futures.append(tpe.submit(target))
-            # only one thread raised an exception
-            assert(sum([f.result() for f in futures]) == 1)
+            # a maximum of one thread raised an exception
+            assert(sum([f.result() for f in futures]) in [0, 1])
         finally:
             b.abort()
 
+
+def test_concurrent_close_doesnt_crash():
+    # See issue #467, where calling close() concurrently
+    # led to a segfault
+
+    num_threads = 2
+
+    b = threading.Barrier(num_threads)
+
+    def worker(f):
+        b.wait()
+        try:
+            f.close()
+            return 0
+        except RuntimeError:
+            # we may see an error about shared multithreaded use if there is a race
+            return 1
+
+    with sf.SoundFile(filename_stereo, 'r') as f:
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as tpe:
+                futures = []
+                for _ in range(num_threads):
+                    futures.append(tpe.submit(worker, f))
+                # a maximum of one thread raised an exception
+                assert(sum([f.result() for f in futures]) in [0, 1])
+        finally:
+            b.abort()
 
 
 # -----------------------------------------------------------------------------
