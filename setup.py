@@ -95,8 +95,16 @@ setup(
     package_data=package_data,
     zip_safe=zip_safe,
     license='BSD 3-Clause License',
-    setup_requires=["cffi>=1.0"],
-    install_requires=['cffi>=1.0', 'numpy', 'typing-extensions'],
+    setup_requires=[
+        "cffi>=1.0; python_version < '3.14'",
+        "cffi>=2.0.0b1; python_version >= '3.14'",
+    ],
+    install_requires=[
+        "cffi>=1.0; python_version < '3.14'",
+        "cffi>=2.0.0b1; python_version >= '3.14'",
+        'numpy',
+        'typing-extensions'
+    ],
     cffi_modules=["soundfile_build.py:ffibuilder"],
     extras_require={'numpy': []}, # This option is no longer relevant, but the empty entry must be left in to avoid breaking old build scripts.
     platforms='any',
@@ -112,6 +120,7 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Free Threading :: 2 - Beta'
         'Topic :: Multimedia :: Sound/Audio',
     ],
     long_description=open('README.rst').read(),
