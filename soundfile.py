@@ -12,9 +12,12 @@ __version__ = "0.13.1"
 
 import os as _os
 import sys as _sys
+import threading
 import numpy.typing
 from os import SEEK_SET, SEEK_CUR, SEEK_END
 from ctypes.util import find_library as _find_library
+from contextlib import contextmanager
+from functools import wraps
 from typing import Any, BinaryIO, Dict, Generator, Optional, Tuple, Union
 from typing_extensions import TypeAlias, Self, Final
 from _soundfile import ffi as _ffi
@@ -590,6 +593,19 @@ def default_subtype(format: str) -> Optional[str]:
     return _default_subtypes.get(format.upper())
 
 
+def with_lock(method):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if self._lock.acquire(blocking=False):
+            try:
+                return method(self, *args, **kwargs)
+            finally:
+                self._lock.release()
+        else:
+            raise RuntimeError("Multithreaded use of a SoundFile object detected")
+    return wrapper
+
+
 class SoundFile(object):
     """A sound file.
 
@@ -702,6 +718,7 @@ class SoundFile(object):
         >>> assert myfile.closed
 
         """
+        self._lock = threading.RLock()
         if isinstance(file, _os.PathLike):
             file = _os.fspath(file)
         self._name = file
@@ -768,6 +785,7 @@ class SoundFile(object):
     """The bitrate mode on 'write()'"""
 
     @property
+    @with_lock
     def extra_info(self):
         """Retrieve the log string generated when opening the file."""
         info = _ffi.new("char[]", 2**14)
@@ -800,19 +818,21 @@ class SoundFile(object):
     def __setattr__(self, name: str, value: Any) -> None:
         """Write text meta-data in the sound file through properties."""
         if name in _str_types:
-            self._check_if_closed()
-            err = _snd.sf_set_string(self._file, _str_types[name],
-                                     value.encode())
-            _error_check(err)
+            with self._lock:
+                self._check_if_closed()
+                err = _snd.sf_set_string(self._file, _str_types[name],
+                                         value.encode())
+                _error_check(err)
         else:
             object.__setattr__(self, name, value)
 
     def __getattr__(self, name: str) -> Any:
         """Read text meta-data in the sound file through properties."""
         if name in _str_types:
-            self._check_if_closed()
-            data = _snd.sf_get_string(self._file, _str_types[name])
-            return _ffi.string(data).decode('utf-8', 'replace') if data else ""
+            with self._lock:
+                self._check_if_closed()
+                data = _snd.sf_get_string(self._file, _str_types[name])
+                return _ffi.string(data).decode('utf-8', 'replace') if data else ""
         else:
             raise AttributeError(
                 "'SoundFile' object has no attribute {0!r}".format(name))
@@ -836,6 +856,7 @@ class SoundFile(object):
         """Return True if the file supports seeking."""
         return self._info.seekable == _snd.SF_TRUE
 
+    @with_lock
     def seek(self, frames: int, whence: int = SEEK_SET) -> int:
         """Set the read/write position.
 
@@ -881,7 +902,7 @@ class SoundFile(object):
         """Return the current read/write position."""
         return self.seek(0, SEEK_CUR)
 
-
+    @with_lock
     def read(self, frames: int = -1, dtype: str = 'float64', 
              always_2d: bool = False, fill_value: Optional[float] = None, 
              out: Optional[AudioData] = None) -> AudioData:
@@ -977,7 +998,7 @@ class SoundFile(object):
                 out[frames:] = fill_value
         return out
 
-
+    @with_lock
     def buffer_read(self, frames: int = -1, dtype: Optional[str] = None) -> memoryview:
         """Read from the file and return data as buffer object.
 
@@ -1013,6 +1034,7 @@ class SoundFile(object):
         assert read_frames == frames
         return _ffi.buffer(cdata)
 
+    @with_lock
     def buffer_read_into(self, buffer: Union[bytearray, memoryview, Any], dtype: str) -> int:
         """Read from the file into a given buffer object.
 
@@ -1046,6 +1068,7 @@ class SoundFile(object):
         frames = self._cdata_io('read', cdata, ctype, frames)
         return frames
 
+    @with_lock
     def write(self, data: AudioData) -> None:
         """Write audio data from a NumPy array to the file.
 
@@ -1100,6 +1123,7 @@ class SoundFile(object):
         assert written == len(data)
         self._update_frames(written)
 
+    @with_lock
     def buffer_write(self, data: Any, dtype: str) -> None:
         """Write audio data from a buffer/bytes object to the file.
 
@@ -1127,6 +1151,7 @@ class SoundFile(object):
         assert written == frames
         self._update_frames(written)
 
+    @with_lock
     def blocks(self, blocksize: Optional[int] = None, overlap: int = 0, 
                frames: int = -1, dtype: str = 'float64',
                always_2d: bool = False, fill_value: Optional[float] = None, 
@@ -1222,6 +1247,7 @@ class SoundFile(object):
             yield np.copy(block) if copy_out else block
             frames -= toread
 
+    @with_lock
     def truncate(self, frames: Optional[int] = None) -> None:
         """Truncate the file to a given number of frames.
 
@@ -1246,6 +1272,7 @@ class SoundFile(object):
             raise LibsndfileError(err, "Error truncating the file")
         self._info.frames = frames
 
+    @with_lock
     def flush(self) -> None:
         """Write unwritten data to the file system.
 
@@ -1260,6 +1287,7 @@ class SoundFile(object):
         self._check_if_closed()
         _snd.sf_write_sync(self._file)
 
+    @with_lock
     def close(self) -> None:
         """Close the file.  Can be called multiple times."""
         if not self.closed:
@@ -1465,6 +1493,7 @@ class SoundFile(object):
             self.seek(start, SEEK_SET)
         return frames
 
+    @with_lock
     def copy_metadata(self):
         """Get all metadata present in this SoundFile
 
