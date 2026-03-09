@@ -1,9 +1,18 @@
 {
-    "pythonVersion": "3.9",
-    "exclude": [
-      "**/node_modules",
-      "**/__pycache__",
-      "**/.venv",
-      "tests/"
-    ]
+  "pythonVersion": "3.10",
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.venv",
+    "tests/",
+    "**/.*"
+  ],
+  "deprecateTypingAliases": true,
+  "disableBytesTypePromotions": true,
+  "enableReachabilityAnalysis": true,
+  "enableTypeIgnoreComments": false,
+  "strictDictionaryInference": true,
+  "strictListInference": true,
+  "strictSetInference": true,
+  "typeCheckingMode": "strict",
 }
