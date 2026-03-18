@@ -46,8 +46,12 @@ def _file_existing(request, filename, fdarg, objarg=None):
         fd = os.open(filename, fdarg)
 
         def finalizer():
-            with pytest.raises(OSError):
+            # On Windows Server 2025, os.close() on an already-closed fd does
+            # not raise OSError, so we close it silently to avoid resource leaks.
+            try:
                 os.close(fd)
+            except OSError:
+                pass
 
         request.addfinalizer(finalizer)
         return fd
