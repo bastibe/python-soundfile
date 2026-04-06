@@ -12,20 +12,20 @@ __version__ = "0.13.1"
 
 import os as _os
 import sys as _sys
-import numpy as np
-from os import SEEK_SET, SEEK_CUR, SEEK_END
-from ctypes.util import find_library as _find_library
-from typing import Any, BinaryIO, overload, Literal
-
 from collections.abc import Generator
+from ctypes.util import find_library as _find_library
+from os import SEEK_CUR, SEEK_END, SEEK_SET
+from typing import Any, BinaryIO, Final, Literal, TypeAlias, overload
+
+import numpy as np  # ty:ignore[unresolved-import]
 from typing_extensions import Self
 
-from typing import TypeAlias, Final
 from _soundfile import ffi as _ffi
 
 FileDescriptorOrPath: TypeAlias = str | int | BinaryIO | _os.PathLike[Any]
 AudioData: TypeAlias = np.ndarray[tuple[int, ...], np.dtype[np.float32 | np.float64 | np.int32 | np.int16]]
 AudioData_2d: TypeAlias = np.ndarray[tuple[int, int], np.dtype[np.float32 | np.float64 | np.int32 | np.int16]]
+dtype_str: TypeAlias = Literal['float64', 'float32', 'int32', 'int16']
 _snd: Any
 _ffi: Any
 
@@ -165,6 +165,7 @@ try:  # packaged lib (in _soundfile_data which should be on python path)
     elif _sys.platform == 'win32':
         from platform import architecture as _architecture
         from platform import machine as _machine
+
         # this check can not be completed correctly: for x64 binaries running on
         # arm64 Windows report the same values as arm64 binaries. For now, neither
         # numpy nor cffi are available for arm64, so we can safely assume we're
@@ -211,7 +212,7 @@ except (OSError, ImportError, TypeError):
         # Homebrew on Apple M1 uses a `/opt/homebrew/lib` instead of
         # `/usr/local/lib`. We are making sure we pick that up.
         from platform import machine as _machine
-        if _sys.platform == 'darwin' and _machine() == 'arm64':
+        if _sys.platform == 'darwin' and _machine() == 'arm64': # pyright: ignore[reportUnnecessaryComparison]
             _hbrew_path = '/opt/homebrew/lib/' if _os.path.isdir('/opt/homebrew/lib/') \
                 else '/usr/local/lib/'
             _snd = _ffi.dlopen(_os.path.join(_hbrew_path, _explicit_libname))
@@ -226,20 +227,20 @@ if __libsndfile_version__.startswith('libsndfile-'):
 
 @overload
 def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None,
-         dtype: Literal['float64', 'float32', 'int32', 'int16'] = 'float64', always_2d: Literal[True] = True,
+         dtype: dtype_str = 'float64', always_2d: Literal[True] = True,
          fill_value: float | None = None, out: AudioData_2d | None = None,
          samplerate: int | None = None, channels: int | None = None,
          format: str | None = None, subtype: str | None = None,
          endian: str | None = None, closefd: bool = True) -> tuple[AudioData_2d, int]:...
 @overload
 def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None,
-         dtype: Literal['float64', 'float32', 'int32', 'int16'] = 'float64', always_2d: bool = False,
+         dtype: dtype_str = 'float64', always_2d: bool = False,
          fill_value: float | None = None, out: AudioData | None = None,
          samplerate: int | None = None, channels: int | None = None,
          format: str | None = None, subtype: str | None = None,
          endian: str | None = None, closefd: bool = True) -> tuple[AudioData, int]:...
 def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None,
-         dtype: Literal['float64', 'float32', 'int32', 'int16'] = 'float64', always_2d: bool = False,
+         dtype: dtype_str = 'float64', always_2d: bool = False,
          fill_value: float | None = None, out: AudioData | None = None,
          samplerate: int | None = None, channels: int | None = None,
          format: str | None = None, subtype: str | None = None,
@@ -330,7 +331,7 @@ def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int
     """
     with SoundFile(file, 'r', samplerate, channels,
                    subtype, endian, format, closefd) as f:
-        frames = f._prepare_read(start, stop, frames)
+        frames = f._prepare_read(start, stop, frames) # pyright: ignore[reportPrivateUsage]
         data = f.read(frames, dtype, always_2d, fill_value, out)
     return data, f.samplerate
 
@@ -397,7 +398,7 @@ def write(file: FileDescriptorOrPath, data: AudioData, samplerate: int,
 
 def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
            overlap: int = 0, frames: int = -1, start: int = 0,
-           stop: int | None = None, dtype: str = 'float64',
+           stop: int | None = None, dtype: dtype_str = 'float64',
            always_2d: bool = False, fill_value: float | None = None,
            out: AudioData | None = None, samplerate: int | None = None,
            channels: int | None = None, format: str | None = None,
@@ -452,7 +453,7 @@ def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
     """
     with SoundFile(file, 'r', samplerate, channels,
                    subtype, endian, format, closefd) as f:
-        frames = f._prepare_read(start, stop, frames)
+        frames = f._prepare_read(start, stop, frames) # pyright: ignore[reportPrivateUsage]
         yield from f.blocks(blocksize, overlap, frames, dtype, always_2d, fill_value, out)
 
 
@@ -891,14 +892,14 @@ class SoundFile:
 
 
     @overload
-    def read(self, frames: int = -1, dtype: Literal['float64', 'float32', 'int32', 'int16'] = 'float64',
+    def read(self, frames: int = -1, dtype: dtype_str = 'float64',
              always_2d: Literal[True] = True, fill_value: float | None = None,
              out: AudioData_2d | None = None) -> AudioData_2d:...
     @overload
-    def read(self, frames: int = -1, dtype: Literal['float64', 'float32', 'int32', 'int16'] = 'float64',
+    def read(self, frames: int = -1, dtype: dtype_str = 'float64',
              always_2d: bool = False, fill_value: float | None = None,
              out: AudioData | None = None) -> AudioData:...
-    def read(self, frames: int = -1, dtype: Literal['float64', 'float32', 'int32', 'int16'] = 'float64',
+    def read(self, frames: int = -1, dtype: dtype_str = 'float64',
              always_2d: bool = False, fill_value: float | None = None,
              out: AudioData | None = None) -> AudioData:
         """Read from the file and return data as NumPy array.
@@ -994,7 +995,7 @@ class SoundFile:
         return out
 
 
-    def buffer_read(self, frames: int = -1, dtype: str | None = None) -> memoryview:
+    def buffer_read(self, frames: int = -1, *, dtype: dtype_str) -> memoryview:
         """Read from the file and return data as buffer object.
 
         Reads the given number of *frames* in the given data format
@@ -1029,7 +1030,7 @@ class SoundFile:
         assert read_frames == frames
         return _ffi.buffer(cdata)
 
-    def buffer_read_into(self, buffer: bytearray | memoryview | Any, dtype: str) -> int:
+    def buffer_read_into(self, buffer: bytearray | memoryview | Any, dtype: dtype_str) -> int:
         """Read from the file into a given buffer object.
 
         Fills the given *buffer* with frames in the given data format
@@ -1058,7 +1059,7 @@ class SoundFile:
 
         """
         ctype = self._check_dtype(dtype)
-        cdata, frames = self._check_buffer(buffer, ctype)
+        cdata, frames = self._check_buffer(buffer, ctype)  # pyright: ignore[reportArgumentType] # ty:ignore[invalid-argument-type]
         frames = self._cdata_io('read', cdata, ctype, frames)
         return frames
 
@@ -1114,7 +1115,7 @@ class SoundFile:
         assert written == len(data)
         self._update_frames(written)
 
-    def buffer_write(self, data: Any, dtype: str) -> None:
+    def buffer_write(self, data: Any, dtype: dtype_str) -> None:
         """Write audio data from a buffer/bytes object to the file.
 
         Writes the contents of *data* to the file at the current
@@ -1142,7 +1143,7 @@ class SoundFile:
         self._update_frames(written)
 
     def blocks(self, blocksize: int | None = None, overlap: int = 0,
-               frames: int = -1, dtype: str = 'float64',
+               frames: int = -1, dtype: dtype_str = 'float64',
                always_2d: bool = False, fill_value: float | None = None,
                out: AudioData | None = None) -> Generator[AudioData, None, None]:
         """Return a generator for block-wise reading.
@@ -1291,16 +1292,16 @@ class SoundFile:
                     # truncate the file, because SFM_RDWR doesn't:
                     _os.close(_os.open(file, _os.O_WRONLY | _os.O_TRUNC))
             openfunction = _snd.sf_open
-            if isinstance(file, str):
+            if isinstance(file, str): # pyright: ignore[reportUnnecessaryIsInstance]
                 if _sys.platform == 'win32':
                     openfunction = _snd.sf_wchar_open
                 else:
-                    file = file.encode(_sys.getfilesystemencoding())
+                    file = file.encode(_sys.getfilesystemencoding())  # ty:ignore[invalid-assignment]
             file_ptr = openfunction(file, mode_int, self._info)
         elif isinstance(file, int):
             file_ptr = _snd.sf_open_fd(file, mode_int, self._info, closefd)
         elif _has_virtual_io_attrs(file, mode_int):
-            file_ptr = _snd.sf_open_virtual(self._init_virtual_io(file),
+            file_ptr = _snd.sf_open_virtual(self._init_virtual_io(file),  # ty:ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
                                             mode_int, self._info, _ffi.NULL)
         else:
             raise TypeError(f"Invalid file: {self.name!r}")
@@ -1320,7 +1321,7 @@ class SoundFile:
     def _init_virtual_io(self, file: BinaryIO) -> int:
         """Initialize callback functions for sf_open_virtual()."""
         @_ffi.callback("sf_vio_get_filelen")
-        def vio_get_filelen(user_data) -> int:
+        def vio_get_filelen(user_data) -> int: # pyright: ignore[reportMissingParameterType, reportUnknownParameterType]
             curr = file.tell()
             file.seek(0, SEEK_END)
             size = file.tell()
@@ -1328,35 +1329,35 @@ class SoundFile:
             return size
 
         @_ffi.callback("sf_vio_seek")
-        def vio_seek(offset: int, whence: int, user_data) -> int:
+        def vio_seek(offset: int, whence: int, user_data) -> int: # pyright: ignore[reportMissingParameterType, reportUnknownParameterType]
             file.seek(offset, whence)
             return file.tell()
 
         @_ffi.callback("sf_vio_read")
-        def vio_read(ptr, count: int, user_data) -> int:
+        def vio_read(ptr, count: int, user_data) -> int: # pyright: ignore[reportMissingParameterType, reportUnknownParameterType]
             # first try readinto(), if not available fall back to read()
             try:
                 buf = _ffi.buffer(ptr, count)
-                data_read = file.readinto(buf)
+                data_read = file.readinto(buf) # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]  # ty:ignore[unresolved-attribute]
             except AttributeError:
                 data = file.read(count)
                 data_read = len(data)
                 buf = _ffi.buffer(ptr, data_read)
                 buf[0:data_read] = data
-            return data_read
+            return data_read # pyright: ignore[reportUnknownVariableType]
 
         @_ffi.callback("sf_vio_write")
-        def vio_write(ptr, count: int, user_data) -> int:
+        def vio_write(ptr, count: int, user_data) -> int: # pyright: ignore[reportMissingParameterType, reportUnknownParameterType]
             buf = _ffi.buffer(ptr, count)
             data = buf[:]
             written = file.write(data)
             # write() returns None for file objects in Python <= 2.7:
-            if written is None:
+            if written is None: # pyright: ignore[reportUnnecessaryComparison]
                 written = count
             return written
 
         @_ffi.callback("sf_vio_tell")
-        def vio_tell(user_data) -> int:
+        def vio_tell(user_data) -> int: # pyright: ignore[reportMissingParameterType, reportUnknownParameterType]
             return file.tell()
 
         # Note: the callback functions must be kept alive!
@@ -1407,7 +1408,7 @@ class SoundFile:
             raise ValueError("Data size must be a multiple of frame size")
         return data, frames
 
-    def _create_empty_array(self, frames: int, always_2d: bool, dtype: str) -> AudioData:
+    def _create_empty_array(self, frames: int, always_2d: bool, dtype: dtype_str) -> AudioData:
         """Create an empty array with appropriate shape."""
         if always_2d or self.channels > 1:
             shape = frames, self.channels
@@ -1415,7 +1416,7 @@ class SoundFile:
             shape = frames,
         return np.empty(shape, dtype, order='C')
 
-    def _check_dtype(self, dtype: str) -> str:
+    def _check_dtype(self, dtype: dtype_str) -> str:
         """Check if dtype string is valid and return ctype string."""
         try:
             return _ffi_types[dtype]
@@ -1432,7 +1433,7 @@ class SoundFile:
             raise ValueError(f"Invalid shape: {array.shape!r} (Expected {self.channels} channels, got {array_channels})")
         if not array.flags.c_contiguous:
             raise ValueError("Data must be C-contiguous")
-        ctype = self._check_dtype(array.dtype.name)
+        ctype = self._check_dtype(array.dtype.name) # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
         assert array.dtype.itemsize == _ffi.sizeof(ctype)
         cdata = _ffi.cast(ctype + '*', array.__array_interface__['data'][0])
         return self._cdata_io(action, cdata, ctype, frames)
@@ -1533,7 +1534,7 @@ def _format_int(format: str, subtype: str | None, endian: str | None) -> int:
         if subtype is None:
             raise TypeError(
                 f"No default subtype for major format {format!r}")
-    elif not isinstance(subtype, str):
+    elif not isinstance(subtype, str): # pyright: ignore[reportUnnecessaryIsInstance]
         raise TypeError(f"Invalid subtype: {subtype!r}")
     try:
         result |= _subtypes[subtype.upper()]
@@ -1541,7 +1542,7 @@ def _format_int(format: str, subtype: str | None, endian: str | None) -> int:
         raise ValueError(f"Unknown subtype: {subtype!r}")
     if endian is None:
         endian = 'FILE'
-    elif not isinstance(endian, str):
+    elif not isinstance(endian, str): # pyright: ignore[reportUnnecessaryIsInstance]
         raise TypeError(f"Invalid endian-ness: {endian!r}")
     try:
         result |= _endians[endian.upper()]
@@ -1559,7 +1560,7 @@ def _format_int(format: str, subtype: str | None, endian: str | None) -> int:
 
 def _check_mode(mode: str) -> int:
     """Check if mode is valid and return its integer representation."""
-    if not isinstance(mode, str):
+    if not isinstance(mode, str): # pyright: ignore[reportUnnecessaryIsInstance]
         raise TypeError(f"Invalid mode: {mode!r}")
     mode_set = set(mode)
     if mode_set.difference('xrwb+') or len(mode) > len(mode_set):
@@ -1612,19 +1613,19 @@ def _get_format_from_filename(file: FileDescriptorOrPath, mode: str) -> str:
     file/file.name is a bytes object).
 
     """
-    format = ''
+    format: str = ''
     file = getattr(file, 'name', file)
     try:
         # This raises an exception if file is not a (Unicode/byte) string:
-        format = _os.path.splitext(file)[-1][1:]
+        format = _os.path.splitext(file)[-1][1:] # pyright: ignore[reportArgumentType, reportCallIssue, reportUnknownVariableType]  # ty:ignore[no-matching-overload]
         # Convert bytes to unicode (raises AttributeError on Python 3 str):
-        format = format.decode('utf-8', 'replace')
+        format = format.decode('utf-8', 'replace') # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
     except Exception:
         pass
-    if format.upper() not in _formats and 'r' not in mode:
+    if format.upper() not in _formats and 'r' not in mode: # pyright: ignore[reportUnknownMemberType]
         raise TypeError("No format specified and unable to get format from "
                         "file extension: {!r}".format(file))
-    return format
+    return format # pyright: ignore[reportUnknownVariableType]
 
 
 def _format_str(format_int: int) -> str:
@@ -1658,7 +1659,7 @@ def _available_formats_helper(count_flag: int, format_flag: int) -> Generator[tu
 
 def _check_format(format_str: str) -> int:
     """Check if `format_str` is valid and return format ID."""
-    if not isinstance(format_str, str):
+    if not isinstance(format_str, str): # pyright: ignore[reportUnnecessaryIsInstance]
         raise TypeError(f"Invalid format: {format_str!r}")
     try:
         format_int = _formats[format_str.upper()]
