@@ -16,15 +16,17 @@ import threading as _threading
 from collections.abc import Generator
 from ctypes.util import find_library as _find_library
 from os import SEEK_CUR, SEEK_END, SEEK_SET
-from typing import Any, BinaryIO, Final, TypeAlias
+from typing import Any, BinaryIO, Final, Literal, TypeAlias, overload
 
-import numpy.typing
+import numpy
 from typing_extensions import Self
 
 from _soundfile import ffi as _ffi
 
 FileDescriptorOrPath: TypeAlias = str | int | BinaryIO | _os.PathLike[Any]
-AudioData: TypeAlias = numpy.typing.NDArray[Any]
+AudioData: TypeAlias = numpy.ndarray[tuple[int, ...], numpy.dtype[numpy.float32 | numpy.float64 | numpy.int32 | numpy.int16]]
+AudioData_2d: TypeAlias = numpy.ndarray[tuple[int, int], numpy.dtype[numpy.float32 | numpy.float64 | numpy.int32 | numpy.int16]]
+dtype_str: TypeAlias = Literal['float64', 'float32', 'int32', 'int16']
 _snd: Any
 _ffi: Any
 
@@ -223,13 +225,20 @@ if __libsndfile_version__.startswith('libsndfile-'):
     __libsndfile_version__ = __libsndfile_version__[len('libsndfile-'):]
 
 
-
-def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None,
-         dtype: str = 'float64', always_2d: bool = False,
-         fill_value: float | None = None, out: AudioData | None = None,
-         samplerate: int | None = None, channels: int | None = None,
-         format: str | None = None, subtype: str | None = None,
-         endian: str | None = None, closefd: bool = True) -> tuple[AudioData, int]:
+@overload
+def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64',
+        *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None,
+        samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None,
+        endian: str | None = None, closefd: bool = True) -> tuple[AudioData_2d, int]:...
+@overload
+def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64',
+        always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None,
+        samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None,
+        endian: str | None = None, closefd: bool = True) -> tuple[AudioData, int]:...
+def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64',
+        always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None,
+        samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None,
+        endian: str | None = None, closefd: bool = True) -> tuple[AudioData | AudioData_2d, int]:
 
     """Provide audio data from a sound file as NumPy array.
 
