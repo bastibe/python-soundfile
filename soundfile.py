@@ -886,9 +886,17 @@ class SoundFile:
         return self.seek(0, SEEK_CUR)
 
 
-    def read(self, frames: int = -1, dtype: str = 'float64',
-             always_2d: bool = False, fill_value: float | None = None,
-             out: AudioData | None = None) -> AudioData:
+    @overload
+    def read(self, frames: int = -1, dtype: dtype_str = 'float64',
+            *, always_2d: Literal[True], fill_value: float | None = None,
+            out: AudioData_2d | None = None) -> AudioData_2d:...
+    @overload
+    def read(self, frames: int = -1, dtype: dtype_str = 'float64',
+            always_2d: bool = False, fill_value: float | None = None,
+            out: AudioData | None = None) -> AudioData:...
+    def read(self, frames: int = -1, dtype: dtype_str = 'float64',
+            always_2d: bool = False, fill_value: float | None = None,
+            out: AudioData | None = None) -> AudioData | AudioData_2d:
         """Read from the file and return data as NumPy array.
 
         Reads the given number of frames in the given data format
@@ -982,7 +990,7 @@ class SoundFile:
         return out
 
 
-    def buffer_read(self, frames: int = -1, dtype: str | None = None) -> memoryview:
+    def buffer_read(self, frames: int = -1, dtype: dtype_str | None = None) -> memoryview:
         """Read from the file and return data as buffer object.
 
         Reads the given number of *frames* in the given data format
@@ -1017,7 +1025,7 @@ class SoundFile:
         assert read_frames == frames
         return _ffi.buffer(cdata)
 
-    def buffer_read_into(self, buffer: bytearray | memoryview | Any, dtype: str) -> int:
+    def buffer_read_into(self, buffer: bytearray | memoryview | Any, dtype: dtype_str) -> int:
         """Read from the file into a given buffer object.
 
         Fills the given *buffer* with frames in the given data format
@@ -1104,7 +1112,7 @@ class SoundFile:
         assert written == len(data)
         self._update_frames(written)
 
-    def buffer_write(self, data: Any, dtype: str) -> None:
+    def buffer_write(self, data: bytes, dtype: dtype_str) -> None:
         """Write audio data from a buffer/bytes object to the file.
 
         Writes the contents of *data* to the file at the current
@@ -1132,7 +1140,7 @@ class SoundFile:
         self._update_frames(written)
 
     def blocks(self, blocksize: int | None = None, overlap: int = 0,
-               frames: int = -1, dtype: str = 'float64',
+               frames: int = -1, dtype: dtype_str = 'float64',
                always_2d: bool = False, fill_value: float | None = None,
                out: AudioData | None = None) -> Generator[AudioData, None, None]:
         """Return a generator for block-wise reading.
@@ -1477,7 +1485,7 @@ class SoundFile:
             self.seek(start, SEEK_SET)
         return frames
 
-    def copy_metadata(self):
+    def copy_metadata(self) -> dict[str, str]:
         """Get all metadata present in this SoundFile
 
         Returns
