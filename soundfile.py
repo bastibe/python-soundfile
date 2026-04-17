@@ -390,7 +390,16 @@ def write(file: FileDescriptorOrPath, data: AudioData, samplerate: int,
                    compression_level, bitrate_mode) as f:
         f.write(data)
 
-
+@overload
+def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
+           overlap: int = 0, frames: int = -1, start: int = 0,
+           stop: int | None = None, dtype: dtype_str = 'float64',
+           *, always_2d: Literal[True], fill_value: float | None = None,
+           out: AudioData | None = None, samplerate: int | None = None,
+           channels: int | None = None, format: str | None = None,
+           subtype: str | None = None, endian: str | None = None,
+           closefd: bool = True) -> Generator[AudioData_2d, None, None]: ...
+@overload
 def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
            overlap: int = 0, frames: int = -1, start: int = 0,
            stop: int | None = None, dtype: dtype_str = 'float64',
@@ -398,7 +407,15 @@ def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
            out: AudioData | None = None, samplerate: int | None = None,
            channels: int | None = None, format: str | None = None,
            subtype: str | None = None, endian: str | None = None,
-           closefd: bool = True) -> Generator[AudioData, None, None]:
+           closefd: bool = True) -> Generator[AudioData, None, None]: ...
+def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
+           overlap: int = 0, frames: int = -1, start: int = 0,
+           stop: int | None = None, dtype: dtype_str = 'float64',
+           always_2d: bool = False, fill_value: float | None = None,
+           out: AudioData | None = None, samplerate: int | None = None,
+           channels: int | None = None, format: str | None = None,
+           subtype: str | None = None, endian: str | None = None,
+           closefd: bool = True) -> Generator[AudioData, None, None] | Generator[AudioData_2d, None, None]:
     """Return a generator for block-wise reading.
 
     By default, iteration starts at the beginning and stops at the end
@@ -1139,10 +1156,20 @@ class SoundFile:
         assert written == frames
         self._update_frames(written)
 
+    @overload
+    def blocks(self, blocksize: int | None = None, overlap: int = 0,
+               frames: int = -1, dtype: dtype_str = 'float64',
+               *, always_2d: Literal[True], fill_value: float | None = None,
+               out: AudioData | None = None) -> Generator[AudioData_2d, None, None]: ...
+    @overload
     def blocks(self, blocksize: int | None = None, overlap: int = 0,
                frames: int = -1, dtype: dtype_str = 'float64',
                always_2d: bool = False, fill_value: float | None = None,
-               out: AudioData | None = None) -> Generator[AudioData, None, None]:
+               out: AudioData | None = None) -> Generator[AudioData, None, None]: ...
+    def blocks(self, blocksize: int | None = None, overlap: int = 0,
+               frames: int = -1, dtype: dtype_str = 'float64',
+               always_2d: bool = False, fill_value: float | None = None,
+               out: AudioData | None = None) -> Generator[AudioData, None, None] | Generator[AudioData_2d, None, None]:
         """Return a generator for block-wise reading.
 
         By default, the generator yields blocks of the given
