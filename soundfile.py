@@ -393,7 +393,7 @@ def write(file: FileDescriptorOrPath, data: AudioData, samplerate: int,
 
 def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
            overlap: int = 0, frames: int = -1, start: int = 0,
-           stop: int | None = None, dtype: str = 'float64',
+           stop: int | None = None, dtype: dtype_str = 'float64',
            always_2d: bool = False, fill_value: float | None = None,
            out: AudioData | None = None, samplerate: int | None = None,
            channels: int | None = None, format: str | None = None,
@@ -456,20 +456,20 @@ class _SoundFileInfo:
     """Information about a SoundFile"""
 
     def __init__(self, file, verbose):
-        self.verbose = verbose
+        self.verbose: bool = verbose
         with SoundFile(file) as f:
-            self.name = f.name
-            self.samplerate = f.samplerate
-            self.channels = f.channels
-            self.frames = f.frames
-            self.duration = float(self.frames)/f.samplerate
-            self.format = f.format
-            self.subtype = f.subtype
-            self.endian = f.endian
-            self.format_info = f.format_info
-            self.subtype_info = f.subtype_info
-            self.sections = f.sections
-            self.extra_info = f.extra_info
+            self.name: str | int | Any = f.name
+            self.samplerate: int = f.samplerate
+            self.channels: int = f.channels
+            self.frames: int = f.frames
+            self.duration: float = float(self.frames)/f.samplerate
+            self.format: str = f.format
+            self.subtype: str = f.subtype
+            self.endian: str = f.endian
+            self.format_info: str = f.format_info
+            self.subtype_info: str = f.subtype_info
+            self.sections: int = f.sections
+            self.extra_info: str = f.extra_info
 
     @property
     def _duration_str(self):
