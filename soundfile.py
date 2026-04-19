@@ -1275,7 +1275,7 @@ class SoundFile(object):
     # sf_error(NULL) to retrieve the error code, but another thread
     # may clear the global error between our open and our sf_error.
     # This lock serialises the open+sf_error(NULL) pair to prevent that.
-    _open_lock = _threading.Lock()
+    _sf_error_lock = _threading.Lock()
 
     def _open(self, file, mode_int, closefd):
         """Call the appropriate sf_open*() function from libsndfile."""
@@ -1292,26 +1292,19 @@ class SoundFile(object):
                     openfunction = _snd.sf_wchar_open
                 else:
                     file = file.encode(_sys.getfilesystemencoding())
-            with self._open_lock:
-                file_ptr = openfunction(file, mode_int, self._info)
-                if file_ptr == _ffi.NULL:
-                    err = _snd.sf_error(file_ptr)
-                    raise LibsndfileError(err, prefix="Error opening {0!r}: ".format(self.name))
         elif isinstance(file, int):
-            with self._open_lock:
-                file_ptr = _snd.sf_open_fd(file, mode_int, self._info, closefd)
-                if file_ptr == _ffi.NULL:
-                    err = _snd.sf_error(file_ptr)
-                    raise LibsndfileError(err, prefix="Error opening {0!r}: ".format(self.name))
+            openfunction = lambda file, mode_int, info: _snd.sf_open_fd(file, mode_int, info, closefd)
         elif _has_virtual_io_attrs(file, mode_int):
-            with self._open_lock:
-                file_ptr = _snd.sf_open_virtual(self._init_virtual_io(file),
-                                                mode_int, self._info, _ffi.NULL)
-                if file_ptr == _ffi.NULL:
-                    err = _snd.sf_error(file_ptr)
-                    raise LibsndfileError(err, prefix="Error opening {0!r}: ".format(self.name))
+            openfunction = lambda file, mode_int, info: _snd.sf_open_virtual(self._init_virtual_io(file),
+                                            mode_int, info, _ffi.NULL)
         else:
             raise TypeError("Invalid file: {0!r}".format(self.name))
+
+        with self._sf_error_lock:
+            file_ptr = openfunction(file, mode_int, self._info)
+            if file_ptr == _ffi.NULL:
+                err = _snd.sf_error(file_ptr)
+                raise LibsndfileError(err, prefix="Error opening {0!r}: ".format(self.name))
         if mode_int == _snd.SFM_WRITE:
             # Due to a bug in libsndfile version <= 1.0.25, frames != 0
             # when opening a named pipe in SFM_WRITE mode.
