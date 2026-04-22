@@ -226,17 +226,11 @@ if __libsndfile_version__.startswith('libsndfile-'):
 
 
 @overload
-def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64',
-        *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None,
-        samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None,
-        endian: str | None = None, closefd: bool = True) -> tuple[AudioData_2d, int]:...
+def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64', *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None, samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None, endian: str | None = None, closefd: bool = True) -> tuple[AudioData_2d, int]:...
 @overload
+def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64', always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None, samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None, endian: str | None = None, closefd: bool = True) -> tuple[AudioData, int]:...
 def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64',
-        always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None,
-        samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None,
-        endian: str | None = None, closefd: bool = True) -> tuple[AudioData, int]:...
-def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64',
-        always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None,
+        always_2d: bool = False, fill_value: float | None = None, out: AudioData | AudioData_2d | None = None,
         samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None,
         endian: str | None = None, closefd: bool = True) -> tuple[AudioData | AudioData_2d, int]:
 
@@ -391,28 +385,14 @@ def write(file: FileDescriptorOrPath, data: AudioData, samplerate: int,
         f.write(data)
 
 @overload
-def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
-           overlap: int = 0, frames: int = -1, start: int = 0,
-           stop: int | None = None, dtype: dtype_str = 'float64',
-           *, always_2d: Literal[True], fill_value: float | None = None,
-           out: AudioData | None = None, samplerate: int | None = None,
-           channels: int | None = None, format: str | None = None,
-           subtype: str | None = None, endian: str | None = None,
-           closefd: bool = True) -> Generator[AudioData_2d, None, None]: ...
+def blocks(file: FileDescriptorOrPath, blocksize: int | None = None, overlap: int = 0, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64', *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None, samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None, endian: str | None = None, closefd: bool = True) -> Generator[AudioData_2d, None, None]:...
 @overload
+def blocks(file: FileDescriptorOrPath, blocksize: int | None = None, overlap: int = 0, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64', always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None, samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None, endian: str | None = None, closefd: bool = True) -> Generator[AudioData, None, None]:...
 def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
            overlap: int = 0, frames: int = -1, start: int = 0,
            stop: int | None = None, dtype: dtype_str = 'float64',
            always_2d: bool = False, fill_value: float | None = None,
-           out: AudioData | None = None, samplerate: int | None = None,
-           channels: int | None = None, format: str | None = None,
-           subtype: str | None = None, endian: str | None = None,
-           closefd: bool = True) -> Generator[AudioData, None, None]: ...
-def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
-           overlap: int = 0, frames: int = -1, start: int = 0,
-           stop: int | None = None, dtype: dtype_str = 'float64',
-           always_2d: bool = False, fill_value: float | None = None,
-           out: AudioData | None = None, samplerate: int | None = None,
+           out: AudioData | AudioData_2d | None = None, samplerate: int | None = None,
            channels: int | None = None, format: str | None = None,
            subtype: str | None = None, endian: str | None = None,
            closefd: bool = True) -> Generator[AudioData, None, None] | Generator[AudioData_2d, None, None]:
@@ -904,16 +884,12 @@ class SoundFile:
 
 
     @overload
-    def read(self, frames: int = -1, dtype: dtype_str = 'float64',
-            *, always_2d: Literal[True], fill_value: float | None = None,
-            out: AudioData_2d | None = None) -> AudioData_2d:...
+    def read(self, frames: int = -1, dtype: dtype_str = 'float64', *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None) -> AudioData_2d:...
     @overload
+    def read(self, frames: int = -1, dtype: dtype_str = 'float64', always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None) -> AudioData:...
     def read(self, frames: int = -1, dtype: dtype_str = 'float64',
             always_2d: bool = False, fill_value: float | None = None,
-            out: AudioData | None = None) -> AudioData:...
-    def read(self, frames: int = -1, dtype: dtype_str = 'float64',
-            always_2d: bool = False, fill_value: float | None = None,
-            out: AudioData | None = None) -> AudioData | AudioData_2d:
+            out: AudioData | AudioData_2d | None = None) -> AudioData | AudioData_2d:
         """Read from the file and return data as NumPy array.
 
         Reads the given number of frames in the given data format
@@ -1157,19 +1133,13 @@ class SoundFile:
         self._update_frames(written)
 
     @overload
-    def blocks(self, blocksize: int | None = None, overlap: int = 0,
-               frames: int = -1, dtype: dtype_str = 'float64',
-               *, always_2d: Literal[True], fill_value: float | None = None,
-               out: AudioData | None = None) -> Generator[AudioData_2d, None, None]: ...
+    def blocks(self, blocksize: int | None = None, overlap: int = 0, frames: int = -1, dtype: dtype_str = 'float64', *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None) -> Generator[AudioData_2d, None, None]:...
     @overload
+    def blocks(self, blocksize: int | None = None, overlap: int = 0, frames: int = -1, dtype: dtype_str = 'float64', always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None) -> Generator[AudioData, None, None]:...
     def blocks(self, blocksize: int | None = None, overlap: int = 0,
                frames: int = -1, dtype: dtype_str = 'float64',
                always_2d: bool = False, fill_value: float | None = None,
-               out: AudioData | None = None) -> Generator[AudioData, None, None]: ...
-    def blocks(self, blocksize: int | None = None, overlap: int = 0,
-               frames: int = -1, dtype: dtype_str = 'float64',
-               always_2d: bool = False, fill_value: float | None = None,
-               out: AudioData | None = None) -> Generator[AudioData, None, None] | Generator[AudioData_2d, None, None]:
+               out: AudioData | AudioData_2d | None = None) -> Generator[AudioData, None, None] | Generator[AudioData_2d, None, None]:
         """Return a generator for block-wise reading.
 
         By default, the generator yields blocks of the given
