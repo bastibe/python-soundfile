@@ -12,8 +12,13 @@ if architecture0 is None:
     # _find_library('sndfile') fails:
     if sys.platform == 'win32':
         architecture0 = architecture()[0]  # 64bit or 32bit
+        if architecture0 == '64bit':
+            if 'arm' in machine().lower():
+                architecture0 = 'arm64'
+            else:
+                architecture0 = 'x64'
     else:
-        architecture0 = machine()  # x86_64 or arm64
+        architecture0 = machine()
 
 if platform == 'darwin':
     libname = 'libsndfile_' + architecture0 + '.dylib'
