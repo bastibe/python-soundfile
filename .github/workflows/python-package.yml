@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, windows-11-arm, macos-latest]
         python-version:
           - "3.10"
           - "3.11"
@@ -17,7 +17,7 @@ jobs:
           - "3.14"
           - "pypy-3.10"
           - "pypy-3.11"
-        architecture: ["x86", "x64"]
+        architecture: ["x86", "x64", "arm64"]
         exclude:
           - os: macos-latest
             python-version: "3.10"
@@ -27,6 +27,22 @@ jobs:
             architecture: "x86"
           - os: windows-latest
             python-version: "pypy-3.10"
+          - os: windows-11-arm
+            python-version: "3.10"
+          - os: windows-latest
+            architecture: "arm64"
+          - os: ubuntu-latest
+            architecture: "arm64"
+          - os: macos-latest
+            architecture: "arm64"
+          - os: windows-11-arm
+            architecture: "x86"
+          - os: windows-11-arm
+            architecture: "x64"
+          - os: windows-11-arm
+            python-version: "pypy-3.10"
+          - os: windows-11-arm
+            python-version: "pypy-3.11"
 
     steps:
       - uses: actions/checkout@v2
