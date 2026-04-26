@@ -16,7 +16,7 @@ import threading as _threading
 from collections.abc import Generator
 from ctypes.util import find_library as _find_library
 from os import SEEK_CUR, SEEK_END, SEEK_SET
-from typing import Any, BinaryIO, Final, Literal, TypeAlias, overload
+from typing import Any, BinaryIO, Final, Literal, TypeAlias
 
 import numpy
 from typing_extensions import Self
@@ -225,10 +225,6 @@ if __libsndfile_version__.startswith('libsndfile-'):
     __libsndfile_version__ = __libsndfile_version__[len('libsndfile-'):]
 
 
-@overload
-def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64', *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None, samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None, endian: str | None = None, closefd: bool = True) -> tuple[AudioData_2d, int]:...
-@overload
-def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64', always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None, samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None, endian: str | None = None, closefd: bool = True) -> tuple[AudioData, int]:...
 def read(file: FileDescriptorOrPath, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64',
         always_2d: bool = False, fill_value: float | None = None, out: AudioData | AudioData_2d | None = None,
         samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None,
@@ -384,10 +380,6 @@ def write(file: FileDescriptorOrPath, data: AudioData, samplerate: int,
                    compression_level, bitrate_mode) as f:
         f.write(data)
 
-@overload
-def blocks(file: FileDescriptorOrPath, blocksize: int | None = None, overlap: int = 0, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64', *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None, samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None, endian: str | None = None, closefd: bool = True) -> Generator[AudioData_2d, None, None]:...
-@overload
-def blocks(file: FileDescriptorOrPath, blocksize: int | None = None, overlap: int = 0, frames: int = -1, start: int = 0, stop: int | None = None, dtype: dtype_str = 'float64', always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None, samplerate: int | None = None, channels: int | None = None, format: str | None = None, subtype: str | None = None, endian: str | None = None, closefd: bool = True) -> Generator[AudioData, None, None]:...
 def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
            overlap: int = 0, frames: int = -1, start: int = 0,
            stop: int | None = None, dtype: dtype_str = 'float64',
@@ -883,10 +875,6 @@ class SoundFile:
         return self.seek(0, SEEK_CUR)
 
 
-    @overload
-    def read(self, frames: int = -1, dtype: dtype_str = 'float64', *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None) -> AudioData_2d:...
-    @overload
-    def read(self, frames: int = -1, dtype: dtype_str = 'float64', always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None) -> AudioData:...
     def read(self, frames: int = -1, dtype: dtype_str = 'float64',
             always_2d: bool = False, fill_value: float | None = None,
             out: AudioData | AudioData_2d | None = None) -> AudioData | AudioData_2d:
@@ -1132,10 +1120,6 @@ class SoundFile:
         assert written == frames
         self._update_frames(written)
 
-    @overload
-    def blocks(self, blocksize: int | None = None, overlap: int = 0, frames: int = -1, dtype: dtype_str = 'float64', *, always_2d: Literal[True], fill_value: float | None = None, out: AudioData_2d | None = None) -> Generator[AudioData_2d, None, None]:...
-    @overload
-    def blocks(self, blocksize: int | None = None, overlap: int = 0, frames: int = -1, dtype: dtype_str = 'float64', always_2d: bool = False, fill_value: float | None = None, out: AudioData | None = None) -> Generator[AudioData, None, None]:...
     def blocks(self, blocksize: int | None = None, overlap: int = 0,
                frames: int = -1, dtype: dtype_str = 'float64',
                always_2d: bool = False, fill_value: float | None = None,
