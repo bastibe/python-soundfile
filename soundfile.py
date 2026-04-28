@@ -167,17 +167,15 @@ try:  # packaged lib (in _soundfile_data which should be on python path)
         from platform import architecture as _architecture
         from platform import machine as _machine
 
-        # this check can not be completed correctly: for x64 binaries running on
-        # arm64 Windows report the same values as arm64 binaries. For now, neither
-        # numpy nor cffi are available for arm64, so we can safely assume we're
-        # in x86 land:
-        if _architecture()[0] == '64bit':
+        _win_machine = _machine().lower()
+        if _win_machine in ('arm64', 'aarch64'):
+            _packaged_libname = 'libsndfile_arm64.dll'
+        elif _architecture()[0] == '64bit':
             _packaged_libname = 'libsndfile_x64.dll'
         elif _architecture()[0] == '32bit':
             _packaged_libname = 'libsndfile_x86.dll'
         else:
-            raise OSError('no packaged library for Windows {} {}'
-                          .format(_architecture(), _machine()))
+            raise OSError(f'no packaged library for Windows {_architecture()} {_machine()}')
     elif _sys.platform == 'linux':
         from platform import machine as _machine
         if _machine() in ["aarch64", "aarch64_be", "armv8b", "armv8l"]:
@@ -476,21 +474,21 @@ class _SoundFileInfo:
 
     def __repr__(self):
         info = "\n".join(
-            ["{0.name}",
-             "samplerate: {0.samplerate} Hz",
-             "channels: {0.channels}",
-             "duration: {0._duration_str}",
-             "format: {0.format_info} [{0.format}]",
-             "subtype: {0.subtype_info} [{0.subtype}]"])
+            [f"{self.name}",
+             f"samplerate: {self.samplerate} Hz",
+             f"channels: {self.channels}",
+             f"duration: {self._duration_str}",
+             f"format: {self.format_info} [{self.format}]",
+             f"subtype: {self.subtype_info} [{self.subtype}]"])
         if self.verbose:
+            indented_extra_info = ("\n"+" "*4).join(self.extra_info.split("\n"))
             info += "\n".join(
-                ["\nendian: {0.endian}",
-                 "sections: {0.sections}",
-                 "frames: {0.frames}",
+                [f"\nendian: {self.endian}",
+                 f"sections: {self.sections}",
+                 f"frames: {self.frames}",
                  'extra_info: """',
-                 '    {1}"""'])
-        indented_extra_info = ("\n"+" "*4).join(self.extra_info.split("\n"))
-        return info.format(self, indented_extra_info)
+                 f'    {indented_extra_info}"""'])
+        return info
 
 
 def info(file: FileDescriptorOrPath, verbose: bool = False) -> _SoundFileInfo:
@@ -776,10 +774,10 @@ class SoundFile:
                                if self.compression_level is not None else "")
         compression_setting += (f", bitrate_mode='{self.bitrate_mode}'"
                                 if self.bitrate_mode is not None else "")
-        return ("SoundFile({0.name!r}, mode={0.mode!r}, "
-                "samplerate={0.samplerate}, channels={0.channels}, "
-                "format={0.format!r}, subtype={0.subtype!r}, "
-                "endian={0.endian!r}{1})".format(self, compression_setting))
+        return (f"SoundFile({self.name!r}, mode={self.mode!r}, "
+                f"samplerate={self.samplerate}, channels={self.channels}, "
+                f"format={self.format!r}, subtype={self.subtype!r}, "
+                f"endian={self.endian!r}{compression_setting})")
 
     def __del__(self) -> None:
         self.close()
@@ -1290,13 +1288,13 @@ class SoundFile:
             openfunction = lambda file, mode_int, info: _snd.sf_open_virtual(self._init_virtual_io(file),
                                             mode_int, info, _ffi.NULL)
         else:
-            raise TypeError("Invalid file: {0!r}".format(self.name))
+            raise TypeError(f"Invalid file: {self.name!r}")
 
         with self._sf_error_lock:
             file_ptr = openfunction(file, mode_int, self._info)
             if file_ptr == _ffi.NULL:
                 err = _snd.sf_error(file_ptr)
-                raise LibsndfileError(err, prefix="Error opening {0!r}: ".format(self.name))
+                raise LibsndfileError(err, prefix=f"Error opening {self.name!r}: ")
         if mode_int == _snd.SFM_WRITE:
             # Due to a bug in libsndfile version <= 1.0.25, frames != 0
             # when opening a named pipe in SFM_WRITE mode.
@@ -1410,13 +1408,12 @@ class SoundFile:
         try:
             return _ffi_types[dtype]
         except KeyError:
-            raise ValueError("dtype must be one of {!r} and not {!r}".format(
-                sorted(_ffi_types.keys()), dtype))
+            raise ValueError(f"dtype must be one of {sorted(_ffi_types.keys())!r} and not {dtype!r}")
 
     def _array_io(self, action, array, frames):
         """Check array and call low-level IO function."""
         if array.ndim not in (1,2):
-            raise ValueError("Invalid shape: {!r} ({})".format(array.shape, "0 dimensions not supported" if array.ndim < 1 else "too many dimensions"))
+            raise ValueError(f"Invalid shape: {array.shape!r} ({'0 dimensions not supported' if array.ndim < 1 else 'too many dimensions'})")
         array_channels = 1 if array.ndim == 1 else array.shape[1]
         if array_channels != self.channels:
             raise ValueError(f"Invalid shape: {array.shape!r} (Expected {self.channels} channels, got {array_channels})")
@@ -1612,8 +1609,8 @@ def _get_format_from_filename(file, mode):
     except Exception:
         pass
     if format.upper() not in _formats and 'r' not in mode:
-        raise TypeError("No format specified and unable to get format from "
-                        "file extension: {!r}".format(file))
+        raise TypeError(f"No format specified and unable to get format from "
+                        f"file extension: {file!r}")
     return format
 
 
