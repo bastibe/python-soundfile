@@ -67,6 +67,14 @@ jobs:
       - name: Run tests
         run: python -m pytest
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/ruff-action@v4.0.0
+        with:
+          args: check --ignore=E402,E722,E731,F401
+
   type-check:
     runs-on: ubuntu-latest
     steps:
