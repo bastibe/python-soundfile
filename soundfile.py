@@ -1206,8 +1206,9 @@ class SoundFile:
                 else:
                     overlap_memory[:] = out[-overlap:]
 
-            if blocksize > frames + overlap and fill_value is None:
-                block = out[:frames + overlap]
+            valid_frames = output_offset + toread
+            if valid_frames < len(out) and fill_value is None:
+                block = out[:valid_frames]
             else:
                 block = out
             yield np.copy(block) if copy_out else block
