@@ -1189,6 +1189,17 @@ class SoundFile:
             blocksize = len(out)
             copy_out = False
 
+        if 0 < frames < blocksize and fill_value is None:
+            # Less than one block of data, so the loop below would run exactly
+            # once and `out` would keep whatever sat past the data. Reading the
+            # short count and yielding only that much avoids it. Only reachable
+            # when the caller passed `out`, since otherwise `out` is already
+            # sized to min(blocksize, frames).
+            self.read(frames, dtype, always_2d, fill_value, out[:frames])
+            block = out[:frames]
+            yield np.copy(block) if copy_out else block
+            return
+
         overlap_memory = None
         while frames > 0:
             if overlap_memory is None:
@@ -1206,9 +1217,8 @@ class SoundFile:
                 else:
                     overlap_memory[:] = out[-overlap:]
 
-            valid_frames = output_offset + toread
-            if valid_frames < len(out) and fill_value is None:
-                block = out[:valid_frames]
+            if blocksize > frames + overlap and fill_value is None:
+                block = out[:frames + overlap]
             else:
                 block = out
             yield np.copy(block) if copy_out else block
