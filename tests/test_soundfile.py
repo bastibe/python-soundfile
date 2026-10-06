@@ -720,6 +720,23 @@ def test_extra_info(sf_stereo_r):
     assert 'WAVE_FORMAT_IEEE_FLOAT' in sf_stereo_r.extra_info
 
 
+@pytest.mark.parametrize("frames, samplerate, duration", [
+    (4, 8, "4 samples"),
+    (12, 8, "1.500 s"),
+    (61 * 8, 8, "01:01.000 min"),
+    (900 * 8, 8, "15:00.000 min"),
+    (3661 * 8 + 4, 8, "1:01:01.500 h"),
+    (11707 * 8 + 4, 8, "3:15:07.500 h"),
+    (36000 * 8, 8, "10:00:00.000 h"),
+    # 119.9996 s must not be shown as "01:60.000 min":
+    (1199996, 10000, "02:00.000 min"),
+])
+def test_info_duration(tmp_path, frames, samplerate, duration):
+    filename = str(tmp_path / 'duration.wav')
+    sf.write(filename, np.zeros(frames, dtype='int16'), samplerate)
+    assert f"duration: {duration}\n" in repr(sf.info(filename))
+
+
 def test_mode_should_be_in_write_mode(sf_stereo_w):
     assert sf_stereo_w.mode == 'w'
     assert sf_stereo_w.frames == 0
