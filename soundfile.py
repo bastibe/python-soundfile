@@ -459,12 +459,13 @@ class _SoundFileInfo:
 
     @property
     def _duration_str(self):
-        hours, rest = divmod(self.duration, 3600)
+        # round first, otherwise 119.9996 s is shown as "01:60.000 min"
+        hours, rest = divmod(round(self.duration, 3), 3600)
         minutes, seconds = divmod(rest, 60)
         if hours >= 1:
-            duration = f"{hours:.0g}:{minutes:02.0g}:{seconds:05.3f} h"
+            duration = f"{hours:.0f}:{minutes:02.0f}:{seconds:06.3f} h"
         elif minutes >= 1:
-            duration = f"{minutes:02.0g}:{seconds:05.3f} min"
+            duration = f"{minutes:02.0f}:{seconds:06.3f} min"
         elif seconds <= 1:
             duration = f"{self.frames:d} samples"
         else:
