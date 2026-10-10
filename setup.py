@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 import os
-from platform import architecture, machine
-from setuptools import setup
 import sys
+import sysconfig
+from platform import machine
+
+from setuptools import setup
 
 # environment variables for cross-platform package creation
 platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
 architecture0 = os.environ.get('PYSOUNDFILE_ARCHITECTURE')
 if architecture0 is None:
-    # follow the same decision tree as in soundfile.py after
-    # _find_library('sndfile') fails:
+    # Follow the packaged library selection in soundfile.py:
     if sys.platform == 'win32':
-        architecture0 = architecture()[0]  # 64bit or 32bit
+        architecture0 = {'win32': 'x86', 'win-amd64': 'x64',
+                         'win-arm64': 'arm64'}[sysconfig.get_platform()]
     else:
         architecture0 = machine()  # x86_64 or arm64
 
@@ -52,7 +54,7 @@ else:
                 else:
                     oses = 'macosx_11_0_arm64'
             elif platform == 'win32':
-                if architecture0.lower() == 'arm64' or machine() == 'ARM64':
+                if architecture0.lower() == 'arm64':
                     oses = 'win_arm64'
                 elif architecture0 == 'x86' or architecture0 == '32bit':
                     oses = 'win32'
