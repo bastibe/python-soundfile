@@ -402,9 +402,10 @@ def blocks(file: FileDescriptorOrPath, blocksize: int | None = None,
         The file to read from.  See `SoundFile` for details.
     blocksize : int
         The number of frames to read per block.
-        Either this or *out* must be given.
+        Either this or *out* must be given. Must be greater than zero.
     overlap : int, optional
-        The number of frames to rewind between each block.
+        The number of frames to rewind between each block. Must be
+        non-negative and smaller than *blocksize* (or the length of *out*).
 
     Yields
     ------
@@ -1132,9 +1133,10 @@ class SoundFile:
         ----------
         blocksize : int
             The number of frames to read per block. Either this or *out*
-            must be given.
+            must be given. Must be greater than zero.
         overlap : int, optional
-            The number of frames to rewind between each block.
+            The number of frames to rewind between each block. Must be
+            non-negative and smaller than *blocksize* (or the length of *out*).
         frames : int, optional
             The number of frames to read.
             If ``frames < 0``, the file is read until the end.
@@ -1188,6 +1190,11 @@ class SoundFile:
                     "Only one of {blocksize, out} may be specified")
             blocksize = len(out)
             copy_out = False
+
+        if blocksize <= 0:
+            raise ValueError("blocksize must be greater than zero")
+        if overlap < 0 or overlap >= blocksize:
+            raise ValueError("overlap must be non-negative and smaller than blocksize")
 
         overlap_memory = None
         while frames > 0:
