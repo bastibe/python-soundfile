@@ -1325,7 +1325,7 @@ class SoundFile:
             try:
                 buf = _ffi.buffer(ptr, count)
                 data_read = file.readinto(buf)
-            except AttributeError:
+            except (AttributeError, NotImplementedError):
                 data = file.read(count)
                 data_read = len(data)
                 buf = _ffi.buffer(ptr, data_read)
