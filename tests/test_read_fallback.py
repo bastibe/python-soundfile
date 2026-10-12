@@ -12,6 +12,10 @@ class ReadAdapter(io.RawIOBase):
         self.source = io.BytesIO(contents)
         self.read_calls = 0
 
+    def readinto(self, buffer):
+        # PyPy does not expose RawIOBase's stub; exercise the same capability failure.
+        raise NotImplementedError
+
     def read(self, size=-1):
         self.read_calls += 1
         return self.source.read(size)
@@ -38,7 +42,7 @@ def test_virtual_io_read_adapter_with_unimplemented_readinto(format, channels):
     encoded = io.BytesIO()
     sf.write(encoded, values, 8000, format=format, subtype='PCM_16')
     adapter = ReadAdapter(encoded.getvalue())
-    # The inherited method exists, but is not implemented by this adapter.
+    # The method exists, but is deliberately not implemented by this adapter.
     with pytest.raises(NotImplementedError):
         adapter.readinto(bytearray(1))
     decoded, rate = sf.read(adapter, dtype='int16')
