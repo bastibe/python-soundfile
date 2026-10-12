@@ -931,7 +931,8 @@ class SoundFile:
             returned.
         out : `numpy.ndarray` or subclass, optional
             If *out* is specified, the data is written into the given
-            array instead of creating a new array. In this case, the
+            array instead of creating a new array. The array must be
+            C-contiguous and have native byte order. In this case, the
             arguments *dtype* and *always_2d* are silently ignored! If
             *frames* is not given, it is obtained from the length of
             *out*.
@@ -1086,7 +1087,8 @@ class SoundFile:
         import numpy as np
 
         # no copy is made if data has already the correct memory layout:
-        data = np.ascontiguousarray(data)
+        data = np.asarray(data)
+        data = np.ascontiguousarray(data, dtype=data.dtype.newbyteorder('='))
         written = self._array_io('write', data, len(data))
         assert written == len(data)
         self._update_frames(written)
@@ -1422,11 +1424,7 @@ class SoundFile:
         ctype = self._check_dtype(array.dtype.name)
         assert array.dtype.itemsize == _ffi.sizeof(ctype)
         if not array.dtype.isnative:
-            native_array = array.astype(array.dtype.newbyteorder('='))
-            processed = self._array_io(action, native_array, frames)
-            if action == 'read':
-                array[:processed] = native_array[:processed]
-            return processed
+            raise ValueError("Data must have native byte order")
         cdata = _ffi.cast(ctype + '*', array.__array_interface__['data'][0])
         return self._cdata_io(action, cdata, ctype, frames)
 
