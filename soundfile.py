@@ -1421,6 +1421,12 @@ class SoundFile:
             raise ValueError("Data must be C-contiguous")
         ctype = self._check_dtype(array.dtype.name)
         assert array.dtype.itemsize == _ffi.sizeof(ctype)
+        if not array.dtype.isnative:
+            native_array = array.astype(array.dtype.newbyteorder('='))
+            processed = self._array_io(action, native_array, frames)
+            if action == 'read':
+                array[:processed] = native_array[:processed]
+            return processed
         cdata = _ffi.cast(ctype + '*', array.__array_interface__['data'][0])
         return self._cdata_io(action, cdata, ctype, frames)
 
