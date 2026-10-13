@@ -931,11 +931,11 @@ class SoundFile:
             returned.
         out : `numpy.ndarray` or subclass, optional
             If *out* is specified, the data is written into the given
-            array instead of creating a new array. The array must be
-            C-contiguous and have native byte order. In this case, the
+            array instead of creating a new array. In this case, the
             arguments *dtype* and *always_2d* are silently ignored! If
             *frames* is not given, it is obtained from the length of
-            *out*.
+            *out*. The array must be C-contiguous and have native byte
+            order.
 
         Examples
         --------
