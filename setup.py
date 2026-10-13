@@ -10,7 +10,8 @@ from setuptools import setup
 platform = os.environ.get('PYSOUNDFILE_PLATFORM', sys.platform)
 architecture0 = os.environ.get('PYSOUNDFILE_ARCHITECTURE')
 if architecture0 is None:
-    # Follow the packaged library selection in soundfile.py:
+    # Match soundfile.py using the interpreter's architecture. The host machine
+    # can be ARM64 even when running an x64 or x86 Python under emulation.
     if sys.platform == 'win32':
         architecture0 = {'win32': 'x86', 'win-amd64': 'x64',
                          'win-arm64': 'arm64'}[sysconfig.get_platform()]

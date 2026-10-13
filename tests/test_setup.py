@@ -9,7 +9,6 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
-import setuptools
 
 
 def setup_options(monkeypatch, host, python_platform, machine, bits,
@@ -30,7 +29,10 @@ def setup_options(monkeypatch, host, python_platform, machine, bits,
     monkeypatch.setattr(os.path, 'isdir', lambda path:
                         packaged if path == '_soundfile_data' else original_isdir(path))
     options = {}
-    monkeypatch.setattr(setuptools, 'setup', lambda **kwargs: options.update(kwargs))
+    # Packaging tools are build-time dependencies, absent from a normal install.
+    setuptools = ModuleType('setuptools')
+    setuptools.setup = lambda **kwargs: options.update(kwargs)
+    monkeypatch.setitem(sys.modules, 'setuptools', setuptools)
     wheel_command = ModuleType('wheel.bdist_wheel')
     wheel_command.bdist_wheel = object
     monkeypatch.setitem(sys.modules, 'wheel.bdist_wheel', wheel_command)
@@ -43,6 +45,7 @@ def setup_options(monkeypatch, host, python_platform, machine, bits,
     ('win-amd64', 'AMD64', '64bit', 'libsndfile_x64.dll', 'win_amd64'),
     ('win-arm64', 'ARM64', '64bit', 'libsndfile_arm64.dll', 'win_arm64'),
     ('win-amd64', 'ARM64', '64bit', 'libsndfile_x64.dll', 'win_amd64'),
+    ('win32', 'ARM64', '32bit', 'libsndfile_x86.dll', 'win32'),
 ])
 def test_default_windows_architecture(monkeypatch, python_platform, machine,
                                       bits, library, tag):
