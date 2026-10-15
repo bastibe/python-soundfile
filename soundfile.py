@@ -1267,7 +1267,8 @@ class SoundFile:
     # sf_error(NULL) to retrieve the error code, but another thread
     # may clear the global error between our open and our sf_error.
     # This lock serialises the open+sf_error(NULL) pair to prevent that.
-    _sf_error_lock = _threading.Lock()
+    # Virtual I/O callbacks may open another SoundFile in the same thread.
+    _sf_error_lock = _threading.RLock()
 
     def _open(self, file, mode_int, closefd):
         """Call the appropriate sf_open*() function from libsndfile."""

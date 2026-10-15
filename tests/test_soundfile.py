@@ -9,6 +9,7 @@ import sys
 import gc
 import weakref
 import threading
+import subprocess
 
 # floating point data is typically limited to the interval [-1.0, 1.0],
 # but smaller/larger values are supported as well
@@ -868,28 +869,110 @@ def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into
     assert np.all(data[2:] == 0)
     assert out.shape == (4, sf_stereo_r.channels)
 
-def test_concurrent_open_error_reporting(file_inmemory):
+def test_concurrent_open_error_reporting():
     # Test that no sf_open errors are missed when used
     # concurrently (there are race conditions in libsndfile's error reporting).
 
     n_threads = 4
     n_trials_per_thread = 10
 
-    n_reported_errors = [0]
+    error_codes = [[] for _ in range(n_threads)]
 
-    def target():
+    def target(codes):
         for _ in range(n_trials_per_thread):
             try:
-                sf.SoundFile(file_inmemory)
-            except sf.LibsndfileError:
-                n_reported_errors[0] += 1
+                sf.SoundFile(io.BytesIO())
+            except sf.LibsndfileError as exc:
+                codes.append(exc.code)
 
-    threads = [threading.Thread(target=target) for _ in range(n_threads)]
+    threads = [threading.Thread(target=target, args=(codes,))
+               for codes in error_codes]
     for thread in threads:
         thread.start()
     for thread in threads:
         thread.join()
-    assert n_reported_errors[0] == n_threads * n_trials_per_thread
+    # 1 is libsndfile's SF_ERR_UNRECOGNISED_FORMAT for an empty stream.
+    assert error_codes == [[1] * n_trials_per_thread] * n_threads
+
+
+@pytest.mark.parametrize("callback", ["read", "write"])
+def test_virtual_io_callback_can_open_soundfile(callback):
+    script = r'''
+import io
+import struct
+import sys
+import wave
+
+import numpy as np
+import soundfile as sf
+
+
+def audio_bytes():
+    data = io.BytesIO()
+    with wave.open(data, "wb") as output:
+        output.setnchannels(1)
+        output.setsampwidth(2)
+        output.setframerate(8000)
+        output.writeframes(struct.pack("<4h", 0, 1000, -1000, 2000))
+    return data.getvalue()
+
+
+raw = audio_bytes()
+
+
+class NestedReader(io.BytesIO):
+    entered = False
+
+    def readinto(self, target):
+        if not self.entered:
+            self.entered = True
+            print("entered-read-callback", flush=True)
+            with sf.SoundFile(io.BytesIO(raw)) as nested:
+                assert nested.read(dtype="int16").tolist() == [0, 1000, -1000, 2000]
+        return super().readinto(target)
+
+
+class NestedWriter(io.BytesIO):
+    entered = False
+
+    def write(self, data):
+        if not self.entered:
+            self.entered = True
+            print("entered-write-callback", flush=True)
+            with sf.SoundFile(io.BytesIO(raw)) as nested:
+                assert nested.read(dtype="int16").tolist() == [0, 1000, -1000, 2000]
+        return super().write(data)
+
+
+if sys.argv[1] == "read":
+    source = NestedReader(raw)
+    with sf.SoundFile(source) as audio:
+        assert audio.read(dtype="int16").tolist() == [0, 1000, -1000, 2000]
+else:
+    source = NestedWriter()
+    with sf.SoundFile(source, "w", 8000, 1, format="WAV", subtype="PCM_16") as audio:
+        audio.write(np.array([0, 1000, -1000, 2000], dtype="int16"))
+    source.seek(0)
+    with sf.SoundFile(source) as audio:
+        assert audio.read(dtype="int16").tolist() == [0, 1000, -1000, 2000]
+'''
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+    env = os.environ.copy()
+    env["PYTHONPATH"] = repo_root
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", script, callback],
+            cwd=repo_root,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+    except subprocess.TimeoutExpired as exc:
+        pytest.fail(f"virtual {callback} callback timed out: {exc.stdout!r}")
+    assert result.stdout == f"entered-{callback}-callback\n"
+    assert result.stderr == ""
 
 
 # -----------------------------------------------------------------------------
