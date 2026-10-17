@@ -1283,7 +1283,7 @@ class SoundFile:
                 if _sys.platform == 'win32':
                     openfunction = _snd.sf_wchar_open
                 else:
-                    file = file.encode(_sys.getfilesystemencoding())
+                    file = _os.fsencode(file)
         elif isinstance(file, int):
             openfunction = lambda file, mode_int, info: _snd.sf_open_fd(file, mode_int, info, closefd)
         elif _has_virtual_io_attrs(file, mode_int):
