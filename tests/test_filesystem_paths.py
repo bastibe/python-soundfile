@@ -1,3 +1,4 @@
+import errno
 import os
 import wave
 from pathlib import Path
@@ -16,6 +17,14 @@ def test_filesystem_byte_path_roundtrip(tmp_path, path_type):
     name = os.fsdecode(raw_name)
     if os.fsencode(name) != raw_name or not any(0xDC80 <= ord(c) <= 0xDCFF for c in name):
         pytest.skip('filesystem encoding represents this filename without surrogateescape')
+    # Check filesystem support independently before testing SoundFile's codec.
+    try:
+        with open(raw_name, 'xb'):
+            pass
+    except OSError as error:
+        if error.errno in (errno.EINVAL, errno.EILSEQ):
+            pytest.skip('filesystem does not support this byte filename')
+        raise
     path = path_type(name)
     samples = np.array([0, 1, 256, -2345], dtype='int16')
     sf.write(path, samples, 16000)
