@@ -885,6 +885,9 @@ class SoundFile:
         the end of the file are returned.
         Use `seek()` to move the current read/write position.
 
+        An `OSError` raised by a file-like object's read callback is
+        propagated to the caller instead of being treated as end of file.
+
         Parameters
         ----------
         frames : int, optional
@@ -1294,6 +1297,12 @@ class SoundFile:
 
         with self._sf_error_lock:
             file_ptr = openfunction(file, mode_int, self._info)
+            try:
+                self._check_virtual_read_error()
+            except OSError:
+                if file_ptr != _ffi.NULL:
+                    _snd.sf_close(file_ptr)
+                raise
             if file_ptr == _ffi.NULL:
                 err = _snd.sf_error(file_ptr)
                 raise LibsndfileError(err, prefix=f"Error opening {self.name!r}: ")
@@ -1308,6 +1317,9 @@ class SoundFile:
 
     def _init_virtual_io(self, file):
         """Initialize callback functions for sf_open_virtual()."""
+        read_errors = []
+        self._virtual_read_errors = read_errors
+
         @_ffi.callback("sf_vio_get_filelen")
         def vio_get_filelen(user_data):
             curr = file.tell()
@@ -1323,15 +1335,22 @@ class SoundFile:
 
         @_ffi.callback("sf_vio_read")
         def vio_read(ptr, count, user_data):
-            # first try readinto(), if not available fall back to read()
             try:
-                buf = _ffi.buffer(ptr, count)
-                data_read = file.readinto(buf)
-            except AttributeError:
-                data = file.read(count)
-                data_read = len(data)
-                buf = _ffi.buffer(ptr, data_read)
-                buf[0:data_read] = data
+                # first try readinto(), if not available fall back to read()
+                try:
+                    buf = _ffi.buffer(ptr, count)
+                    data_read = file.readinto(buf)
+                except AttributeError:
+                    data = file.read(count)
+                    data_read = len(data)
+                    buf = _ffi.buffer(ptr, data_read)
+                    buf[0:data_read] = data
+            except OSError as error:
+                # Exceptions cannot cross the CFFI callback boundary.
+                # Preserve the first failure until the native call returns.
+                if not read_errors:
+                    read_errors.append(error)
+                return 0
             return data_read
 
         @_ffi.callback("sf_vio_write")
@@ -1356,6 +1375,12 @@ class SoundFile:
                             'tell': vio_tell}
 
         return _ffi.new("SF_VIRTUAL_IO*", self._virtual_io)
+
+    def _check_virtual_read_error(self):
+        """Re-raise a read callback error on the Python side of CFFI."""
+        errors = getattr(self, '_virtual_read_errors', None)
+        if errors:
+            raise errors.pop()
 
     def _getAttributeNames(self):
         """Return all attributes used in __setattr__ and __getattr__.
@@ -1437,6 +1462,7 @@ class SoundFile:
             curr = self.tell()
         func = getattr(_snd, 'sf_' + action + 'f_' + ctype)
         frames = func(self._file, data, frames)
+        self._check_virtual_read_error()
         _error_check(self._errorcode)
         if self.seekable():
             self.seek(curr + frames, SEEK_SET)  # Update read & write position
