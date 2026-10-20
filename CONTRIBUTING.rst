@@ -31,7 +31,7 @@ This uses pytest_;
    Unfortunately, this is typically the case if the packaged DLLs are used.
    To skip the tests which utilize file descriptors, use::
 
-      python setup.py test --pytest-args="-knot\ fd"
+      python -m pytest -k "not fd"
 
    .. _known problem: http://www.mega-nerd.com/libsndfile/api.html#open_fd
 
