@@ -9,7 +9,7 @@ import sys
 import gc
 import weakref
 import threading
-import subprocess
+import multiprocessing
 
 # floating point data is typically limited to the interval [-1.0, 1.0],
 # but smaller/larger values are supported as well
@@ -895,84 +895,63 @@ def test_concurrent_open_error_reporting():
     assert error_codes == [[1] * n_trials_per_thread] * n_threads
 
 
+def _virtual_io_callback_worker(callback):
+    result = {'entered': False, 'nested': None, 'outer': None}
+
+    class NestedReader(io.BytesIO):
+        def readinto(self, target):
+            if not result['entered']:
+                result['entered'] = True
+                with sf.SoundFile(filename_mono) as nested:
+                    result['nested'] = nested.read(dtype='int16').tolist()
+            return super().readinto(target)
+
+    class NestedWriter(io.BytesIO):
+        def write(self, data):
+            if not result['entered']:
+                result['entered'] = True
+                with sf.SoundFile(filename_mono) as nested:
+                    result['nested'] = nested.read(dtype='int16').tolist()
+            return super().write(data)
+
+    if callback == 'read':
+        with open(filename_mono, 'rb') as source_file:
+            source = NestedReader(source_file.read())
+        with sf.SoundFile(source) as audio:
+            result['outer'] = audio.read(dtype='int16').tolist()
+    else:
+        source = NestedWriter()
+        with sf.SoundFile(source, 'w', 44100, 1,
+                          format='WAV', subtype='PCM_16') as audio:
+            audio.write(data_mono)
+        source.seek(0)
+        with sf.SoundFile(source) as audio:
+            result['outer'] = audio.read(dtype='int16').tolist()
+
+    assert result['entered']
+    assert result['nested'] == data_mono.tolist()
+    assert result['outer'] == data_mono.tolist()
+
+
 @pytest.mark.parametrize("callback", ["read", "write"])
 def test_virtual_io_callback_can_open_soundfile(callback):
-    script = r'''
-import io
-import struct
-import sys
-import wave
-
-import numpy as np
-import soundfile as sf
-
-
-def audio_bytes():
-    data = io.BytesIO()
-    with wave.open(data, "wb") as output:
-        output.setnchannels(1)
-        output.setsampwidth(2)
-        output.setframerate(8000)
-        output.writeframes(struct.pack("<4h", 0, 1000, -1000, 2000))
-    return data.getvalue()
-
-
-raw = audio_bytes()
-
-
-class NestedReader(io.BytesIO):
-    entered = False
-
-    def readinto(self, target):
-        if not self.entered:
-            self.entered = True
-            print("entered-read-callback", flush=True)
-            with sf.SoundFile(io.BytesIO(raw)) as nested:
-                assert nested.read(dtype="int16").tolist() == [0, 1000, -1000, 2000]
-        return super().readinto(target)
-
-
-class NestedWriter(io.BytesIO):
-    entered = False
-
-    def write(self, data):
-        if not self.entered:
-            self.entered = True
-            print("entered-write-callback", flush=True)
-            with sf.SoundFile(io.BytesIO(raw)) as nested:
-                assert nested.read(dtype="int16").tolist() == [0, 1000, -1000, 2000]
-        return super().write(data)
-
-
-if sys.argv[1] == "read":
-    source = NestedReader(raw)
-    with sf.SoundFile(source) as audio:
-        assert audio.read(dtype="int16").tolist() == [0, 1000, -1000, 2000]
-else:
-    source = NestedWriter()
-    with sf.SoundFile(source, "w", 8000, 1, format="WAV", subtype="PCM_16") as audio:
-        audio.write(np.array([0, 1000, -1000, 2000], dtype="int16"))
-    source.seek(0)
-    with sf.SoundFile(source) as audio:
-        assert audio.read(dtype="int16").tolist() == [0, 1000, -1000, 2000]
-'''
-    repo_root = os.path.dirname(os.path.dirname(__file__))
-    env = os.environ.copy()
-    env["PYTHONPATH"] = repo_root
+    context = multiprocessing.get_context('spawn')
+    process = context.Process(target=_virtual_io_callback_worker,
+                              args=(callback,))
     try:
-        result = subprocess.run(
-            [sys.executable, "-c", script, callback],
-            cwd=repo_root,
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=True,
-        )
-    except subprocess.TimeoutExpired as exc:
-        pytest.fail(f"virtual {callback} callback timed out: {exc.stdout!r}")
-    assert result.stdout == f"entered-{callback}-callback\n"
-    assert result.stderr == ""
+        process.start()
+        process.join(timeout=5)
+        if process.is_alive():
+            pytest.fail(f"virtual {callback} callback timed out")
+        assert process.exitcode == 0
+    finally:
+        if process.pid is not None:
+            process.terminate()
+            process.join(timeout=5)
+            if process.is_alive():
+                process.kill()
+                process.join(timeout=5)
+            assert not process.is_alive()
 
 
 # -----------------------------------------------------------------------------
