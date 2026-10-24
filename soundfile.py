@@ -24,7 +24,7 @@ from typing_extensions import Self
 from _soundfile import ffi as _ffi
 
 FileDescriptorOrPath: TypeAlias = str | int | BinaryIO | _os.PathLike[Any]
-AudioData: TypeAlias = numpy.ndarray[tuple[int, ...], numpy.dtype[numpy.float32 | numpy.float64 | numpy.int32 | numpy.int16]]
+AudioData: TypeAlias = numpy.ndarray[tuple[Any, ...], numpy.dtype[numpy.float32 | numpy.float64 | numpy.int32 | numpy.int16]]
 AudioData_2d: TypeAlias = numpy.ndarray[tuple[int, int], numpy.dtype[numpy.float32 | numpy.float64 | numpy.int32 | numpy.int16]]
 dtype_str: TypeAlias = Literal['float64', 'float32', 'int32', 'int16']
 _snd: Any
