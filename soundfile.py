@@ -334,6 +334,8 @@ def write(file: FileDescriptorOrPath, data: AudioData, samplerate: int,
     data : array_like
         The data to write.  Usually two-dimensional (frames x channels),
         but one-dimensional *data* can be used for mono files.
+        Other numbers of dimensions are rejected before the file is
+        opened.
         Only the data types ``'float64'``, ``'float32'``, ``'int32'``
         and ``'int16'`` are supported.
 
@@ -368,6 +370,9 @@ def write(file: FileDescriptorOrPath, data: AudioData, samplerate: int,
     """
     import numpy as np
     data = np.asarray(data)
+    if data.ndim not in (1, 2):
+        raise ValueError(
+            f"Invalid shape: {data.shape!r} (expected 1 or 2 dimensions)")
     if data.ndim == 1:
         channels = 1
     else:
