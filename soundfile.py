@@ -1002,8 +1002,7 @@ class SoundFile:
         ctype = self._check_dtype(dtype)
         cdata = _ffi.new(ctype + '[]', frames * self.channels)
         read_frames = self._cdata_io('read', cdata, ctype, frames)
-        assert read_frames == frames
-        return _ffi.buffer(cdata)
+        return _ffi.buffer(cdata, read_frames * self.channels * _ffi.sizeof(ctype))
 
     def buffer_read_into(self, buffer: bytearray | memoryview | Any, dtype: dtype_str) -> int:
         """Read from the file into a given buffer object.
