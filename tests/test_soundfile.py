@@ -9,6 +9,7 @@ import sys
 import gc
 import weakref
 import threading
+import multiprocessing
 
 # floating point data is typically limited to the interval [-1.0, 1.0],
 # but smaller/larger values are supported as well
@@ -868,28 +869,89 @@ def test_read_into_out_over_end_with_fill_should_return_full_data_and_write_into
     assert np.all(data[2:] == 0)
     assert out.shape == (4, sf_stereo_r.channels)
 
-def test_concurrent_open_error_reporting(file_inmemory):
+def test_concurrent_open_error_reporting():
     # Test that no sf_open errors are missed when used
     # concurrently (there are race conditions in libsndfile's error reporting).
 
     n_threads = 4
     n_trials_per_thread = 10
 
-    n_reported_errors = [0]
+    error_codes = [[] for _ in range(n_threads)]
 
-    def target():
+    def target(codes):
         for _ in range(n_trials_per_thread):
             try:
-                sf.SoundFile(file_inmemory)
-            except sf.LibsndfileError:
-                n_reported_errors[0] += 1
+                sf.SoundFile(io.BytesIO())
+            except sf.LibsndfileError as exc:
+                codes.append(exc.code)
 
-    threads = [threading.Thread(target=target) for _ in range(n_threads)]
+    threads = [threading.Thread(target=target, args=(codes,))
+               for codes in error_codes]
     for thread in threads:
         thread.start()
     for thread in threads:
         thread.join()
-    assert n_reported_errors[0] == n_threads * n_trials_per_thread
+    # 1 is libsndfile's SF_ERR_UNRECOGNISED_FORMAT for an empty stream.
+    assert error_codes == [[1] * n_trials_per_thread] * n_threads
+
+
+def _virtual_io_callback_worker(callback):
+    result = {'entered': False, 'nested': None, 'outer': None}
+
+    class NestedReader(io.BytesIO):
+        def readinto(self, target):
+            if not result['entered']:
+                result['entered'] = True
+                with sf.SoundFile(filename_mono) as nested:
+                    result['nested'] = nested.read(dtype='int16').tolist()
+            return super().readinto(target)
+
+    class NestedWriter(io.BytesIO):
+        def write(self, data):
+            if not result['entered']:
+                result['entered'] = True
+                with sf.SoundFile(filename_mono) as nested:
+                    result['nested'] = nested.read(dtype='int16').tolist()
+            return super().write(data)
+
+    if callback == 'read':
+        with open(filename_mono, 'rb') as source_file:
+            source = NestedReader(source_file.read())
+        with sf.SoundFile(source) as audio:
+            result['outer'] = audio.read(dtype='int16').tolist()
+    else:
+        source = NestedWriter()
+        with sf.SoundFile(source, 'w', 44100, 1,
+                          format='WAV', subtype='PCM_16') as audio:
+            audio.write(data_mono)
+        source.seek(0)
+        with sf.SoundFile(source) as audio:
+            result['outer'] = audio.read(dtype='int16').tolist()
+
+    assert result['entered']
+    assert result['nested'] == data_mono.tolist()
+    assert result['outer'] == data_mono.tolist()
+
+
+@pytest.mark.parametrize("callback", ["read", "write"])
+def test_virtual_io_callback_can_open_soundfile(callback):
+    context = multiprocessing.get_context('spawn')
+    process = context.Process(target=_virtual_io_callback_worker,
+                              args=(callback,))
+    try:
+        process.start()
+        process.join(timeout=5)
+        if process.is_alive():
+            pytest.fail(f"virtual {callback} callback timed out")
+        assert process.exitcode == 0
+    finally:
+        if process.pid is not None:
+            process.terminate()
+            process.join(timeout=5)
+            if process.is_alive():
+                process.kill()
+                process.join(timeout=5)
+            assert not process.is_alive()
 
 
 # -----------------------------------------------------------------------------
