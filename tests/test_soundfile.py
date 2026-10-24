@@ -464,6 +464,18 @@ def test_blocks_inplace_modification(file_stereo_r):
     assert_equal_list_of_arrays(blocks, expected_blocks)
 
 
+@pytest.mark.parametrize("blocksize", [len(data_stereo) + 2, len(data_stereo) + 4])
+def test_blocks_with_out_longer_than_file_and_overlap(file_stereo_r, blocksize):
+    # The file is shorter than out, so there is exactly one block and it must
+    # not reach past the end of the file.  The two blocksizes cover both sides
+    # of blocksize > frames + overlap.
+    out = np.full((blocksize, 2), 999.0)
+    blocks = list(sf.blocks(file_stereo_r, out=out, overlap=2))
+    assert len(blocks) == 1
+    assert blocks[0].shape == data_stereo.shape
+    assert np.all(blocks[0] == data_stereo)
+
+
 def test_blocks_mono():
     blocks = list(sf.blocks(filename_mono, blocksize=3, dtype='int16'))
     assert_equal_list_of_arrays(blocks, [[0, 1, 2], [-2, -1]])
