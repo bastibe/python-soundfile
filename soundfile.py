@@ -935,7 +935,8 @@ class SoundFile:
             array instead of creating a new array. In this case, the
             arguments *dtype* and *always_2d* are silently ignored! If
             *frames* is not given, it is obtained from the length of
-            *out*.
+            *out*. The array must be C-contiguous and have native byte
+            order.
 
         Examples
         --------
@@ -1087,7 +1088,8 @@ class SoundFile:
         import numpy as np
 
         # no copy is made if data has already the correct memory layout:
-        data = np.ascontiguousarray(data)
+        data = np.asarray(data)
+        data = np.ascontiguousarray(data, dtype=data.dtype.newbyteorder('='))
         written = self._array_io('write', data, len(data))
         assert written == len(data)
         self._update_frames(written)
@@ -1195,6 +1197,17 @@ class SoundFile:
             raise ValueError("blocksize must be greater than zero")
         if overlap < 0 or overlap >= blocksize:
             raise ValueError("overlap must be non-negative and smaller than blocksize")
+
+        if 0 < frames < blocksize and fill_value is None:
+            # Less than one block of data, so the loop below would run exactly
+            # once and `out` would keep whatever sat past the data. Reading the
+            # short count and yielding only that much avoids it. Only reachable
+            # when the caller passed `out`, since otherwise `out` is already
+            # sized to min(blocksize, frames).
+            self.read(frames, dtype, always_2d, fill_value, out[:frames])
+            block = out[:frames]
+            yield np.copy(block) if copy_out else block
+            return
 
         overlap_memory = None
         while frames > 0:
@@ -1332,7 +1345,7 @@ class SoundFile:
             try:
                 buf = _ffi.buffer(ptr, count)
                 data_read = file.readinto(buf)
-            except AttributeError:
+            except (AttributeError, NotImplementedError):
                 data = file.read(count)
                 data_read = len(data)
                 buf = _ffi.buffer(ptr, data_read)
@@ -1428,6 +1441,8 @@ class SoundFile:
             raise ValueError("Data must be C-contiguous")
         ctype = self._check_dtype(array.dtype.name)
         assert array.dtype.itemsize == _ffi.sizeof(ctype)
+        if not array.dtype.isnative:
+            raise ValueError("Data must have native byte order")
         cdata = _ffi.cast(ctype + '*', array.__array_interface__['data'][0])
         return self._cdata_io(action, cdata, ctype, frames)
 
