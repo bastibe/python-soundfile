@@ -373,6 +373,23 @@ def test_blocks_without_blocksize():
         list(sf.blocks(filename_stereo))
 
 
+@pytest.mark.parametrize('blocksize, overlap', [(0, 0), (3, -1), (3, 3), (3, 4)])
+@pytest.mark.parametrize('use_out', [False, True])
+@pytest.mark.parametrize('use_method', [False, True])
+def test_blocks_invalid_size_or_overlap(blocksize, overlap, use_out, use_method):
+    kwargs = {'out': np.empty((blocksize, 2))} if use_out else {'blocksize': blocksize}
+    with sf.SoundFile(filename_stereo) as f:
+        generator = (f.blocks(overlap=overlap, **kwargs) if use_method else
+                     sf.blocks(filename_stereo, overlap=overlap, **kwargs))
+        try:
+            with pytest.raises(ValueError, match='blocksize|overlap'):
+                next(generator)
+            if use_method:
+                assert f.tell() == 0
+        finally:
+            generator.close()
+
+
 def test_blocks_full_last_block(file_stereo_r):
     blocks = list(sf.blocks(file_stereo_r, blocksize=2))
     assert_equal_list_of_arrays(blocks, [data_stereo[0:2], data_stereo[2:4]])
