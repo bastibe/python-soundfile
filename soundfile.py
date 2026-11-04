@@ -1129,6 +1129,8 @@ class SoundFile:
         By default, the generator yields blocks of the given
         *blocksize* (using a given *overlap*) until the end of the file
         is reached; *frames* can be used to stop earlier.
+        Without *fill_value*, iteration also stops at the end of a
+        non-seekable file if fewer than *frames* are available.
 
         Parameters
         ----------
@@ -1191,17 +1193,6 @@ class SoundFile:
             blocksize = len(out)
             copy_out = False
 
-        if 0 < frames < blocksize and fill_value is None:
-            # Less than one block of data, so the loop below would run exactly
-            # once and `out` would keep whatever sat past the data. Reading the
-            # short count and yielding only that much avoids it. Only reachable
-            # when the caller passed `out`, since otherwise `out` is already
-            # sized to min(blocksize, frames).
-            self.read(frames, dtype, always_2d, fill_value, out[:frames])
-            block = out[:frames]
-            yield np.copy(block) if copy_out else block
-            return
-
         overlap_memory = None
         while frames > 0:
             if overlap_memory is None:
@@ -1211,7 +1202,11 @@ class SoundFile:
                 out[:output_offset] = overlap_memory
 
             toread = min(blocksize - output_offset, frames)
-            self.read(toread, dtype, always_2d, fill_value, out[output_offset:])
+            read = self.read(toread, dtype, always_2d, fill_value,
+                             out[output_offset:])
+            read_frames = len(read) if fill_value is None else toread
+            if read_frames == 0:
+                return
 
             if overlap:
                 if overlap_memory is None:
@@ -1219,12 +1214,14 @@ class SoundFile:
                 else:
                     overlap_memory[:] = out[-overlap:]
 
-            if blocksize > frames + overlap and fill_value is None:
-                block = out[:frames + overlap]
+            if fill_value is None and output_offset + read_frames < len(out):
+                block = out[:output_offset + read_frames]
             else:
                 block = out
             yield np.copy(block) if copy_out else block
-            frames -= toread
+            frames -= read_frames
+            if read_frames < toread:
+                return
 
     def truncate(self, frames: int | None = None) -> None:
         """Truncate the file to a given number of frames.
