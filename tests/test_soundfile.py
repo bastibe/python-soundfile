@@ -1,6 +1,7 @@
 import soundfile as sf
 import numpy as np
 import os
+import errno
 import io
 import shutil
 import pytest
@@ -1037,6 +1038,30 @@ def test_closing_should_close_file(file_stereo_r):
     assert not f.closed
     f.close()
     assert f.closed
+
+
+@pytest.mark.parametrize("closefd", [None, True, False],
+                         ids=["default", "close", "keep"])
+def test_closefd_controls_file_descriptor_ownership(closefd):
+    fd = os.open(filename_stereo, os.O_RDONLY)
+    kwargs = {} if closefd is None else {'closefd': closefd}
+    try:
+        with sf.SoundFile(fd, **kwargs) as f:
+            assert os.fstat(fd).st_size > 0
+            assert np.all(f.read() == data_stereo)
+        if closefd is False:
+            assert os.fstat(fd).st_size > 0
+            os.lseek(fd, 0, os.SEEK_SET)
+            assert os.read(fd, 4) == b'RIFF'
+        else:
+            with pytest.raises(OSError) as excinfo:
+                os.fstat(fd)
+            assert excinfo.value.errno == errno.EBADF
+    finally:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
 
 
 def test_anything_on_closed_file(file_stereo_r):
